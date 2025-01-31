@@ -393,17 +393,14 @@ public sealed class ProjectionsSubsystem : ISubsystem,
 		return _subsystemInitialized.Task;
 	}
 
-	public Task Stop() {
+	public async Task Stop() {
 		if (_subsystemStarted) {
-			if (_leaderInputQueue != null)
-				_leaderInputQueue.Stop();
+			await (_leaderInputQueue?.Stop() ?? Task.CompletedTask);
 			foreach (var queue in _coreWorkers)
-				queue.Value.Stop();
+				await queue.Value.Stop();
 		}
 
 		_subsystemStarted = false;
-
-		return Task.CompletedTask;
 	}
 
 	public void Handle(CoreProjectionStatusMessage.Stopped message) {

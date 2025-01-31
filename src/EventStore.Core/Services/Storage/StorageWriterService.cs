@@ -179,12 +179,6 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 			Interlocked.Increment(ref FlushMessagesInQueue);
 
 		_writerQueue.Publish(message);
-
-		if (message is SystemMessage.BecomeShuttingDown) {
-			// WaitForStop() on main thread to avoid deadlock with queue waiting for itself to stop
-			_writerQueue.WaitForStop();
-			Bus.Publish(new SystemMessage.ServiceShutdown("StorageWriter"));
-		}
 	}
 
 	private async ValueTask CommonHandle(Message message, CancellationToken token) {
@@ -229,8 +223,8 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 				}
 			case VNodeState.ShuttingDown: {
 					await Writer.Flush(token);
-					_writerQueue.RequestStop();
 					BlockWriter = true;
+					_writerQueue.Stop().GetAwaiter().OnCompleted(Bus.PublishStorageWriterShutdown);
 					break;
 				}
 		}
@@ -903,4 +897,9 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 
 		message.Envelope.ReplyWith(new MonitoringMessage.InternalStatsRequestResponse(stats));
 	}
+}
+
+file static class MessageBusHelpers {
+	internal static void PublishStorageWriterShutdown(this IPublisher publisher)
+		=> publisher.Publish(new SystemMessage.ServiceShutdown("StorageWriter"));
 }

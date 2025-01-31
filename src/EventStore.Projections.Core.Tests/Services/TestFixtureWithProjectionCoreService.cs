@@ -37,9 +37,7 @@ public class TestFixtureWithProjectionCoreService {
 			throw new NotImplementedException();
 		}
 
-		public void Stop() {
-			throw new NotImplementedException();
-		}
+		public Task Stop() => Task.FromException(new NotImplementedException());
 
 		public void RequestStop() {
 			throw new NotImplementedException();

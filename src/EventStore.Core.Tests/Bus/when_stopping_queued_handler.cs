@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Bus.Helpers;
@@ -21,43 +22,35 @@ public abstract class when_stopping_queued_handler : QueuedHandlerTestWithNoopCo
 	[Test]
 	public void gracefully_should_not_throw() {
 		Queue.Start();
-		Assert.DoesNotThrow(() => Queue.Stop());
+		Assert.DoesNotThrowAsync(Queue.Stop);
 	}
 
 	[Test]
-	public void gracefully_and_queue_is_not_busy_should_not_take_much_time() {
-		Queue.Start();
+	public async Task gracefully_and_queue_is_not_busy_should_not_take_much_time() {
+		var startTask = Queue.Start();
+		var stopTask = Queue.Stop();
+		await Task.WhenAll(startTask, stopTask).WaitAsync(TimeSpan.FromMilliseconds(5000))
+			.ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext | ConfigureAwaitOptions.SuppressThrowing);
 
-		var wait = new ManualResetEventSlim(false);
-
-		ThreadPool.QueueUserWorkItem(_ => {
-			Queue.Stop();
-			wait.Set();
-		});
-
-		Assert.IsTrue(wait.Wait(5000), "Could not stop queue in time.");
+		Assert.IsTrue(stopTask.IsCompleted & stopTask.IsCompleted, "Could not stop queue in time.");
 	}
 
 	[Test]
 	public void second_time_should_not_throw() {
-		Queue.Start();
-		Queue.Stop();
-		Assert.DoesNotThrow(() => Queue.Stop());
+		var startTask = Queue.Start();
+		Assert.DoesNotThrowAsync(Queue.Stop);
+		Assert.IsTrue(startTask.IsCompleted);
 	}
 
 	[Test]
-	public void second_time_should_not_take_much_time() {
-		Queue.Start();
-		Queue.Stop();
+	public async Task second_time_should_not_take_much_time() {
+		var startTask = Queue.Start();
+		var stopTask = Queue.Stop();
+		await Task.WhenAll(startTask, stopTask).WaitAsync(TimeSpan.FromMilliseconds(5000))
+			.ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext | ConfigureAwaitOptions.SuppressThrowing);
 
-		var wait = new ManualResetEventSlim(false);
-
-		ThreadPool.QueueUserWorkItem(_ => {
-			Queue.Stop();
-			wait.Set();
-		});
-
-		Assert.IsTrue(wait.Wait(1000), "Could not stop queue in time.");
+		Assert.IsTrue(stopTask.IsCompleted & stopTask.IsCompleted, "Could not stop queue in time.");
+		Assert.IsTrue(Queue.Stop().IsCompletedSuccessfully);
 	}
 
 	[Test]
@@ -76,12 +69,12 @@ public abstract class when_stopping_queued_handler : QueuedHandlerTestWithNoopCo
 			}));
 
 			handledEvent.WaitOne();
-			Assert.Throws<TimeoutException>(() => busyQueue.Stop());
+			Assert.ThrowsAsync<TimeoutException>(busyQueue.Stop);
 		} finally {
 			waitHandle.Set();
 			consumer.Wait();
 
-			busyQueue.Stop();
+			busyQueue.RequestStop();
 			waitHandle.Dispose();
 			handledEvent.Dispose();
 			consumer.Dispose();

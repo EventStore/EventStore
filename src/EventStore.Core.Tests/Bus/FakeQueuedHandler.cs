@@ -13,7 +13,7 @@ public class FakeQueuedHandler : IQueuedHandler {
 	public void Handle(Message message) { }
 	public void Publish(Message message) { }
 	public Task Start() => Task.CompletedTask;
-	public void Stop() { }
+	public Task Stop() => Task.CompletedTask;
 	public void RequestStop() { }
 	public QueueStats GetStatistics() => null;
 }

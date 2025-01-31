@@ -64,7 +64,7 @@ public abstract class SubsystemScenario  : IHandle<Message>, IAsyncLifetime {
 		_miniStore.Complete();
 		await _complete;
 		await _stop();
-		_mainQueue.Stop();
+		await _mainQueue.Stop();
 	}
 
 	protected async Task<(long commitPosition, long nextRevision)> WriteEvents(string stream, long expectedRevision, params Event[] events) {

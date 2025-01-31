@@ -41,14 +41,14 @@ public class MultiQueuedHandler : IPublisher {
 		return tasks;
 	}
 
-	public void Stop() {
+	public Task Stop() {
 		var stopTasks = new Task[_queues.Length];
 		var queues = _queues.Span;
 		for (int i = 0; i < queues.Length; ++i) {
-			stopTasks[i] = Task.Factory.StartNew(queues[i].Stop);
+			stopTasks[i] = Task.Run(queues[i].Stop);
 		}
 
-		Task.WaitAll(stopTasks);
+		return Task.WhenAll(stopTasks);
 	}
 
 	public void Publish(Message message) {
