@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace EventStore.Core;
 
+// Implementations of this interface are run to completion during startup
 public interface IClusterVNodeStartupTask {
 	ValueTask Run(CancellationToken token);
 }

@@ -291,7 +291,9 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 			Node.MainBus.Unsubscribe(waitForAdminUser);
 		}
 
-		await Node.StartAsync(true, CancellationToken.None).WithTimeout(TimeSpan.FromSeconds(60));
+		using var cts = new CancellationTokenSource();
+		cts.CancelAfter(TimeSpan.FromSeconds(60));
+		await Node.StartAsync(true, cts.Token);
 
 		if (Node.IsShutdown)
 			_started.TrySetResult(true);

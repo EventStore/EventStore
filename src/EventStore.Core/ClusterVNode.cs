@@ -1614,16 +1614,6 @@ public class ClusterVNode<TStreamId> :
 			startupTasks = app.ApplicationServices.GetRequiredService<IReadOnlyList<IClusterVNodeStartupTask>>();
 		}
 
-		async ValueTask StartNodeUnwrapException(CancellationToken token) {
-			try {
-				await StartNode(token);
-			} catch (AggregateException aggEx) when (aggEx.InnerException is { } innerEx) {
-				// We only really care that *something* is wrong - throw the first inner exception.
-				// keeping its original stack
-				ExceptionDispatchInfo.Capture(innerEx).Throw();
-			}
-		}
-
 		async ValueTask StartNode(CancellationToken token) {
 			// TRUNCATE IF NECESSARY
 			var truncPos = Db.Config.TruncateCheckpoint.Read();
@@ -1640,11 +1630,12 @@ public class ClusterVNode<TStreamId> :
 				// then we can remove this extra restart
 				Log.Information("Truncation successful. Shutting down.");
 				var shutdownGuid = Guid.NewGuid();
+				using var linked = CancellationTokenSource.CreateLinkedTokenSource(token);
+				linked.CancelAfter(DefaultShutdownTimeout);
+
 				await HandleAsync(
 						new SystemMessage.BecomeShuttingDown(shutdownGuid, exitProcess: true, shutdownHttp: true),
-						token)
-					.AsTask()
-					.WaitAsync(DefaultShutdownTimeout, token);
+						linked.Token);
 
 				Handle(new SystemMessage.BecomeShutdown(shutdownGuid));
 				Application.Exit(0, "Shutting down after successful truncation.");
@@ -1674,7 +1665,7 @@ public class ClusterVNode<TStreamId> :
 
 			dynamicCacheManager.Start();
 		}
-		_start = StartNodeUnwrapException;
+		_start = StartNode;
 
 		_startup = new ClusterVNodeStartup<TStreamId>(
 			modifiedOptions.PlugableComponents,

@@ -39,7 +39,6 @@ internal static class Program {
 
 		ThreadPool.SetMaxThreads(1000, 1000);
 		var exitCodeSource = new TaskCompletionSource<int>();
-		var cts = new CancellationTokenSource();
 
 		Log.Logger = EventStoreLoggerConfiguration.ConsoleLog;
 		try {
@@ -178,6 +177,7 @@ internal static class Program {
 				return 0;
 			}
 
+			using var cts = new CancellationTokenSource();
 			Application.RegisterExitAction(code => {
 				// add a small delay to allow the host to start up in case there's a premature shutdown
 				cts.CancelAfter(TimeSpan.FromSeconds(1));
