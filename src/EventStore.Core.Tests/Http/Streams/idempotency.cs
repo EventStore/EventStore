@@ -9,14 +9,14 @@ using System.Threading.Tasks;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
-using HttpStatusCode = System.Net.HttpStatusCode;
 using EventStore.Core.Tests.Http.Users.users;
+using EventStore.Transport.Http;
+using HttpStatusCode = System.Net.HttpStatusCode;
 
 namespace EventStore.Core.Tests.Http.Streams {
 	namespace idempotency {
 		[SetUpFixture]
-		abstract class HttpBehaviorSpecificationOfSuccessfulCreateEvent<TLogFormat, TStreamId>
-			: with_admin_user<TLogFormat, TStreamId> {
+		abstract class HttpBehaviorSpecificationOfSuccessfulCreateEvent : with_admin_user {
 			protected HttpResponseMessage _response;
 
 			[OneTimeSetUp]
@@ -60,10 +60,9 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		class when_posting_to_idempotent_guid_id_then_as_array<TLogFormat, TStreamId>
-			: HttpBehaviorSpecificationOfSuccessfulCreateEvent<TLogFormat, TStreamId> {
+		[TestFixture(ContentType.EventsJson)]
+		[TestFixture(ContentType.LegacyEventsJson)]
+		class when_posting_to_idempotent_guid_id_then_as_array(string contentType) : HttpBehaviorSpecificationOfSuccessfulCreateEvent {
 			private Guid _eventId;
 
 			protected override Task Given() {
@@ -74,27 +73,26 @@ namespace EventStore.Core.Tests.Http.Streams {
 			protected override async Task When() {
 				_response = await MakeArrayEventsPost(
 					TestStream,
-					new[] { new { EventId = _eventId, EventType = "event-type", Data = new { A = "1" } } });
+					new[] { new { EventId = _eventId, EventType = "event-type", Data = new { A = "1" } } },
+					contentType: contentType);
 			}
 
 			private async Task PostEvent() {
 				var request = CreateRequest(TestStream + "/incoming/" + _eventId.ToString(), "", "POST",
-					"application/json");
+					ContentType.Json);
 				request.Headers.Add("ES-EventType", "SomeType");
 				var data = "{a : \"1\"}";
 				var bytes = Encoding.UTF8.GetBytes(data);
 				request.Content = new ByteArrayContent(bytes) {
-					Headers = { ContentType = new MediaTypeHeaderValue("application/json") }
+					Headers = { ContentType = new MediaTypeHeaderValue(ContentType.Json) }
 				};
 				_response = await GetRequestResponse(request);
 				Assert.AreEqual(HttpStatusCode.Created, _response.StatusCode);
 			}
 		}
 
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		class when_posting_to_idempotent_guid_id_twice<TLogFormat, TStreamId>
-			: HttpBehaviorSpecificationOfSuccessfulCreateEvent<TLogFormat, TStreamId>  {
+		[TestFixture]
+		class when_posting_to_idempotent_guid_id_twice : HttpBehaviorSpecificationOfSuccessfulCreateEvent  {
 			private Guid _eventId;
 
 			protected override Task Given() {
@@ -108,23 +106,20 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 			private async Task PostEvent() {
 				var request = CreateRequest(TestStream + "/incoming/" + _eventId.ToString(), "", "POST",
-					"application/json");
+					ContentType.Json);
 				request.Headers.Add("ES-EventType", "SomeType");
 				var data = "{a : \"1\"}";
 				var bytes = Encoding.UTF8.GetBytes(data);
 				request.Content = new ByteArrayContent(bytes) {
-					Headers = { ContentType = new MediaTypeHeaderValue("application/json") }
+					Headers = { ContentType = new MediaTypeHeaderValue(ContentType.Json) }
 				};
 				_response = await GetRequestResponse(request);
 				Assert.AreEqual(HttpStatusCode.Created, _response.StatusCode);
 			}
 		}
 
-
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		class when_posting_to_idempotent_guid_id_three_times<TLogFormat, TStreamId>
-			: HttpBehaviorSpecificationOfSuccessfulCreateEvent<TLogFormat, TStreamId>  {
+		[TestFixture]
+		class when_posting_to_idempotent_guid_id_three_times : HttpBehaviorSpecificationOfSuccessfulCreateEvent  {
 			private Guid _eventId;
 
 			protected override async Task Given() {
@@ -139,24 +134,22 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 			private async Task PostEvent() {
 				var request = CreateRequest(TestStream + "/incoming/" + _eventId.ToString(), "", "POST",
-					"application/json");
+					ContentType.Json);
 				request.Headers.Add("ES-EventType", "SomeType");
 				var data = "{a : \"1\"}";
 				var bytes = Encoding.UTF8.GetBytes(data);
 				request.Content = new ByteArrayContent(bytes) {
-					Headers = { ContentType = new MediaTypeHeaderValue("application/json") }
+					Headers = { ContentType = new MediaTypeHeaderValue(ContentType.Json) }
 				};
 				_response = await GetRequestResponse(request);
 				Assert.AreEqual(HttpStatusCode.Created, _response.StatusCode);
 			}
 		}
 
-
 		[Category("LongRunning")]
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		class when_posting_an_event_once_raw_once_with_array<TLogFormat, TStreamId>
-			: HttpBehaviorSpecificationOfSuccessfulCreateEvent<TLogFormat, TStreamId>  {
+		[TestFixture(ContentType.EventsJson)]
+		[TestFixture(ContentType.LegacyEventsJson)]
+		class when_posting_an_event_once_raw_once_with_array(string contentType) : HttpBehaviorSpecificationOfSuccessfulCreateEvent  {
 			private Guid _eventId;
 
 			protected override Task Given() {
@@ -167,29 +160,27 @@ namespace EventStore.Core.Tests.Http.Streams {
 			protected override async Task When() {
 				_response = await MakeArrayEventsPost(
 					TestStream,
-					new[] { new { EventId = _eventId, EventType = "event-type", Data = new { A = "1" } } });
+					new[] { new { EventId = _eventId, EventType = "event-type", Data = new { A = "1" } } },
+					contentType: contentType);
 			}
 
 			private async Task PostEvent() {
-				var request = CreateRequest(TestStream, "", "POST", "application/json");
+				var request = CreateRequest(TestStream, "", "POST", ContentType.Json);
 				request.Headers.Add("ES-EventId", _eventId.ToString());
 				request.Headers.Add("ES-EventType", "SomeType");
 				var data = "{a : \"1\"}";
 				var bytes = Encoding.UTF8.GetBytes(data);
 				request.Content = new ByteArrayContent(bytes) {
-					Headers = { ContentType = new MediaTypeHeaderValue("application/json") }
+					Headers = { ContentType = new MediaTypeHeaderValue(ContentType.Json) }
 				};
 				_response = await GetRequestResponse(request);
 				Assert.AreEqual(HttpStatusCode.Created, _response.StatusCode);
 			}
 		}
 
-
 		[Category("LongRunning")]
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		class when_posting_an_event_twice_raw<TLogFormat, TStreamId>
-			: HttpBehaviorSpecificationOfSuccessfulCreateEvent<TLogFormat, TStreamId> {
+		[TestFixture]
+		class when_posting_an_event_twice_raw : HttpBehaviorSpecificationOfSuccessfulCreateEvent {
 			private Guid _eventId;
 
 			protected override Task Given() {
@@ -202,13 +193,13 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 
 			private async Task PostEvent() {
-				var request = CreateRequest(TestStream, "", "POST", "application/json");
+				var request = CreateRequest(TestStream, "", "POST", ContentType.Json);
 				request.Headers.Add("ES-EventId", _eventId.ToString());
 				request.Headers.Add("ES-EventType", "SomeType");
 				var data = "{a : \"1\"}";
 				var bytes = Encoding.UTF8.GetBytes(data);
 				request.Content = new ByteArrayContent(bytes) {
-					Headers = { ContentType = new MediaTypeHeaderValue("application/json") }
+					Headers = { ContentType = new MediaTypeHeaderValue(ContentType.Json) }
 				};
 				_response = await GetRequestResponse(request);
 				Assert.AreEqual(HttpStatusCode.Created, _response.StatusCode);
@@ -216,10 +207,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[Category("LongRunning")]
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		class when_posting_an_event_three_times_raw<TLogFormat, TStreamId>
-			: HttpBehaviorSpecificationOfSuccessfulCreateEvent<TLogFormat, TStreamId> {
+		[TestFixture]
+		class when_posting_an_event_three_times_raw : HttpBehaviorSpecificationOfSuccessfulCreateEvent {
 			private Guid _eventId;
 
 			protected override async Task Given() {
@@ -233,13 +222,13 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 
 			private async Task PostEvent() {
-				var request = CreateRequest(TestStream, "", "POST", "application/json");
+				var request = CreateRequest(TestStream, "", "POST", ContentType.Json);
 				request.Headers.Add("ES-EventId", _eventId.ToString());
 				request.Headers.Add("ES-EventType", "SomeType");
 				var data = "{a : \"1\"}";
 				var bytes = Encoding.UTF8.GetBytes(data);
 				request.Content = new ByteArrayContent(bytes) {
-					Headers = { ContentType = new MediaTypeHeaderValue("application/json") }
+					Headers = { ContentType = new MediaTypeHeaderValue(ContentType.Json) }
 				};
 				_response = await GetRequestResponse(request);
 				Assert.AreEqual(HttpStatusCode.Created, _response.StatusCode);
@@ -247,51 +236,53 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[Category("LongRunning")]
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		class when_posting_an_event_twice_array<TLogFormat, TStreamId>
-			: HttpBehaviorSpecificationOfSuccessfulCreateEvent<TLogFormat, TStreamId> {
+		[TestFixture(ContentType.EventsJson)]
+		[TestFixture(ContentType.LegacyEventsJson)]
+		class when_posting_an_event_twice_array(string contentType) : HttpBehaviorSpecificationOfSuccessfulCreateEvent {
 			private Guid _eventId;
 
 			protected override async Task Given() {
 				_eventId = Guid.NewGuid();
 				var response1 = await MakeArrayEventsPost(
 					TestStream,
-					new[] { new { EventId = _eventId, EventType = "event-type", Data = new { A = "1" } } });
+					new[] { new { EventId = _eventId, EventType = "event-type", Data = new { A = "1" } } },
+					contentType: contentType);
 				Assert.AreEqual(HttpStatusCode.Created, response1.StatusCode);
 			}
 
 			protected override async Task When() {
 				_response = await MakeArrayEventsPost(
 					TestStream,
-					new[] { new { EventId = _eventId, EventType = "event-type", Data = new { A = "1" } } });
+					new[] { new { EventId = _eventId, EventType = "event-type", Data = new { A = "1" } } },
+					contentType: contentType);
 			}
 		}
 
-
 		[Category("LongRunning")]
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		class when_posting_an_event_three_times_as_array<TLogFormat, TStreamId>
-			: HttpBehaviorSpecificationOfSuccessfulCreateEvent<TLogFormat, TStreamId> {
+		[TestFixture(ContentType.EventsJson)]
+		[TestFixture(ContentType.LegacyEventsJson)]
+		class when_posting_an_event_three_times_as_array(string contentType) : HttpBehaviorSpecificationOfSuccessfulCreateEvent {
 			private Guid _eventId;
 
 			protected override async Task Given() {
 				_eventId = Guid.NewGuid();
 				var response1 = await MakeArrayEventsPost(
 					TestStream,
-					new[] { new { EventId = _eventId, EventType = "event-type", Data = new { A = "1" } } });
+					new[] { new { EventId = _eventId, EventType = "event-type", Data = new { A = "1" } } },
+					contentType: contentType);
 				Assert.AreEqual(HttpStatusCode.Created, response1.StatusCode);
 				var response2 = await MakeArrayEventsPost(
 					TestStream,
-					new[] { new { EventId = _eventId, EventType = "event-type", Data = new { A = "1" } } });
+					new[] { new { EventId = _eventId, EventType = "event-type", Data = new { A = "1" } } },
+					contentType: contentType);
 				Assert.AreEqual(HttpStatusCode.Created, response2.StatusCode);
 			}
 
 			protected override async Task When() {
 				_response = await MakeArrayEventsPost(
 					TestStream,
-					new[] { new { EventId = _eventId, EventType = "event-type", Data = new { A = "1" } } });
+					new[] { new { EventId = _eventId, EventType = "event-type", Data = new { A = "1" } } },
+					contentType: contentType);
 			}
 		}
 	}
