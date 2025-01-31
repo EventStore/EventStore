@@ -163,6 +163,8 @@ namespace EventStore.Core.Bus;
 							}
 
 							_queueStats.ProcessingEnded(1);
+						} catch (OperationCanceledException ex) when (ex.CancellationToken == _lifetimeToken) {
+							break;
 						} catch (Exception ex) {
 							Log.Error(ex,
 								"Error while processing message {message} in queued handler '{queue}'.", msg,
