@@ -8,17 +8,9 @@ using System.Xml.Serialization;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers;
 
-public class RelLink : IXmlSerializable {
-	public readonly string href;
-	public readonly string rel;
-
-	private RelLink() {
-	}
-
-	public RelLink(string href, string rel) {
-		this.href = href;
-		this.rel = rel;
-	}
+public class RelLink(string href, string rel) : IXmlSerializable {
+	public readonly string href = href;
+	public readonly string rel = rel;
 
 	public XmlSchema GetSchema() {
 		return null;

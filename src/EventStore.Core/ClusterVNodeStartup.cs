@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using EventStore.Common.Configuration;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -27,11 +26,6 @@ using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
-using MidFunc = System.Func<
-	Microsoft.AspNetCore.Http.HttpContext,
-	System.Func<System.Threading.Tasks.Task>,
-	System.Threading.Tasks.Task
->;
 using Operations = EventStore.Core.Services.Transport.Grpc.Operations;
 using ClusterGossip = EventStore.Core.Services.Transport.Grpc.Cluster.Gossip;
 using ClientGossip = EventStore.Core.Services.Transport.Grpc.Gossip;
@@ -117,7 +111,7 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 			.UseAuthorization()
 			.UseAntiforgery();
 
-		app.Map("/health", _statusCheck.Configure);
+		_statusCheck.MapEndpoints(app);
 		app.UseStaticFiles();
 		// AuthenticationMiddleware uses _httpAuthenticationProviders and assigns
 		// the resulting ClaimsPrinciple to HttpContext.User
@@ -139,6 +133,8 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 		app.MapGrpcService<ServerFeatures>();
 
 		app.MapGetInfo();
+		app.MapGetPing();
+		app.MapGetStats();
 
 		// enable redaction service on unix sockets only
 		app.MapGrpcService<Redaction>().AddEndpointFilter(async (c, next) => {
@@ -174,7 +170,6 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 			.AddSingleton(_authorizationProvider)
 			.AddSingleton(_mainBus)
 			.AddSingleton(_mainQueue)
-			// .AddSingleton(_httpService)
 			.AddSingleton<AuthenticationMiddleware>()
 			.AddSingleton<AuthorizationMiddleware>()
 			.AddSingleton(new Streams<TStreamId>(_mainQueue, _maxAppendSize, _writeTimeout, _expiryStrategy, _trackers.GrpcTrackers, _authorizationProvider))
@@ -186,9 +181,10 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 				readTracker: _trackers.GossipTrackers.ProcessingRequestFromPeer))
 			.AddSingleton(new Elections(_mainQueue, _authorizationProvider, _clusterDns))
 			.AddSingleton(new ClientGossip(_mainQueue, _authorizationProvider, _trackers.GossipTrackers.ProcessingRequestFromGrpcClient))
-			.AddSingleton(new Monitoring(_monitoringQueue))
 			.AddSingleton<Redaction>()
 			.AddSingleton<ServerFeatures>();
+
+		services.AddKeyedSingleton("monitoring", _monitoringQueue);
 
 		// OpenTelemetry
 		services.AddOpenTelemetry()
@@ -252,39 +248,19 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 	public void Handle(SystemMessage.BecomeShuttingDown _) => _ready = false;
 
 	private class StatusCheck(ClusterVNodeStartup<TStreamId> startup) {
-		private readonly ClusterVNodeStartup<TStreamId> _startup = startup ?? throw new ArgumentNullException(nameof(startup));
-		private readonly int _livecode = 204;
+		const int Livecode = 204;
 
-		public void Configure(IApplicationBuilder builder) =>
-			builder.Use(GetAndHeadOnly)
-				.UseRouter(router => router.MapMiddlewareGet("live", inner => inner.Use(Live)));
-
-		private MidFunc Live => (context, next) => {
-			if (_startup._ready) {
-				if (context.Request.Query.TryGetValue("liveCode", out var expected) &&
-				    int.TryParse(expected, out var statusCode)) {
-					context.Response.StatusCode = statusCode;
-				} else {
-					context.Response.StatusCode = _livecode;
-				}
-			} else {
-				context.Response.StatusCode = 503;
-			}
-
-			return Task.CompletedTask;
-		};
-
-		private static MidFunc GetAndHeadOnly => (context, next) => {
-			switch (context.Request.Method) {
-				case "HEAD":
-					context.Request.Method = "GET";
-					return next();
-				case "GET":
-					return next();
-				default:
-					context.Response.StatusCode = 405;
-					return Task.CompletedTask;
-			}
-		};
+		public void MapEndpoints(WebApplication builder) {
+			builder.Map("/health/live", (HttpRequest request) => {
+				var code = startup._ready
+					? request.Query.TryGetValue("liveCode", out var expected) && int.TryParse(expected, out var statusCode) ? statusCode : Livecode
+					: 503;
+				return request.Method switch {
+					"HEAD" => Results.StatusCode(code),
+					"GET" => Results.StatusCode(code),
+					_ => Results.StatusCode(405)
+				};
+			});
+		}
 	}
 }

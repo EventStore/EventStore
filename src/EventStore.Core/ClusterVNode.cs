@@ -910,11 +910,8 @@ public class ClusterVNode<TStreamId> : ClusterVNode,
 		Router.RegisterController(new PersistentSubscriptionController(httpSendService, _mainQueue, WorkersHandler));
 		if (!options.Interface.DisableAdminUi)
 			Router.RegisterController(new AdminController(_mainQueue, WorkersHandler));
-		Router.RegisterController(new PingController());
-		Router.RegisterController(infoController);
 		if (!options.Interface.DisableStatsOnHttp) {
 			Router.RegisterController(new StatController(monitoringQueue, WorkersHandler));
-			Router.RegisterController(new MetricsController());
 		}
 
 		if (options.Interface.EnableAtomPubOverHttp || options.DevMode.Dev) {
@@ -1472,9 +1469,7 @@ public class ClusterVNode<TStreamId> : ClusterVNode,
 				// then we can remove this extra restart
 				Log.Information("Truncation successful. Shutting down.");
 				var shutdownGuid = Guid.NewGuid();
-				using (var task = HandleAsync(
-					       new SystemMessage.BecomeShuttingDown(shutdownGuid, exitProcess: true, shutdownHttp: true),
-					       CancellationToken.None).AsTask()) {
+				using (var task = HandleAsync(new(shutdownGuid, exitProcess: true, shutdownHttp: true), CancellationToken.None).AsTask()) {
 					task.Wait(DefaultShutdownTimeout);
 				}
 

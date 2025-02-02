@@ -49,7 +49,6 @@ class RetryInterceptor : Interceptor {
 
 		LogRetries(context);
 		return base.UnaryServerHandler(request, context, continuation);
-
 	}
 
 	private void LogRetries(ServerCallContext context) {

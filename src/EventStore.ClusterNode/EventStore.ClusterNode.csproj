@@ -4,6 +4,8 @@
 		<OutputType>Exe</OutputType>
 		<ApplicationIcon>app2.ico</ApplicationIcon>
 		<GenerateSupportedRuntime>false</GenerateSupportedRuntime>
+		<RazorLangVersion>Latest</RazorLangVersion>
+		<LangVersion>13</LangVersion>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="MudBlazor.Markdown" Version="8.0.0" />

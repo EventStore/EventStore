@@ -10,12 +10,12 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using Grpc.Core;
+using Microsoft.Extensions.DependencyInjection;
+using static EventStore.Client.Monitoring.Monitoring;
 
 namespace EventStore.Core.Services.Transport.Grpc;
 
-internal partial class Monitoring : EventStore.Client.Monitoring.Monitoring.MonitoringBase {
-	private readonly IPublisher _publisher;
-	
+internal partial class Monitoring([FromKeyedServices("monitoring")] IPublisher publisher) : MonitoringBase {
 	public override Task Stats(StatsReq request, IServerStreamWriter<StatsResp> responseStream, ServerCallContext context) {
 		var channel = Channel.CreateBounded<StatsResp>(new BoundedChannelOptions(1) {
 			SingleReader = true,
@@ -26,7 +26,7 @@ internal partial class Monitoring : EventStore.Client.Monitoring.Monitoring.Moni
 
 		return channel.Reader.ReadAllAsync(context.CancellationToken)
 			.ForEachAwaitAsync(responseStream.WriteAsync, context.CancellationToken);
-		
+
 		async Task Receive() {
 			var delay = TimeSpan.FromMilliseconds(request.RefreshTimePeriodInMs);
 			var envelope = new CallbackEnvelope(message => {
@@ -42,23 +42,15 @@ internal partial class Monitoring : EventStore.Client.Monitoring.Monitoring.Moni
 				}
 
 				channel.Writer.TryWrite(response);
-
 			});
 			while (!context.CancellationToken.IsCancellationRequested) {
-				_publisher.Publish(
-					new MonitoringMessage.GetFreshStats(envelope, x => x, request.UseMetadata, false));
+				publisher.Publish(new MonitoringMessage.GetFreshStats(envelope, x => x, request.UseMetadata, false));
 
 				await Task.Delay(delay, context.CancellationToken);
 			}
 		}
 	}
 
-	public Monitoring(IPublisher publisher) {
-		_publisher = publisher;
-	}
-
-	private static Exception UnknownMessage<T>(Message message) where T : Message =>
-		new RpcException(
-			new Status(StatusCode.Unknown,
-				$"Envelope callback expected {typeof(T).Name}, received {message.GetType().Name} instead"));
+	private static RpcException UnknownMessage<T>(Message message) where T : Message =>
+		new(new(StatusCode.Unknown, $"Envelope callback expected {typeof(T).Name}, received {message.GetType().Name} instead"));
 }

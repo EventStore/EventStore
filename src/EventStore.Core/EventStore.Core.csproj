@@ -93,4 +93,84 @@
 	  <None Remove="Duck\1_Schema.sql" />
 	  <EmbeddedResource Include="Duck\1_Schema.sql" />
 	</ItemGroup>
+	<ItemGroup>
+	  <Compile Update="Services\Transport\Grpc\PersistentSubscriptions.Create.cs">
+	    <DependentUpon>PersistentSubscriptions.cs</DependentUpon>
+	  </Compile>
+	  <Compile Update="Services\Transport\Grpc\PersistentSubscriptions.Delete.cs">
+	    <DependentUpon>PersistentSubscriptions.cs</DependentUpon>
+	  </Compile>
+	  <Compile Update="Services\Transport\Grpc\PersistentSubscriptions.Info.cs">
+	    <DependentUpon>PersistentSubscriptions.cs</DependentUpon>
+	  </Compile>
+	  <Compile Update="Services\Transport\Grpc\PersistentSubscriptions.Read.cs">
+	    <DependentUpon>PersistentSubscriptions.cs</DependentUpon>
+	  </Compile>
+	  <Compile Update="Services\Transport\Grpc\PersistentSubscriptions.ReplayParked.cs">
+	    <DependentUpon>PersistentSubscriptions.cs</DependentUpon>
+	  </Compile>
+	  <Compile Update="Services\Transport\Grpc\PersistentSubscriptions.RestartSubsystem.cs">
+	    <DependentUpon>PersistentSubscriptions.cs</DependentUpon>
+	  </Compile>
+	  <Compile Update="Services\Transport\Grpc\PersistentSubscriptions.Update.cs">
+	    <DependentUpon>PersistentSubscriptions.cs</DependentUpon>
+	  </Compile>
+	  <Compile Update="Services\Transport\Grpc\Operations.Admin.cs">
+	    <DependentUpon>Operations.cs</DependentUpon>
+	  </Compile>
+	  <Compile Update="Services\Transport\Grpc\Operations.Scavenge.cs">
+	    <DependentUpon>Operations.cs</DependentUpon>
+	  </Compile>
+	  <Compile Update="Services\Transport\Grpc\Gossip.Read.cs">
+	    <DependentUpon>Gossip.cs</DependentUpon>
+	  </Compile>
+	  <Compile Update="Services\Transport\Grpc\Cluster.Elections.cs">
+	    <DependentUpon>Cluster.cs</DependentUpon>
+	  </Compile>
+	  <Compile Update="Services\Transport\Grpc\Cluster.Gossip.cs">
+	    <DependentUpon>Cluster.cs</DependentUpon>
+	  </Compile>
+	  <Compile Update="Services\Transport\Grpc\Redaction.GetEventPositions.cs">
+	    <DependentUpon>Redaction.cs</DependentUpon>
+	  </Compile>
+	  <Compile Update="Services\Transport\Grpc\Redaction.SwitchChunks.cs">
+	    <DependentUpon>Redaction.cs</DependentUpon>
+	  </Compile>
+	  <Compile Update="Services\Transport\Grpc\Streams.Append.cs">
+	    <DependentUpon>Streams.cs</DependentUpon>
+	  </Compile>
+	  <Compile Update="Services\Transport\Grpc\Streams.BatchAppend.cs">
+	    <DependentUpon>Streams.cs</DependentUpon>
+	  </Compile>
+	  <Compile Update="Services\Transport\Grpc\Streams.Delete.cs">
+	    <DependentUpon>Streams.cs</DependentUpon>
+	  </Compile>
+	  <Compile Update="Services\Transport\Grpc\Streams.Read.cs">
+	    <DependentUpon>Streams.cs</DependentUpon>
+	  </Compile>
+	  <Compile Update="Services\Transport\Grpc\Users.ChangePassword.cs">
+	    <DependentUpon>Users.cs</DependentUpon>
+	  </Compile>
+	  <Compile Update="Services\Transport\Grpc\Users.Create.cs">
+	    <DependentUpon>Users.cs</DependentUpon>
+	  </Compile>
+	  <Compile Update="Services\Transport\Grpc\Users.Delete.cs">
+	    <DependentUpon>Users.cs</DependentUpon>
+	  </Compile>
+	  <Compile Update="Services\Transport\Grpc\Users.Details.cs">
+	    <DependentUpon>Users.cs</DependentUpon>
+	  </Compile>
+	  <Compile Update="Services\Transport\Grpc\Users.Disable.cs">
+	    <DependentUpon>Users.cs</DependentUpon>
+	  </Compile>
+	  <Compile Update="Services\Transport\Grpc\Users.Enable.cs">
+	    <DependentUpon>Users.cs</DependentUpon>
+	  </Compile>
+	  <Compile Update="Services\Transport\Grpc\Users.ResetPassword.cs">
+	    <DependentUpon>Users.cs</DependentUpon>
+	  </Compile>
+	  <Compile Update="Services\Transport\Grpc\Users.Update.cs">
+	    <DependentUpon>Users.cs</DependentUpon>
+	  </Compile>
+	</ItemGroup>
 </Project>

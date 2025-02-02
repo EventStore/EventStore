@@ -1,20 +1,8 @@
 @page "/ui/config"
 @using EventStore.Core
-@using EventStore.Core.Bus
-@using EventStore.Core.Cluster
-@using EventStore.Core.Messages
-@using EventStore.Core.Messaging
 @inject ClusterVNodeOptions Configuration
-@inject IPublisher Publisher
 
 <PageTitle>KurrentDB: Configuration</PageTitle>
-
-<MudText>
-	Server address: @_clusterInfo?.ServerIp:@_clusterInfo?.ServerPort
-</MudText>
-@foreach (var member in _clusterInfo?.Members ?? []) {
-	<MudText>@member.HttpEndPointIp:@member.HttpEndPointPort @member.State @(member.IsAlive ? "Alive" : "Dead")</MudText>
-}
 
 <MudDataGrid Items="@_items" Dense="@true" Filterable="true">
 	<Columns>
@@ -44,11 +32,4 @@
 		_items = Configuration.LoadedOptions.Select(x => x.Value).ToList();
 	}
 
-	protected override async Task OnInitializedAsync() {
-		await base.OnInitializedAsync();
-		var r = await RequestClient.RequestAsync<GossipMessage.ClientGossip, GossipMessage.SendClientGossip>(Publisher, env => new(env));
-		_clusterInfo = r.ClusterInfo;
-	}
-
-	ClientClusterInfo _clusterInfo;
 }

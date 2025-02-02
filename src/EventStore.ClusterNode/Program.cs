@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.IO;
 using System.Linq;
 using System.Net.Security;
@@ -189,6 +190,8 @@ try {
 	return await exitCodeSource.Task;
 
 	async Task Run(ClusterVNodeHostedService hostedService, ManualResetEventSlim signal) {
+		var monitoringService = new MonitoringService();
+
 		try {
 			var builder = WebApplication.CreateBuilder(args);
 			builder.Configuration.AddEnvironmentVariables("DOTNET_");
@@ -223,6 +226,9 @@ try {
 			builder.Services.AddMudMarkdownServices();
 			builder.Services.AddSingleton(options);
 			builder.Services.AddScoped<LogObserver>();
+			builder.Services.AddScoped<StatsService>();
+			builder.Services.AddSingleton(monitoringService);
+
 			var app = builder.Build();
 			hostedService.Node.Startup.Configure(app);
 			app.UseStaticFiles();
@@ -233,6 +239,7 @@ try {
 			Log.Fatal(ex, "Exiting");
 			exitCodeSource.TrySetResult(1);
 		} finally {
+			monitoringService.Dispose();
 			signal.Set();
 		}
 	}

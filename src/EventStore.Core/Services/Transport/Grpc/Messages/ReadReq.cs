@@ -32,16 +32,14 @@ partial class ReadReq {
 					internal Core.Services.Transport.Common.Position ToPosition() => AllOptionCase switch {
 						AllOptionOneofCase.End => Core.Services.Transport.Common.Position.End,
 						AllOptionOneofCase.Start => Core.Services.Transport.Common.Position.Start,
-						AllOptionOneofCase.Position => new Core.Services.Transport.Common.Position(Position.CommitPosition,
-							Position.PreparePosition),
+						AllOptionOneofCase.Position => new(Position.CommitPosition, Position.PreparePosition),
 						_ => throw new InvalidOperationException()
 					};
 
 					internal Core.Services.Transport.Common.Position? ToSubscriptionPosition() => AllOptionCase switch {
 						AllOptionOneofCase.End => Core.Services.Transport.Common.Position.End,
 						AllOptionOneofCase.Start => null,
-						AllOptionOneofCase.Position => new Core.Services.Transport.Common.Position(Position.CommitPosition,
-							Position.PreparePosition),
+						AllOptionOneofCase.Position => new(Position.CommitPosition, Position.PreparePosition),
 						_ => throw new InvalidOperationException()
 					};
 				}

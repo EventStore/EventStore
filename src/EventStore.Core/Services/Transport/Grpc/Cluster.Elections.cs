@@ -35,7 +35,7 @@ partial class Elections {
 		_authorizationProvider = authorizationProvider ?? throw new ArgumentNullException(nameof(authorizationProvider));
 		_clusterDns = clusterDns;
 	}
-	
+
 	public override async Task<Empty> ViewChange(ViewChangeRequest request, ServerCallContext context) {
 		var user = context.GetHttpContext().User;
 		if (!await _authorizationProvider.CheckAccessAsync(user, ViewChangeOperation, context.CancellationToken)) {
@@ -47,7 +47,7 @@ partial class Elections {
 			request.AttemptedView));
 		return EmptyResult;
 	}
-	
+
 	public override async Task<Empty> ViewChangeProof(ViewChangeProofRequest request, ServerCallContext context) {
 		var user = context.GetHttpContext().User;
 		if (!await _authorizationProvider.CheckAccessAsync(user, ViewChangeProofOperation, context.CancellationToken)) {
@@ -59,7 +59,7 @@ partial class Elections {
 			request.InstalledView));
 		return EmptyResult;
 	}
-	
+
 	public override async Task<Empty> Prepare(PrepareRequest request, ServerCallContext context) {
 		var user = context.GetHttpContext().User;
 		if (!await _authorizationProvider.CheckAccessAsync(user, PrepareOperation, context.CancellationToken)) {
@@ -92,7 +92,7 @@ partial class Elections {
 			ClusterInfo.FromGrpcClusterInfo(request.ClusterInfo, _clusterDns)));
 		return EmptyResult;
 	}
-			
+
 	public override async Task<Empty> Proposal(ProposalRequest request, ServerCallContext context) {
 		var user = context.GetHttpContext().User;
 		if (!await _authorizationProvider.CheckAccessAsync(user, ProposalOperation, context.CancellationToken)) {
@@ -122,11 +122,9 @@ partial class Elections {
 		}
 		_bus.Publish(new ElectionMessage.Accept(
 			Uuid.FromDto(request.ServerId).ToGuid(),
-			new DnsEndPoint(request.ServerHttp.Address,
-				(int)request.ServerHttp.Port).WithClusterDns(_clusterDns),
+			new DnsEndPoint(request.ServerHttp.Address, (int)request.ServerHttp.Port).WithClusterDns(_clusterDns),
 			Uuid.FromDto(request.LeaderId).ToGuid(),
-			new DnsEndPoint(request.LeaderHttp.Address,
-				(int)request.LeaderHttp.Port).WithClusterDns(_clusterDns),
+			new DnsEndPoint(request.LeaderHttp.Address, (int)request.LeaderHttp.Port).WithClusterDns(_clusterDns),
 			request.View));
 		return EmptyResult;
 	}
@@ -138,11 +136,10 @@ partial class Elections {
 		}
 		_bus.Publish(new ElectionMessage.LeaderIsResigning(
 			Uuid.FromDto(request.LeaderId).ToGuid(),
-			new DnsEndPoint(request.LeaderHttp.Address,
-				(int)request.LeaderHttp.Port).WithClusterDns(_clusterDns)));
+			new DnsEndPoint(request.LeaderHttp.Address, (int)request.LeaderHttp.Port).WithClusterDns(_clusterDns)));
 		return EmptyResult;
 	}
-	
+
 	public override async Task<Empty> LeaderIsResigningOk(LeaderIsResigningOkRequest request, ServerCallContext context) {
 		var user = context.GetHttpContext().User;
 		if (!await _authorizationProvider.CheckAccessAsync(user, MasterIsResigningOkOperation, context.CancellationToken)) {
@@ -150,11 +147,9 @@ partial class Elections {
 		}
 		_bus.Publish(new ElectionMessage.LeaderIsResigningOk(
 			Uuid.FromDto(request.LeaderId).ToGuid(),
-			new DnsEndPoint(request.LeaderHttp.Address,
-				(int)request.LeaderHttp.Port).WithClusterDns(_clusterDns),
+			new DnsEndPoint(request.LeaderHttp.Address, (int)request.LeaderHttp.Port).WithClusterDns(_clusterDns),
 			Uuid.FromDto(request.ServerId).ToGuid(),
-			new DnsEndPoint(request.ServerHttp.Address,
-				(int)request.ServerHttp.Port).WithClusterDns(_clusterDns)));
+			new DnsEndPoint(request.ServerHttp.Address, (int)request.ServerHttp.Port).WithClusterDns(_clusterDns)));
 		return EmptyResult;
 	}
 }

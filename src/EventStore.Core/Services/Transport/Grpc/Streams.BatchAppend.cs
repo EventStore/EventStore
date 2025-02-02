@@ -72,8 +72,7 @@ partial class Streams<TStreamId> {
 		private long _pending;
 
 		public BatchAppendWorker(IPublisher publisher, IAuthorizationProvider authorizationProvider,
-			IDurationTracker tracker,
-			IAsyncStreamReader<BatchAppendReq> requestStream, IServerStreamWriter<BatchAppendResp> responseStream,
+			IDurationTracker tracker, IAsyncStreamReader<BatchAppendReq> requestStream, IServerStreamWriter<BatchAppendResp> responseStream,
 			ClaimsPrincipal user, int maxAppendSize, TimeSpan writeTimeout, bool requiresLeader) {
 			_publisher = publisher;
 			_authorizationProvider = authorizationProvider;
@@ -98,13 +97,11 @@ partial class Streams<TStreamId> {
 #if DEBUG
 			var sendTask =
 #endif
-				Send(_channel.Reader, cancellationToken)
-					.ContinueWith(HandleCompletion, CancellationToken.None);
+				Send(_channel.Reader, cancellationToken).ContinueWith(HandleCompletion, CancellationToken.None);
 #if DEBUG
 			var receiveTask =
 #endif
-				Receive(_channel.Writer, _user, _requiresLeader, cancellationToken)
-					.ContinueWith(HandleCompletion, CancellationToken.None);
+				Receive(_channel.Writer, _user, _requiresLeader, cancellationToken).ContinueWith(HandleCompletion, CancellationToken.None);
 
 			return tcs.Task;
 
@@ -331,7 +328,7 @@ partial class Streams<TStreamId> {
 			Func<ValueTask> onTimeout, CancellationToken cancellationToken) {
 			CorrelationId = correlationId;
 			StreamId = streamId;
-			_events = new List<Event>();
+			_events = [];
 			_size = 0;
 			ExpectedVersion = expectedVersion;
 

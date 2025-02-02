@@ -1,0 +1,75 @@
+@page "/ui/cluster"
+@implements IDisposable
+@using EventStore.Core.Bus
+@using EventStore.ClusterNode.Components.Tools
+@using EventStore.ClusterNode.Services
+@inject IPublisher Publisher
+@inject MonitoringService MonitoringService
+
+<PageTitle>KurrentDB: Cluster</PageTitle>
+
+<MudGrid>
+	<MudItem xs="12">
+		<MudCard Class="ma-2">
+			<MudCardHeader>
+				<CardHeaderAvatar>
+					<MudAvatar Color="@ClusterIconColor">
+						<MudIcon Icon="@ClusterIcon"/>
+					</MudAvatar>
+				</CardHeaderAvatar>
+				<CardHeaderContent>
+					<MudText Typo="Typo.body1">Server
+						address: @_clusterInfo?.ServerIp:@_clusterInfo?.ServerPort</MudText>
+				</CardHeaderContent>
+				<CardHeaderActions>
+					@* <MudIconButton Icon="@Icons.Material.Filled.Settings" Color="Color.Default"/> *@
+				</CardHeaderActions>
+			</MudCardHeader>
+			<MudCardContent>
+				<MudText>OS: @LocalOs</MudText>
+			</MudCardContent>
+		</MudCard>
+	</MudItem>
+	@foreach (var member in _clusterInfo?.Members ?? []) {
+		<MudItem xs="@CardWidth">
+			<ClusterMember Member="member"></ClusterMember>
+		</MudItem>
+	}
+</MudGrid>
+
+<MudGrid Spacing="6" Justify="Justify.Center">
+	<MudItem>
+		<MudPaper Width="300px" Height="300px" Class="pa-16 ma-2" Outlined="true">
+			<MudText Typo="Typo.h5" Align="Align.Center">Connections</MudText>
+			<MudText Typo="Typo.h3" Align="Align.Center" Color="Color.Primary">@MonitoringService.ActiveConnections</MudText>
+		</MudPaper>
+	</MudItem>
+	<MudItem>
+		<MudPaper Class="pa-2 ma-2" Width="300px" Height="300px" Outlined="true">
+			<MudChart
+				ChartType="ChartType.Donut"
+				InputData="@_cpuDonut" InputLabels="@(new[] { "Used CPU", "Total CPU" })">
+				<CustomGraphics>
+					<text class="donut-inner-text" x="50%" y="35%" dominant-baseline="middle" text-anchor="middle"
+					      fill="var(--mud-palette-text-primary)" font-family="Helvetica" font-size="2">CPU usage
+					</text>
+					<text class="donut-inner-text" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle"
+					      fill="var(--mud-palette-text-primary)" font-family="Helvetica"
+					      font-size="5">@((_cpu / 100).ToString("P1"))</text>
+				</CustomGraphics>
+			</MudChart>
+		</MudPaper>
+	</MudItem>
+	<MudItem>
+		<MudPaper Class="pa-16 ma-2" Outlined="true"></MudPaper>
+	</MudItem>
+</MudGrid>
+<MudTimeSeriesChart
+	ChartSeries="@_series"
+	@bind-SelectedIndex="_index"
+	Width="100%"
+	Height="350px"
+	ChartOptions="@_options"
+	CanHideSeries
+	TimeLabelSpacing="TimeSpan.FromMinutes(5)"/>
+
