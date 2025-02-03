@@ -1324,9 +1324,9 @@ public class ClusterVNode<TStreamId> :
 				buffer: calculatorBuffer,
 				throttle: throttle);
 
-			var chunkDeleter = IChunkRemover<TStreamId, ILogRecord>.NoOp;
+			var chunkRemover = IChunkRemover<TStreamId, ILogRecord>.NoOp;
 			if (archiveOptions.Enabled) {
-				chunkDeleter = new ChunkRemover<TStreamId, ILogRecord>(
+				chunkRemover = new ChunkRemover<TStreamId, ILogRecord>(
 					logger: logger,
 					archiveCheckpoint: new AdvancingCheckpoint(archiveReader.GetCheckpoint),
 					chunkManager: new ChunkManagerForChunkRemover(Db.Manager),
@@ -1338,7 +1338,7 @@ public class ClusterVNode<TStreamId> :
 			var chunkExecutor = new ChunkExecutor<TStreamId, ILogRecord>(
 				logger,
 				logFormat.Metastreams,
-				chunkDeleter,
+				chunkRemover,
 				new ChunkManagerForExecutor<TStreamId>(logger, Db.Manager, Db.Config, Db.TransformManager),
 				chunkSize: Db.Config.ChunkSize,
 				unsafeIgnoreHardDeletes: options.Database.UnsafeIgnoreHardDelete,

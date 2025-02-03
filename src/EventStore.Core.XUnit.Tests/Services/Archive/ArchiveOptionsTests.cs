@@ -14,6 +14,16 @@ public class ArchiveOptionsTests {
 	}
 
 	[Fact]
+	public void unspecified_storage_type_is_invalid() {
+		var sut = new ArchiveOptions {
+			Enabled = true,
+			StorageType = StorageType.Unspecified,
+		};
+		var ex = Assert.Throws<InvalidConfigurationException>(sut.Validate);
+		Assert.Contains("StorageType", ex.Message);
+	}
+
+	[Fact]
 	public void can_use_file_system_options() {
 		var sut = new ArchiveOptions {
 			Enabled = true,
@@ -86,6 +96,10 @@ public class ArchiveOptionsTests {
 	public void retention_options_require_days() {
 		var sut = new ArchiveOptions {
 			Enabled = true,
+			StorageType = StorageType.FileSystem,
+			FileSystem = new() {
+				Path = "c:/archive",
+			},
 			RetainAtLeast = new() {
 				LogicalBytes = 50,
 			}
@@ -98,6 +112,10 @@ public class ArchiveOptionsTests {
 	public void retention_options_require_logical_bytes() {
 		var sut = new ArchiveOptions {
 			Enabled = true,
+			StorageType = StorageType.FileSystem,
+			FileSystem = new() {
+				Path = "c:/archive",
+			},
 			RetainAtLeast = new() {
 				Days = 50,
 			}

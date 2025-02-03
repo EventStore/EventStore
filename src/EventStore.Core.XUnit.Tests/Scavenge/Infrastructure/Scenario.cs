@@ -452,7 +452,7 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 			IChunkExecutor<TStreamId> chunkExecutor = new ChunkExecutor<TStreamId, ILogRecord>(
 				logger: logger,
 				metastreamLookup: chunkExecutorMetastreamLookup,
-				chunkDeleter: new TracingChunkRemover<TStreamId, ILogRecord>(
+				chunkRemover: new TracingChunkRemover<TStreamId, ILogRecord>(
 					new ChunkRemover<TStreamId, ILogRecord>(
 						logger: logger,
 						archiveCheckpoint: new AdvancingCheckpoint(_archiveReader.GetCheckpoint),

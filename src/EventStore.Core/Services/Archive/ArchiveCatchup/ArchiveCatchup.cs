@@ -62,6 +62,12 @@ public class ArchiveCatchup : IClusterVNodeStartupTask {
 		Log.Information("Catching up with the archive. Writer checkpoint: 0x{writerCheckpoint:X}, Archive checkpoint: 0x{archiveCheckpoint:X}.",
 			writerChk, archiveChk);
 
+		if (writerChk == 0)
+			Log.Warning(
+				"This node has no local data and will download the entire archive. " +
+				"It is preferable to restore the node from a backup instead, so that it will download only the most recent data. " +
+				"A new backup can be created from one of the other nodes if necessary.");
+
 		while (!await CatchUpWithArchive(writerChk, archiveChk, ct))
 			writerChk = _writerCheckpoint.Read();
 	}

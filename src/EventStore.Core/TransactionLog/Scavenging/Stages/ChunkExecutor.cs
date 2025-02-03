@@ -18,7 +18,7 @@ namespace EventStore.Core.TransactionLog.Scavenging.Stages;
 public class ChunkExecutor<TStreamId, TRecord> : IChunkExecutor<TStreamId> {
 	private readonly ILogger _logger;
 	private readonly IMetastreamLookup<TStreamId> _metastreamLookup;
-	private readonly IChunkRemover<TStreamId, TRecord> _chunkDeleter;
+	private readonly IChunkRemover<TStreamId, TRecord> _chunkRemover;
 	private readonly IChunkManagerForChunkExecutor<TStreamId, TRecord> _chunkManager;
 	private readonly long _chunkSize;
 	private readonly bool _unsafeIgnoreHardDeletes;
@@ -29,7 +29,7 @@ public class ChunkExecutor<TStreamId, TRecord> : IChunkExecutor<TStreamId> {
 	public ChunkExecutor(
 		ILogger logger,
 		IMetastreamLookup<TStreamId> metastreamLookup,
-		IChunkRemover<TStreamId, TRecord> chunkDeleter,
+		IChunkRemover<TStreamId, TRecord> chunkRemover,
 		IChunkManagerForChunkExecutor<TStreamId, TRecord> chunkManager,
 		long chunkSize,
 		bool unsafeIgnoreHardDeletes,
@@ -39,7 +39,7 @@ public class ChunkExecutor<TStreamId, TRecord> : IChunkExecutor<TStreamId> {
 
 		_logger = logger;
 		_metastreamLookup = metastreamLookup;
-		_chunkDeleter = chunkDeleter;
+		_chunkRemover = chunkRemover;
 		_chunkManager = chunkManager;
 		_chunkSize = chunkSize;
 		_unsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
@@ -120,7 +120,7 @@ public class ChunkExecutor<TStreamId, TRecord> : IChunkExecutor<TStreamId> {
 							physicalChunk.Name,
 							physicalWeight);
 
-					} else if (await _chunkDeleter.StartRemovingIfNotRetained(
+					} else if (await _chunkRemover.StartRemovingIfNotRetained(
 						scavengePoint,
 						concurrentState,
 						physicalChunk,
