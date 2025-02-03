@@ -96,6 +96,10 @@ public class ArchiveOptionsTests {
 	public void retention_options_require_days() {
 		var sut = new ArchiveOptions {
 			Enabled = true,
+			StorageType = StorageType.FileSystem,
+			FileSystem = new() {
+				Path = "c:/archive",
+			},
 			RetainAtLeast = new() {
 				LogicalBytes = 50,
 			}
@@ -108,6 +112,10 @@ public class ArchiveOptionsTests {
 	public void retention_options_require_logical_bytes() {
 		var sut = new ArchiveOptions {
 			Enabled = true,
+			StorageType = StorageType.FileSystem,
+			FileSystem = new() {
+				Path = "c:/archive",
+			},
 			RetainAtLeast = new() {
 				Days = 50,
 			}
