@@ -40,6 +40,11 @@ public static class SystemStreams {
 
 	public static bool IsSystemStream(string streamId) => streamId is ['$', ..];
 
+	// "" is an invalid name, and so metadata cannot be set for it
+	public static bool IsInvalidStream(string streamId) {
+		return string.IsNullOrEmpty(streamId) || streamId == "$$";
+	}
+
 	public static string MetastreamOf(string streamId) {
 		return "$$" + streamId;
 	}
