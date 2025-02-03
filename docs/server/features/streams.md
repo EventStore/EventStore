@@ -38,6 +38,10 @@ The following system streams are created by the system regardless of which subsy
 | **`$user-{name}`**      | For each user, one such stream is created. Events in this stream detail the username, full name, password hash and salt, as well as which groups this user is affiliated with. |
 | **`$stats-{endpoint}`** | If write-stats-to-db is enabled in the server configuration, this stream will be created.                                                                                      |
 
+::: note
+The user streams will only be created if [basic authentication](../security/user-authentication.md#basic-authentication) is enabled. They will not be created if the insecure flag is set to true, nor if either LDAP or OAuth is used as the authentication method.
+:::
+
 #### Projection Streams
 
 Below are the streams created by the projection subsystem:
@@ -70,7 +74,7 @@ Below are the streams created by the scavenging subsystem:
 
 | Stream name format | Purpose                                                  |
 |:-------------------|:---------------------------------------------------------|
-| **`$scavenges`**   | Records the results and states of scavenging operations. |
+| **`$scavenges`**   | Indexes all scavenge operations that have run on the cluster. |
 
 ## Metadata and reserved names
 
