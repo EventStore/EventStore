@@ -19,9 +19,9 @@ public class FakeCollectingQueuedHandler : IQueuedHandler {
 	}
 
 	public string Name => string.Empty;
-	public Task Start() => Task.CompletedTask;
+	public void Start() { }
 
-	public void Stop() {}
+	public Task Stop() => Task.CompletedTask;
 
 	public void RequestStop() { }
 

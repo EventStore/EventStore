@@ -35,14 +35,9 @@ public abstract class TestFixtureWithProjectionCoreAndManagementServices<TLogFor
 			throw new NotImplementedException();
 		}
 
-		public string Name { get; }
-		public Task Start() {
-			throw new NotImplementedException();
-		}
+		public void Start() => throw new NotImplementedException();
 
-		public void Stop() {
-			throw new NotImplementedException();
-		}
+		public Task Stop() => Task.FromException(new NotImplementedException());
 
 		public void RequestStop() {
 			throw new NotImplementedException();
