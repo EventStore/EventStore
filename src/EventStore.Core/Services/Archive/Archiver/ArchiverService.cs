@@ -65,6 +65,9 @@ public sealed class ArchiverService :
 	}
 
 	public void Handle(SystemMessage.ChunkSwitched message) {
+		if (message.ChunkInfo.IsRemote)
+			return;
+
 		_switchedChunks.Add(message.ChunkInfo);
 		_archivingSignal.Set();
 	}
