@@ -59,11 +59,13 @@ namespace EventStore.Core.Tests.Http.StreamSecurity {
 			}
 
 			[Test]
-			public async Task accepts_post_event_as_authorized_user_by_trusted_auth() {
+			[TestCase(SystemHeaders.TrustedAuth)]
+			[TestCase(SystemHeaders.LegacyTrustedAuth)]
+			public async Task accepts_post_event_as_authorized_user_by_trusted_auth(string trustedAuthHeader) {
 				var uri = MakeUrl(TestStream);
 
 				var request = new HttpRequestMessage(HttpMethod.Post, uri) {
-					Headers = { { SystemHeaders.TrustedAuth, "root; admin, other" } },
+					Headers = { { trustedAuthHeader, "root; admin, other" } },
 					Content = new ByteArrayContent(
 						new[] { new { EventId = Guid.NewGuid(), EventType = "event-type", Data = new { Some = "Data" } } }
 							.ToJsonBytes()) {

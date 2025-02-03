@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Collections.Specialized;
 using System.Text;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Transport.Http;
@@ -159,7 +160,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[TestFixture]
-		public class when_posting_an_event_as_raw_json_without_eventid : with_admin_user {
+		public class when_posting_an_event_as_raw_json_without_event_id : with_admin_user {
 			private HttpResponseMessage _response;
 
 			protected override Task Given() => Task.CompletedTask;
@@ -733,6 +734,36 @@ namespace EventStore.Core.Tests.Http.Streams {
 			[Test]
 			public void returns_correct_body() {
 				Assert.AreEqual(_data, _lastResponseBytes);
+			}
+		}
+
+		[Category("LongRunning")]
+		[TestFixture(-2, HttpStatusCode.NoContent)]
+		[TestFixture(1, HttpStatusCode.NoContent)]
+		[TestFixture(2, HttpStatusCode.BadRequest)]
+		public class when_deleting_with_legacy_expected_version(int expectedVersion, HttpStatusCode expectedResult) : with_admin_user {
+			private HttpResponseMessage _response;
+
+			protected override async Task Given() {
+				var response = await MakeArrayEventsPost(
+					TestStream,
+					new[] {
+						new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {A = "1"}},
+						new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {A = "2"}},
+					},
+					contentType: ContentType.EventsJson);
+				Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+			}
+
+			protected override async Task When() {
+				var request = CreateRequest(TestStream, "", "DELETE", ContentType.Json,
+					headers: new NameValueCollection{{SystemHeaders.ExpectedVersion, expectedVersion.ToString()}});
+				_response = await _client.SendAsync(request);
+			}
+
+			[Test]
+			public void returns_the_expected_http_status_code() {
+				Assert.AreEqual(expectedResult, _response.StatusCode);
 			}
 		}
 	}

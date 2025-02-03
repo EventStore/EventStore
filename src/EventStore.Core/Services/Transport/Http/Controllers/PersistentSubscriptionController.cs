@@ -119,6 +119,9 @@ public class PersistentSubscriptionController : CommunicationController {
 		longPollTimeout = null;
 		var longPollHeader = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.LongPoll);
 		if (StringValues.IsNullOrEmpty(longPollHeader))
+			longPollHeader = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.LegacyLongPoll);
+
+		if (StringValues.IsNullOrEmpty(longPollHeader))
 			return true;
 		int longPollSec;
 		if (int.TryParse(longPollHeader, out longPollSec) && longPollSec > 0) {
@@ -197,23 +200,29 @@ public class PersistentSubscriptionController : CommunicationController {
 		requireLeader = false;
 
 		var onlyLeader = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.RequireLeader);
+		var onlyLeaderLegacy = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.LegacyRequireLeader);
 		var onlyMaster = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.RequireMaster);
 
-		if (StringValues.IsNullOrEmpty(onlyLeader) && StringValues.IsNullOrEmpty(onlyMaster))
+		if (StringValues.IsNullOrEmpty(onlyLeader) && StringValues.IsNullOrEmpty(onlyMaster) && StringValues.IsNullOrEmpty(onlyLeaderLegacy))
 			return true;
 
 		if (string.Equals(onlyLeader, "True", StringComparison.OrdinalIgnoreCase) ||
+		    string.Equals(onlyLeaderLegacy, "True", StringComparison.OrdinalIgnoreCase) ||
 		    string.Equals(onlyMaster, "True", StringComparison.OrdinalIgnoreCase)) {
 			requireLeader = true;
 			return true;
 		}
 
 		return string.Equals(onlyLeader, "False", StringComparison.OrdinalIgnoreCase) ||
+		       string.Equals(onlyLeaderLegacy, "False", StringComparison.OrdinalIgnoreCase) ||
 		       string.Equals(onlyMaster, "False", StringComparison.OrdinalIgnoreCase);
 	}
 	private bool GetResolveLinkTos(HttpEntityManager manager, out bool resolveLinkTos, bool defaultOption = false) {
 		resolveLinkTos = defaultOption;
 		var linkToHeader = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.ResolveLinkTos);
+		if (StringValues.IsNullOrEmpty(linkToHeader))
+			linkToHeader = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.LegacyResolveLinkTos);
+
 		if (StringValues.IsNullOrEmpty(linkToHeader))
 			return true;
 		if (string.Equals(linkToHeader, "False", StringComparison.OrdinalIgnoreCase)) {
