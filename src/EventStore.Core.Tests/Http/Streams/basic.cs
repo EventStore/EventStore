@@ -757,7 +757,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 			protected override async Task When() {
 				var request = CreateRequest(TestStream, "", "DELETE", ContentType.Json,
-					headers: new NameValueCollection{{SystemHeaders.ExpectedVersion, expectedVersion.ToString()}});
+					headers: new NameValueCollection{{SystemHeaders.LegacyExpectedVersion, expectedVersion.ToString()}});
 				_response = await _client.SendAsync(request);
 			}
 

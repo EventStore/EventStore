@@ -855,9 +855,9 @@ public class AtomController : CommunicationController {
 
 	private bool GetExpectedVersion(HttpEntityManager manager, out long expectedVersion) {
 		var expVer = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.ExpectedVersion);
-		if (StringValues.IsNullOrEmpty(expVer)) {
+		if (StringValues.IsNullOrEmpty(expVer))
 			expVer = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.LegacyExpectedVersion);
-		}
+
 		if (StringValues.IsNullOrEmpty(expVer)) {
 			expectedVersion = ExpectedVersion.Any;
 			return true;

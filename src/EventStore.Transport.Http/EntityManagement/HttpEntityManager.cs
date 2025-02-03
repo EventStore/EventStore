@@ -144,17 +144,22 @@ public sealed class HttpEntityManager {
 		}
 	}
 
-	// TODO: Add new Kurrent headers here
 	private void SetRequiredHeaders() {
 		try {
 			HttpEntity.Response.AddHeader("Access-Control-Allow-Methods", string.Join(", ", _allowedMethods));
 			HttpEntity.Response.AddHeader("Access-Control-Allow-Headers",
-				"Content-Type, X-Requested-With, X-Forwarded-Host, X-Forwarded-Prefix, X-PINGOTHER, Authorization, ES-LongPoll, ES-ExpectedVersion, ES-EventId, ES-EventType, ES-RequireMaster, ES-RequireLeader, ES-HardDelete, ES-ResolveLinkTos");
+				"Content-Type, X-Requested-With, X-Forwarded-Host, X-Forwarded-Prefix, X-PINGOTHER, Authorization, " +
+				"Kurrent-LongPoll, Kurrent-ExpectedVersion, Kurrent-EventId, Kurrent-EventType, Kurrent-RequireLeader, Kurrent-HardDelete, Kurrent-ResolveLinkTos, " +
+				"ES-LongPoll, ES-ExpectedVersion, ES-EventId, ES-EventType, ES-RequireMaster, ES-RequireLeader, ES-HardDelete, ES-ResolveLinkTos");
 			HttpEntity.Response.AddHeader("Access-Control-Allow-Origin", "*");
 			HttpEntity.Response.AddHeader("Access-Control-Expose-Headers",
-				"Location, ES-Position, ES-CurrentVersion");
-			if (HttpEntity.Response.StatusCode == HttpStatusCode.Unauthorized)
+				"Location, " +
+				"Kurrent-Position, Kurrent-CurrentVersion, " +
+				"ES-Position, ES-CurrentVersion, ");
+			if (HttpEntity.Response.StatusCode == HttpStatusCode.Unauthorized) {
+				HttpEntity.Response.AddHeader("WWW-Authenticate", "BasicCustom realm=\"Kurrent\"");
 				HttpEntity.Response.AddHeader("WWW-Authenticate", "BasicCustom realm=\"ES\"");
+			}
 		} catch (ObjectDisposedException) {
 			// ignore
 		} catch (Exception e) {

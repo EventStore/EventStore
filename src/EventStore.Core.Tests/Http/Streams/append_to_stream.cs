@@ -125,7 +125,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 			public async Task created_event_uses_event_id() {
 				var stream = await GetJson<JObject>(TestStream + "/0/forward/10", accept: ContentType.Json, extra: "?embed=body");
 				var read = stream["entries"]?.ToList();
-				Assert.AreEqual(_eventId, read[0].Value<string>("eventId"));
+				Assert.AreEqual(_eventId, read?[0].Value<string>("eventId"));
 			}
 		}
 
@@ -152,7 +152,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 			public async Task created_event_uses_event_type() {
 				var stream = await GetJson<JObject>(TestStream + "/0/forward/10", accept: ContentType.Json, extra: "?embed=body");
 				var read = stream["entries"]?.ToList();
-				Assert.AreEqual(_eventType, read[0].Value<string>("eventType"));
+				Assert.AreEqual(_eventType, read?[0].Value<string>("eventType"));
 			}
 		}
 
