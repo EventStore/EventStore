@@ -7,17 +7,29 @@ using EventStore.Common.Utils;
 namespace EventStore.Core.Services;
 
 public static class SystemHeaders {
-	public const string ExpectedVersion = "ES-ExpectedVersion";
-	public const string RequireLeader = "ES-RequireLeader";
+	public const string ExpectedVersion = "Kurrent-ExpectedVersion";
+	public const string RequireLeader = "Kurrent-RequireLeader";
+	public const string ResolveLinkTos = "Kurrent-ResolveLinkTos";
+	public const string LongPoll = "Kurrent-LongPoll";
+	public const string TrustedAuth = "Kurrent-TrustedAuth";
+	public const string ProjectionPosition = "Kurrent-Position";
+	public const string HardDelete = "Kurrent-HardDelete";
+	public const string EventId = "Kurrent-EventId";
+	public const string EventType = "Kurrent-EventType";
+	public const string CurrentVersion = "Kurrent-CurrentVersion";
+
+	// Legacy ES-* headers
+	public const string LegacyExpectedVersion = "ES-ExpectedVersion";
+	public const string LegacyRequireLeader = "ES-RequireLeader";
 	public const string RequireMaster = "ES-RequireMaster"; // For backwards compatibility
-	public const string ResolveLinkTos = "ES-ResolveLinkTos";
-	public const string LongPoll = "ES-LongPoll";
-	public const string TrustedAuth = "ES-TrustedAuth";
-	public const string ProjectionPosition = "ES-Position";
-	public const string HardDelete = "ES-HardDelete";
-	public const string EventId = "ES-EventId";
-	public const string EventType = "ES-EventType";
-	public const string CurrentVersion = "ES-CurrentVersion";
+	public const string LegacyResolveLinkTos = "ES-ResolveLinkTos";
+	public const string LegacyLongPoll = "ES-LongPoll";
+	public const string LegacyTrustedAuth = "ES-TrustedAuth";
+	public const string LegacyProjectionPosition = "ES-Position";
+	public const string LegacyHardDelete = "ES-HardDelete";
+	public const string LegacyEventId = "ES-EventId";
+	public const string LegacyEventType = "ES-EventType";
+	public const string LegacyCurrentVersion = "ES-CurrentVersion";
 }
 
 public static class SystemStreams {
