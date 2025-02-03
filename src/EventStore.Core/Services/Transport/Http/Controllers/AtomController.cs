@@ -310,7 +310,7 @@ public class AtomController : CommunicationController {
 
 		if (!manager.RequestCodec.HasEventTypes && includedType == null) {
 			SendBadRequest(manager,
-				"Must include an event type with the request either in body or as ES-EventType header.");
+				$"Must include an event type with the request either in body or as {SystemHeaders.EventType} header.");
 			return;
 		}
 

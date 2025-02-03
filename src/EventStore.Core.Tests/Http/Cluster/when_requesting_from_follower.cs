@@ -9,6 +9,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
+using EventStore.Core.Services;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Integration;
 using NUnit.Framework;
@@ -193,9 +194,9 @@ public class when_requesting_from_follower<TLogFormat, TStreamId> : specificatio
 		var uri = CreateUri(nodeEndpoint, path);
 		var request = CreateRequest(uri, HttpMethod.Post, requireLeader);
 
-		request.Headers.Add("ES-EventType", "SomeType");
-		request.Headers.Add("ES-ExpectedVersion", ExpectedVersion.Any.ToString());
-		request.Headers.Add("ES-EventId", Guid.NewGuid().ToString());
+		request.Headers.Add(SystemHeaders.EventType, "SomeType");
+		request.Headers.Add(SystemHeaders.ExpectedVersion, ExpectedVersion.Any.ToString());
+		request.Headers.Add(SystemHeaders.EventId, Guid.NewGuid().ToString());
 		var data = "{a : \"1\", b:\"3\", c:\"5\" }";
 		request.Content = new StringContent(data, Encoding.UTF8, ContentType.Json);
 
@@ -207,7 +208,7 @@ public class when_requesting_from_follower<TLogFormat, TStreamId> : specificatio
 
 	private HttpRequestMessage CreateRequest(Uri uri, HttpMethod method, bool requireLeader) {
 		var request = new HttpRequestMessage(method, uri);
-		request.Headers.Add("ES-RequireLeader", requireLeader ? "True" : "False");
+		request.Headers.Add(SystemHeaders.RequireLeader, requireLeader ? "True" : "False");
 		request.Headers.Authorization = new AuthenticationHeaderValue("Basic",
             					GetAuthorizationHeader(DefaultData.AdminNetworkCredentials));
 		return request;

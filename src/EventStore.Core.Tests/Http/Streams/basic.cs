@@ -14,6 +14,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
+using EventStore.Core.Services;
 using EventStore.Core.Tests.Http.Users.users;
 using HttpMethod = EventStore.Transport.Http.HttpMethod;
 using HttpStatusCode = System.Net.HttpStatusCode;
@@ -131,7 +132,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 			protected override async Task When() {
 				var request = CreateRequest(TestStream + "/incoming/" + Guid.NewGuid(), "", "POST",
 					ContentType.Json);
-				request.Headers.Add("ES-EventType", "SomeType");
+				request.Headers.Add(SystemHeaders.EventType, "SomeType");
 				var data = "{a : \"1\", b:\"3\", c:\"5\" }";
 				var bytes = Encoding.UTF8.GetBytes(data);
 				request.Content = new ByteArrayContent(bytes) {
@@ -165,7 +166,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 			protected override async Task When() {
 				var request = CreateRequest(TestStream, "", "POST", ContentType.Json);
-				request.Headers.Add("ES-EventType", "SomeType");
+				request.Headers.Add(SystemHeaders.EventType, "SomeType");
 				var data = "{A : \"1\", B:\"3\", C:\"5\" }";
 				var bytes = Encoding.UTF8.GetBytes(data);
 				request.Content = new ByteArrayContent(bytes) {
@@ -712,8 +713,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 			protected override async Task Given() {
 				var request = CreateRequest(TestStream, String.Empty, HttpMethod.Post, ContentType.Raw);
-				request.Headers.Add("ES-EventType", "TestEventType");
-				request.Headers.Add("ES-EventID", Guid.NewGuid().ToString());
+				request.Headers.Add(SystemHeaders.EventType, "TestEventType");
+				request.Headers.Add(SystemHeaders.EventId, Guid.NewGuid().ToString());
 				if (_data == null) {
 					var fileData = HelperExtensions.GetFilePathFromAssembly("Resources/es-tile.png");
 					_data = File.ReadAllBytes(fileData);

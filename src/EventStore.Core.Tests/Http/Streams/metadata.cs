@@ -9,6 +9,7 @@ using EventStore.Core.Tests.Http.Streams.basic;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using EventStore.Common.Utils;
+using EventStore.Core.Services;
 using EventStore.Core.Tests.Http.Users.users;
 using HttpStatusCode = System.Net.HttpStatusCode;
 using ContentType = EventStore.Transport.Http.ContentType;
@@ -24,7 +25,7 @@ public class when_posting_metadata_as_json_to_non_existing_stream : with_admin_u
 	protected override async Task When() {
 		var req = CreateRawJsonPostRequest(TestStream + "/metadata", "POST", new { A = "1" },
 			DefaultData.AdminNetworkCredentials);
-		req.Headers.Add("ES-EventId", Guid.NewGuid().ToString());
+		req.Headers.Add(SystemHeaders.EventId, Guid.NewGuid().ToString());
 		_response = await _client.SendAsync(req);
 	}
 
@@ -58,7 +59,7 @@ public class when_posting_metadata_as_json_to_existing_stream(string contentType
 	protected override async Task When() {
 		var req = CreateRawJsonPostRequest(TestStream + "/metadata", "POST", new { A = "1" },
 			DefaultData.AdminNetworkCredentials);
-		req.Headers.Add("ES-EventId", Guid.NewGuid().ToString());
+		req.Headers.Add(SystemHeaders.EventId, Guid.NewGuid().ToString());
 		_response = await _client.SendAsync(req);
 	}
 

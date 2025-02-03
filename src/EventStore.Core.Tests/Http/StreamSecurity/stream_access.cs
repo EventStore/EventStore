@@ -63,7 +63,7 @@ namespace EventStore.Core.Tests.Http.StreamSecurity {
 				var uri = MakeUrl(TestStream);
 
 				var request = new HttpRequestMessage(HttpMethod.Post, uri) {
-					Headers = { { "ES-TrustedAuth", "root; admin, other" } },
+					Headers = { { SystemHeaders.TrustedAuth, "root; admin, other" } },
 					Content = new ByteArrayContent(
 						new[] { new { EventId = Guid.NewGuid(), EventType = "event-type", Data = new { Some = "Data" } } }
 							.ToJsonBytes()) {

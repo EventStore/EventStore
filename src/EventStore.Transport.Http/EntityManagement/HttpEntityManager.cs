@@ -144,6 +144,7 @@ public sealed class HttpEntityManager {
 		}
 	}
 
+	// TODO: Add new Kurrent headers here
 	private void SetRequiredHeaders() {
 		try {
 			HttpEntity.Response.AddHeader("Access-Control-Allow-Methods", string.Join(", ", _allowedMethods));
