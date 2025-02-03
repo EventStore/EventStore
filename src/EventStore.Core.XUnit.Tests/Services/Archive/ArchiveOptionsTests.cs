@@ -14,6 +14,16 @@ public class ArchiveOptionsTests {
 	}
 
 	[Fact]
+	public void unspecified_storage_type_is_invalid() {
+		var sut = new ArchiveOptions {
+			Enabled = true,
+			StorageType = StorageType.Unspecified,
+		};
+		var ex = Assert.Throws<InvalidConfigurationException>(sut.Validate);
+		Assert.Contains("StorageType", ex.Message);
+	}
+
+	[Fact]
 	public void can_use_file_system_options() {
 		var sut = new ArchiveOptions {
 			Enabled = true,

@@ -27,7 +27,7 @@ public class ArchiveOptions {
 
 		switch (StorageType) {
 			case StorageType.Unspecified:
-				break;
+				throw new InvalidConfigurationException("Please specify a StorageType (e.g. S3)");
 			case StorageType.FileSystem:
 				FileSystem.Validate();
 				break;
