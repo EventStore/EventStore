@@ -179,10 +179,14 @@ namespace EventStore.Core.Messages {
 				string eventStreamId, long expectedVersion, Event[] events, ClaimsPrincipal user,
 				IReadOnlyDictionary<string, string> tokens = null, CancellationToken cancellationToken = default)
 				: base(internalCorrId, correlationId, envelope, requireLeader, user, tokens) {
-				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
+
+				if (SystemStreams.IsInvalidStream(eventStreamId))
+					throw new ArgumentOutOfRangeException(nameof(eventStreamId));
+
 				if (expectedVersion < Data.ExpectedVersion.StreamExists ||
 				    expectedVersion == Data.ExpectedVersion.Invalid)
 					throw new ArgumentOutOfRangeException(nameof(expectedVersion));
+
 				Ensure.NotNull(events, "events");
 
 				EventStreamId = eventStreamId;
