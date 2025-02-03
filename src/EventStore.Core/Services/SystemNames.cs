@@ -33,6 +33,11 @@ namespace EventStore.Core.Services {
 			return streamId.Length != 0 && streamId[0] == '$';
 		}
 
+		// "" is an invalid name, and so metadata cannot be set for it
+		public static bool IsInvalidStream(string streamId) {
+			return string.IsNullOrEmpty(streamId) || streamId == "$$";
+		}
+
 		public static string MetastreamOf(string streamId) {
 			return "$$" + streamId;
 		}
