@@ -1,4 +1,4 @@
-<a href="https://www.eventstore.com/"><img src="https://lh3.googleusercontent.com/G6tLxSbJvFodjR_FHrsXs5WOIls0VfuXkWgv60vbRB0WSuJoe-m1cADCsroUHQgJUQMcwp_HNKCLfiTWuCfVwlT607G8niENuGfq5DsnEmWUx_4Szx3GAWI6X1GKRA5iwv_loW0T75cWCAZsRZm3DL4" height=50% width=50% alt="EventStoreDB" /></a>
+<a href="https://eventstore.com/"><img src="https://lh3.googleusercontent.com/G6tLxSbJvFodjR_FHrsXs5WOIls0VfuXkWgv60vbRB0WSuJoe-m1cADCsroUHQgJUQMcwp_HNKCLfiTWuCfVwlT607G8niENuGfq5DsnEmWUx_4Szx3GAWI6X1GKRA5iwv_loW0T75cWCAZsRZm3DL4" height=50% width=50% alt="EventStoreDB" /></a>
 
 EventStoreDB is the event-native database, where business events are immutably stored and streamed. Designed for event-sourced, event-driven, and microservices architectures
 
@@ -23,14 +23,14 @@ EventStoreDB is a new category of operational database that has evolved from the
   <a href='https://www.youtube.com/embed/IxPXizeHJM4'> <img src='https://user-images.githubusercontent.com/5140165/232470679-4716b5bb-0814-4bec-958f-0f20fc2b9586.png' width='75%'> </a>
 </p>
 
-Download the [latest version](https://www.eventstore.com/downloads).
-For more product information visit [the website](https://www.eventstore.com/eventstoredb).
+Download the [latest version](https://eventstore.com/downloads).
+For more product information visit [the website](https://eventstore.com/eventstoredb).
 
 ## What is Event Store Cloud?
 
 Event Store Cloud is a fully managed cloud offering that's designed to make it easy for developers to build and run highly available and secure applications that incorporate EventStoreDB without having to worry about managing the underlying infrastructure. You can provision EventStoreDB clusters in AWS, Azure, and GCP, and connect these services securely to your own cloud resources.
 
-For more details visit [the website](https://www.eventstore.com/event-store-cloud).
+For more details visit [the website](https://eventstore.com/event-store-cloud).
 
 ## Licensing
 
@@ -179,8 +179,8 @@ docker run --rm myeventstore --insecure --what-if
 
 ## More resources
 
-- [Release notes ](https://www.eventstore.com/blog/release-notes)
-- [Beginners Guide to Event Sourcing](https://www.eventstore.com/event-sourcing)
-- [Articles](https://www.eventstore.com/blog)
-- [Webinars ](https://www.eventstore.com/webinars)
-- [Contact us](https://www.eventstore.com/contact)
+- [Release notes ](https://eventstore.com/blog/release-notes)
+- [Beginners Guide to Event Sourcing](https://eventstore.com/event-sourcing)
+- [Articles](https://eventstore.com/blog)
+- [Webinars ](https://eventstore.com/webinars)
+- [Contact us](https://eventstore.com/contact)
