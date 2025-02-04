@@ -6,9 +6,7 @@ KurrentDB 25.0 introduces the initial release of Archiving: a new major feature 
 
 Future releases of KurrentDB will build on and improve this feature.
 
-::: info
-A license key is required to use this feature.
-:::
+A [license key](../quick-start/installation.md#license-keys) is required to use this feature.
 
 ## Motivation
 
