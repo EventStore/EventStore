@@ -28,7 +28,7 @@ AutoScavenge:
 Once the feature is enabled the server should log a similar message to the one below:
 
 ```
-[18304, 1,23:01:53.335,INF] "AutoScavenge" "24.10.0" plugin enabled.
+[18304, 1,23:01:53.335,INF] "AutoScavenge" "25.0.0.1673" plugin enabled.
 ```
 
 ::: note
