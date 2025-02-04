@@ -37,7 +37,7 @@ public class EventStoreLoggerConfiguration {
 	private static readonly SerilogEventListener EventListener;
 
 	private static int Initialized;
-	private static LoggingLevelSwitch _defaultLogLevelSwitch;
+	private static LoggingLevelSwitch _defaultLogLevelSwitch = new(LogEventLevel.Debug);
 	private static object _defaultLogLevelSwitchLock = new object();
 
 	private readonly string _logsDirectory;
@@ -207,6 +207,7 @@ public class EventStoreLoggerConfiguration {
 			.Enrich.WithProperty(Constants.SourceContextPropertyName, "KurrentDB")
 			.Enrich.WithProcessId()
 			.Enrich.WithThreadId()
+            .Enrich.WithMachineName()
 			.Enrich.FromLogContext();
 
 
