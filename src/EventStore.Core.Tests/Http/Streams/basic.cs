@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Collections.Specialized;
 using System.Text;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Transport.Http;
@@ -14,6 +15,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
+using EventStore.Core.Services;
 using EventStore.Core.Tests.Http.Users.users;
 using HttpMethod = EventStore.Transport.Http.HttpMethod;
 using HttpStatusCode = System.Net.HttpStatusCode;
@@ -131,7 +133,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 			protected override async Task When() {
 				var request = CreateRequest(TestStream + "/incoming/" + Guid.NewGuid(), "", "POST",
 					ContentType.Json);
-				request.Headers.Add("ES-EventType", "SomeType");
+				request.Headers.Add(SystemHeaders.EventType, "SomeType");
 				var data = "{a : \"1\", b:\"3\", c:\"5\" }";
 				var bytes = Encoding.UTF8.GetBytes(data);
 				request.Content = new ByteArrayContent(bytes) {
@@ -158,14 +160,14 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[TestFixture]
-		public class when_posting_an_event_as_raw_json_without_eventid : with_admin_user {
+		public class when_posting_an_event_as_raw_json_without_event_id : with_admin_user {
 			private HttpResponseMessage _response;
 
 			protected override Task Given() => Task.CompletedTask;
 
 			protected override async Task When() {
 				var request = CreateRequest(TestStream, "", "POST", ContentType.Json);
-				request.Headers.Add("ES-EventType", "SomeType");
+				request.Headers.Add(SystemHeaders.EventType, "SomeType");
 				var data = "{A : \"1\", B:\"3\", C:\"5\" }";
 				var bytes = Encoding.UTF8.GetBytes(data);
 				request.Content = new ByteArrayContent(bytes) {
@@ -712,8 +714,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 			protected override async Task Given() {
 				var request = CreateRequest(TestStream, String.Empty, HttpMethod.Post, ContentType.Raw);
-				request.Headers.Add("ES-EventType", "TestEventType");
-				request.Headers.Add("ES-EventID", Guid.NewGuid().ToString());
+				request.Headers.Add(SystemHeaders.EventType, "TestEventType");
+				request.Headers.Add(SystemHeaders.EventId, Guid.NewGuid().ToString());
 				if (_data == null) {
 					var fileData = HelperExtensions.GetFilePathFromAssembly("Resources/es-tile.png");
 					_data = File.ReadAllBytes(fileData);
@@ -732,6 +734,36 @@ namespace EventStore.Core.Tests.Http.Streams {
 			[Test]
 			public void returns_correct_body() {
 				Assert.AreEqual(_data, _lastResponseBytes);
+			}
+		}
+
+		[Category("LongRunning")]
+		[TestFixture(-2, HttpStatusCode.NoContent)]
+		[TestFixture(1, HttpStatusCode.NoContent)]
+		[TestFixture(2, HttpStatusCode.BadRequest)]
+		public class when_deleting_with_legacy_expected_version(int expectedVersion, HttpStatusCode expectedResult) : with_admin_user {
+			private HttpResponseMessage _response;
+
+			protected override async Task Given() {
+				var response = await MakeArrayEventsPost(
+					TestStream,
+					new[] {
+						new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {A = "1"}},
+						new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {A = "2"}},
+					},
+					contentType: ContentType.EventsJson);
+				Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+			}
+
+			protected override async Task When() {
+				var request = CreateRequest(TestStream, "", "DELETE", ContentType.Json,
+					headers: new NameValueCollection{{SystemHeaders.LegacyExpectedVersion, expectedVersion.ToString()}});
+				_response = await _client.SendAsync(request);
+			}
+
+			[Test]
+			public void returns_the_expected_http_status_code() {
+				Assert.AreEqual(expectedResult, _response.StatusCode);
 			}
 		}
 	}

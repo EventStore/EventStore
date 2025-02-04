@@ -432,8 +432,8 @@ public class ProjectionsController : CommunicationController {
 		else
 			return state.Position != null
 				? Configure.Ok(ContentType.Json, Helper.UTF8NoBom, null, null, false,
-					new KeyValuePair<string, string>(SystemHeaders.ProjectionPosition,
-						state.Position.ToJsonString()))
+					new KeyValuePair<string, string>(SystemHeaders.ProjectionPosition, state.Position.ToJsonString()),
+					new KeyValuePair<string, string>(SystemHeaders.LegacyProjectionPosition, state.Position.ToJsonString()))
 				: Configure.Ok(ContentType.Json, Helper.UTF8NoBom, null, null, false);
 	}
 
@@ -444,8 +444,8 @@ public class ProjectionsController : CommunicationController {
 		else
 			return state.Position != null
 				? Configure.Ok(ContentType.Json, Helper.UTF8NoBom, null, null, false,
-					new KeyValuePair<string, string>(SystemHeaders.ProjectionPosition,
-						state.Position.ToJsonString()))
+					new KeyValuePair<string, string>(SystemHeaders.ProjectionPosition, state.Position.ToJsonString()),
+					new KeyValuePair<string, string>(SystemHeaders.LegacyProjectionPosition, state.Position.ToJsonString()))
 				: Configure.Ok(ContentType.Json, Helper.UTF8NoBom, null, null, false);
 	}
 

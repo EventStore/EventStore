@@ -6,6 +6,7 @@ using System.Text;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
+using EventStore.Core.Services;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
@@ -80,7 +81,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 			private async Task PostEvent() {
 				var request = CreateRequest(TestStream + "/incoming/" + _eventId.ToString(), "", "POST",
 					ContentType.Json);
-				request.Headers.Add("ES-EventType", "SomeType");
+				request.Headers.Add(SystemHeaders.EventType, "SomeType");
 				var data = "{a : \"1\"}";
 				var bytes = Encoding.UTF8.GetBytes(data);
 				request.Content = new ByteArrayContent(bytes) {
@@ -107,7 +108,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 			private async Task PostEvent() {
 				var request = CreateRequest(TestStream + "/incoming/" + _eventId.ToString(), "", "POST",
 					ContentType.Json);
-				request.Headers.Add("ES-EventType", "SomeType");
+				request.Headers.Add(SystemHeaders.EventType, "SomeType");
 				var data = "{a : \"1\"}";
 				var bytes = Encoding.UTF8.GetBytes(data);
 				request.Content = new ByteArrayContent(bytes) {
@@ -135,7 +136,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 			private async Task PostEvent() {
 				var request = CreateRequest(TestStream + "/incoming/" + _eventId.ToString(), "", "POST",
 					ContentType.Json);
-				request.Headers.Add("ES-EventType", "SomeType");
+				request.Headers.Add(SystemHeaders.EventType, "SomeType");
 				var data = "{a : \"1\"}";
 				var bytes = Encoding.UTF8.GetBytes(data);
 				request.Content = new ByteArrayContent(bytes) {
@@ -166,8 +167,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 			private async Task PostEvent() {
 				var request = CreateRequest(TestStream, "", "POST", ContentType.Json);
-				request.Headers.Add("ES-EventId", _eventId.ToString());
-				request.Headers.Add("ES-EventType", "SomeType");
+				request.Headers.Add(SystemHeaders.EventId, _eventId.ToString());
+				request.Headers.Add(SystemHeaders.EventType, "SomeType");
 				var data = "{a : \"1\"}";
 				var bytes = Encoding.UTF8.GetBytes(data);
 				request.Content = new ByteArrayContent(bytes) {
@@ -194,8 +195,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 			private async Task PostEvent() {
 				var request = CreateRequest(TestStream, "", "POST", ContentType.Json);
-				request.Headers.Add("ES-EventId", _eventId.ToString());
-				request.Headers.Add("ES-EventType", "SomeType");
+				request.Headers.Add(SystemHeaders.EventId, _eventId.ToString());
+				request.Headers.Add(SystemHeaders.EventType, "SomeType");
 				var data = "{a : \"1\"}";
 				var bytes = Encoding.UTF8.GetBytes(data);
 				request.Content = new ByteArrayContent(bytes) {
@@ -223,8 +224,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 			private async Task PostEvent() {
 				var request = CreateRequest(TestStream, "", "POST", ContentType.Json);
-				request.Headers.Add("ES-EventId", _eventId.ToString());
-				request.Headers.Add("ES-EventType", "SomeType");
+				request.Headers.Add(SystemHeaders.EventId, _eventId.ToString());
+				request.Headers.Add(SystemHeaders.EventType, "SomeType");
 				var data = "{a : \"1\"}";
 				var bytes = Encoding.UTF8.GetBytes(data);
 				request.Content = new ByteArrayContent(bytes) {

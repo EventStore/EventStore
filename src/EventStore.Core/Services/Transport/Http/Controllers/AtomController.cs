@@ -310,7 +310,7 @@ public class AtomController : CommunicationController {
 
 		if (!manager.RequestCodec.HasEventTypes && includedType == null) {
 			SendBadRequest(manager,
-				"Must include an event type with the request either in body or as ES-EventType header.");
+				$"Must include an event type with the request either in body or as {SystemHeaders.EventType} header.");
 			return;
 		}
 
@@ -855,6 +855,9 @@ public class AtomController : CommunicationController {
 
 	private bool GetExpectedVersion(HttpEntityManager manager, out long expectedVersion) {
 		var expVer = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.ExpectedVersion);
+		if (StringValues.IsNullOrEmpty(expVer))
+			expVer = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.LegacyExpectedVersion);
+
 		if (StringValues.IsNullOrEmpty(expVer)) {
 			expectedVersion = ExpectedVersion.Any;
 			return true;
@@ -865,6 +868,9 @@ public class AtomController : CommunicationController {
 
 	private bool GetIncludedId(HttpEntityManager manager, out Guid includedId) {
 		var id = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.EventId);
+		if (StringValues.IsNullOrEmpty(id))
+			id = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.LegacyEventId);
+
 		if (StringValues.IsNullOrEmpty(id)) {
 			includedId = Guid.Empty;
 			return true;
@@ -875,6 +881,9 @@ public class AtomController : CommunicationController {
 
 	private bool GetIncludedType(HttpEntityManager manager, out string includedType) {
 		var type = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.EventType);
+		if (StringValues.IsNullOrEmpty(type))
+			type = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.LegacyEventType);
+
 		if (StringValues.IsNullOrEmpty(type)) {
 			includedType = null;
 			return true;
@@ -889,24 +898,30 @@ public class AtomController : CommunicationController {
 		requireLeader = false;
 
 		var onlyLeader = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.RequireLeader);
+		var onlyLeaderLegacy = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.LegacyRequireLeader);
 		var onlyMaster = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.RequireMaster);
 
-		if (StringValues.IsNullOrEmpty(onlyLeader) && StringValues.IsNullOrEmpty(onlyMaster))
+		if (StringValues.IsNullOrEmpty(onlyLeader) && StringValues.IsNullOrEmpty(onlyMaster) && StringValues.IsNullOrEmpty(onlyLeaderLegacy))
 			return true;
 
 		if (string.Equals(onlyLeader, "True", StringComparison.OrdinalIgnoreCase) ||
+		    string.Equals(onlyLeaderLegacy, "True", StringComparison.OrdinalIgnoreCase) ||
 		    string.Equals(onlyMaster, "True", StringComparison.OrdinalIgnoreCase)) {
 			requireLeader = true;
 			return true;
 		}
 
 		return string.Equals(onlyLeader, "False", StringComparison.OrdinalIgnoreCase) ||
+		       string.Equals(onlyLeaderLegacy, "False", StringComparison.OrdinalIgnoreCase) ||
 		       string.Equals(onlyMaster, "False", StringComparison.OrdinalIgnoreCase);
 	}
 
 	private bool GetLongPoll(HttpEntityManager manager, out TimeSpan? longPollTimeout) {
 		longPollTimeout = null;
 		var longPollHeader = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.LongPoll);
+		if (StringValues.IsNullOrEmpty(longPollHeader))
+			longPollHeader = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.LegacyLongPoll);
+
 		if (StringValues.IsNullOrEmpty(longPollHeader))
 			return true;
 		int longPollSec;
@@ -921,6 +936,9 @@ public class AtomController : CommunicationController {
 	private bool GetResolveLinkTos(HttpEntityManager manager, out bool resolveLinkTos, bool defaultOption = false) {
 		resolveLinkTos = defaultOption;
 		var linkToHeader = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.ResolveLinkTos);
+		if (StringValues.IsNullOrEmpty(linkToHeader))
+			linkToHeader = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.LegacyResolveLinkTos);
+
 		if (StringValues.IsNullOrEmpty(linkToHeader))
 			return true;
 		if (string.Equals(linkToHeader, "False", StringComparison.OrdinalIgnoreCase)) {
@@ -938,6 +956,9 @@ public class AtomController : CommunicationController {
 	private bool GetHardDelete(HttpEntityManager manager, out bool hardDelete) {
 		hardDelete = false;
 		var hardDel = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.HardDelete);
+		if (StringValues.IsNullOrEmpty(hardDel))
+			hardDel = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.LegacyHardDelete);
+
 		if (StringValues.IsNullOrEmpty(hardDel))
 			return true;
 		if (string.Equals(hardDel, "True", StringComparison.OrdinalIgnoreCase)) {

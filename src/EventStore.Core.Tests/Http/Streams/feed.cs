@@ -18,6 +18,7 @@ using NUnit.Framework;
 using Newtonsoft.Json.Linq;
 using EventStore.Core.Tests.Http.Users.users;
 using HttpStatusCode = System.Net.HttpStatusCode;
+using SystemHeaders = EventStore.Core.Services.SystemHeaders;
 
 namespace EventStore.Core.Tests.Http.Streams {
 	namespace feed {
@@ -628,13 +629,14 @@ namespace EventStore.Core.Tests.Http.Streams {
 	}
 
 	[Category("LongRunning")]
-	[TestFixture]
-	public class when_reading_the_all_stream_backward_with_resolve_link_to : HttpSpecificationWithLinkToToEvents {
+	[TestFixture(SystemHeaders.ResolveLinkTos)]
+	[TestFixture(SystemHeaders.LegacyResolveLinkTos)]
+	public class when_reading_the_all_stream_backward_with_resolve_link_to(string resolveLinkTosHeader) : HttpSpecificationWithLinkToToEvents {
 		private JObject _feed;
 		private List<JToken> _entries;
 
 		protected override async Task When() {
-			var headers = new NameValueCollection {{"ES-ResolveLinkTos", "True"}};
+			var headers = new NameValueCollection {{resolveLinkTosHeader, "True"}};
 			_feed = await GetJson<JObject>("/streams/$all/head/backward/30",
 				ContentType.Json, DefaultData.AdminNetworkCredentials, headers);
 			_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
@@ -660,13 +662,14 @@ namespace EventStore.Core.Tests.Http.Streams {
 	}
 
 	[Category("LongRunning")]
-	[TestFixture]
-	public class when_reading_the_all_stream_backward_with_resolve_link_to_disabled : HttpSpecificationWithLinkToToEvents {
+	[TestFixture(SystemHeaders.ResolveLinkTos)]
+	[TestFixture(SystemHeaders.LegacyResolveLinkTos)]
+	public class when_reading_the_all_stream_backward_with_resolve_link_to_disabled(string resolveLinkTosHeader) : HttpSpecificationWithLinkToToEvents {
 		private JObject _feed;
 		private List<JToken> _entries;
 
 		protected override async Task When() {
-			var headers = new NameValueCollection {{"ES-ResolveLinkTos", "False"}};
+			var headers = new NameValueCollection {{resolveLinkTosHeader, "False"}};
 			_feed = await GetJson<JObject>("/streams/$all",
 				ContentType.Json, DefaultData.AdminNetworkCredentials, headers);
 			_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
@@ -692,13 +695,14 @@ namespace EventStore.Core.Tests.Http.Streams {
 	}
 
 	[Category("LongRunning")]
-	[TestFixture]
-	public class when_reading_the_all_stream_forward_with_resolve_link_to : HttpSpecificationWithLinkToToEvents {
+	[TestFixture(SystemHeaders.ResolveLinkTos)]
+	[TestFixture(SystemHeaders.LegacyResolveLinkTos)]
+	public class when_reading_the_all_stream_forward_with_resolve_link_to(string resolveLinkTosHeader) : HttpSpecificationWithLinkToToEvents {
 		private JObject _feed;
 		private List<JToken> _entries;
 
 		protected override async Task When() {
-			var headers = new NameValueCollection {{"ES-ResolveLinkTos", "True"}};
+			var headers = new NameValueCollection {{resolveLinkTosHeader, "True"}};
 			_feed = await GetJson<JObject>("/streams/$all/00000000000000000000037777777777/forward/30",
 				ContentType.Json, DefaultData.AdminNetworkCredentials, headers);
 			_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
@@ -724,13 +728,14 @@ namespace EventStore.Core.Tests.Http.Streams {
 	}
 
 	[Category("LongRunning")]
-	[TestFixture]
-	public class when_reading_the_all_stream_forward_with_resolve_link_to_disabled : HttpSpecificationWithLinkToToEvents {
+	[TestFixture(SystemHeaders.ResolveLinkTos)]
+	[TestFixture(SystemHeaders.LegacyResolveLinkTos)]
+	public class when_reading_the_all_stream_forward_with_resolve_link_to_disabled(string resolveLinkTosHeader) : HttpSpecificationWithLinkToToEvents {
 		private JObject _feed;
 		private List<JToken> _entries;
 
 		protected override async Task When() {
-			var headers = new NameValueCollection {{"ES-ResolveLinkTos", "False"}};
+			var headers = new NameValueCollection {{resolveLinkTosHeader, "False"}};
 			_feed = await GetJson<JObject>("/streams/$all/00000000000000000000037777777777/forward/30",
 				ContentType.Json, DefaultData.AdminNetworkCredentials, headers);
 			_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
