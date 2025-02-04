@@ -62,6 +62,10 @@ Archive:
     Bucket: kurrentdb-cluster-123-archive
 ```
 
+::: warning
+Do not use the same archive bucket for multiple clusters, and do not run more than one Archiver node in a single cluster.
+:::
+
 Additionally this can be placed on the Archiver Node to designate it as the Archive Node.
 
 ```yaml
@@ -75,13 +79,9 @@ The Archiver Node is a read-only replica and does not participate in quorum acti
 
 `StorageType` must currently be set to `S3`. Other cloud providers may be supported in the future, please contact us if you are interested.
 
-::: warning
-Do not use the same archive bucket for multiple clusters, and do not run more than one Archiver node in a single cluster.
-:::
-
 ### Credentials
 
-This section is a work in progress. Access to the archive will work if the AWS CLI is set up on the machine. Other scenarios are in progress.
+Access to the archive will work if the AWS CLI is set up on the machine. Other scenarios are in progress.
 
 ## Metrics
 
