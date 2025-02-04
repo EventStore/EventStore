@@ -226,8 +226,7 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 							]
 						};
 					else if (i.Name.StartsWith("eventstore-") &&
-						i.Name.EndsWith("-latency") &&
-						i.Unit == "seconds")
+						i.Name.EndsWith("-latency-seconds"))
 						return new ExplicitBucketHistogramConfiguration {
 							Boundaries = [
 								0.001, //    1 ms
@@ -240,7 +239,8 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 								5,     // 5000 ms
 							]
 						};
-					else if (i.Name.StartsWith("eventstore-") && i.Unit == "seconds")
+					else if (i.Name.StartsWith("eventstore-") &&
+						i.Name.EndsWith("-seconds"))
 						return new ExplicitBucketHistogramConfiguration {
 							Boundaries = [
 								0.000_001, // 1 microsecond
