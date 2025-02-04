@@ -90,18 +90,19 @@ The metrics relevant to Archiving in particular are `eventstore_logical_chunk_re
 The panels are available in the `Events Served` section of the [miscellaneous panels](https://grafana.com/grafana/dashboards/19461-eventstore-panels/) dashboard.
 
 ![Chunk Read Distribution](images/archiving/chunk-read-distribution.png)
+
 ![Reads by Source](images/archiving/reads-by-source.png)
 
 ## Limitations
 
 This initial release has several limitations that we intend to improve in future releases.
 
-Work on the following items is about to begin / has begun:
+Work to improve the following limitations is about to begin or has already begun:
 - The headers of archived chunks are read on startup, just for local chunks. This will increase startup times when there are a lot of chunks in the archive.
 - Once uploaded to the archive, the chunks there are not scavenged.
 - Clients cannot yet opt out of their read reading from the archive.
 - Repeated reads of the same part of the archive are not cached locally.
 
-Work on the following items may be added according to demand
+Work on the following items may be added according to interest
 
-- At the moment only S3 is supported. A local file-system based archive exists for development/testing purposes. Other cloud providers could be supported later.
+- At the moment only S3 is supported. A local file-system based archive exists for development/testing purposes.
