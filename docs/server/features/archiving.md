@@ -21,23 +21,23 @@ The extra copy of the data in S3 also acts as a backup that is kept up to date a
 ### Summary
 
 - Data written to the database is replicated to all nodes in the deployment as normal.
-- A designated `Archiver Node` is responsible for uploading chunk files into the archive.
-- Nodes can then remove chunks from their local volumes to save space according to a retention criteria.
+- A designated _Archiver Node_ is responsible for uploading chunk files into the _archive_.
+- Nodes can then remove chunks from their local volumes to save space according to a _retention policy.
 - Read requests read transparently through to the archive as necessary.
 
 ### Populating the Archive
 
-- A designated `Archiver Node` uploads chunk files to the archive as they are completed. The contents of each chunk file are the same as they were locally, except that merged chunks are unmerged for upload to make them trivial to locate.
+- A designated _Archiver Node_ uploads chunk files to the archive as they are completed. The contents of each chunk file are the same as they were locally, except that merged chunks are unmerged for upload to make them trivial to locate.
 - Only chunk files are uploaded. PTables, Scavenge.db etc remain local to each node.
-- The Archive Node stores an archive checkpoint in the archive indicating how much of the log has been uploaded to the archive.
-- The Archiver Node is also a `Read-only Replica` and does not participate in cluster elections/replication criteria. At the moment Read-only replicas can only be used in 3+ node clusters, and not single node deployments.
+- The Archiver Node stores an archive checkpoint in the archive indicating how much of the log has been uploaded to the archive.
+- The Archiver Node is also a _Read-only Replica_ and does not participate in cluster elections/replication criteria. At the moment Read-only replicas can only be used in 3+ node clusters, and not single node deployments.
 
 ### Removal of data from node volumes
 
 - All nodes can delete chunks from their local volumes.
 - The removal is performed during the Scavenge operation.
 - Chunks are removed only after they have been uploaded to the archive.
-- Chunks are removed only after they no longer meet the simple user defined retention criteria.
+- Chunks are removed only after they no longer meet the simple user defined retention policy.
 
 ## Configuration
 
@@ -62,12 +62,14 @@ Archive:
     Bucket: kurrentdb-cluster-123-archive
 ```
 
-Additionally this can be placed on the Archiver Node to designate it as the Archive Node. The Archiver Node is a read-only replica and does not participate in quorum activities. It must be a separate node to the main cluster nodes. e.g. If you have a three node cluster, you will need a fourth node to be the archiver. If you already have a read-only replica as a forth node then it is possible to use it as the Archiver Node.
+Additionally this can be placed on the Archiver Node to designate it as the Archive Node.
 
 ```yaml
 ReadOnlyReplica: true
 Archiver: true
 ```
+
+The Archiver Node is a read-only replica and does not participate in quorum activities. It must be a separate node to the main cluster nodes. e.g. If you have a three node cluster, you will need a fourth node to be the archiver. If you already have a read-only replica as a forth node then it is possible to use it as the Archiver Node.
 
 `RetainAtLeast` is the retention policy for what to retain in the local volume for each node. It does not affect which chunks are uploaded to the archive by the Archiver Node (which will upload all completed chunks). If a chunk contains any data less than `RetainAtLeast:Days` old, then it will not be removed locally. If a chunk contains any data that is within `RetainAtLeast:LogicalBytes` of the tail of the log (strictly: the `scavenge point` of the current scavenge) then it will not be removed locally.
 
