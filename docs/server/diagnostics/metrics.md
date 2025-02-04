@@ -112,10 +112,12 @@ eventstore_elections_count 0 1710188996949
 
 These metrics track events written to and read from the server, including reads from caches.
 
-| Time series                                          | Type                     | Description         |
-|:-----------------------------------------------------|:-------------------------|:--------------------|
-| `eventstore_io_bytes{activity="read"}`               | [Counter](#common-types) | Event bytes read    |
-| `eventstore_io_events{activity=<"read"\|"written">}` | [Counter](#common-types) | Events read/written |
+| Time series                                                                                                       | Type                       | Description                                                                                          |
+|:------------------------------------------------------------------------------------------------------------------|:---------------------------|:-----------------------------------------------------------------------------------------------------|
+| `eventstore_io_bytes{activity="read"}`                                                                            | [Counter](#common-types)   | Event bytes read                                                                                     |
+| `eventstore_io_events{activity=<"read"\|"written">}`                                                              | [Counter](#common-types)   | Events read/written                                                                                  |
+| `eventstore_logical_chunk_read_distribution_bucket{le=<CHUNK_OFFSET>}`                                            | [Histogram](#common-types) | Number of records read from chunks less than or equal to _CHUNK\_OFFSET_ older than the active chunk |
+| `eventstore_io_record_read_duration_seconds_bucket{source=<"Archive"\|"ChunkCache"\|"FileSystem">,le=<DURATION>}` | [Histogram](#common-types) | Number of records read from the source with latency less than or equal to _DURATION_ in seconds      |
 
 Example configuration:
 ```json
@@ -131,6 +133,13 @@ Example output:
 # UNIT eventstore_io_events events
 eventstore_io_events{activity="written"} 320 1687963622074
 ```
+
+`eventstore_logical_chunk_read_distribution_bucket` is a histogram showing where in the log events are being read from relative to the current tail.
+This is useful for determining cutoff-points such as how much of the log should be kept in memory, and how much can be archived.
+Note that the scale is exponential to accommodate a wide range of log sizes.
+
+`eventstore_io_record_read_duration_seconds_bucket` is a histogram showing how long records are taking to be read from various sources (`Archive`, `ChunkCache`, `FileSystem`).
+Note that any of these can return very quickly if the record happens to already be in the read buffer.
 
 ### Gossip
 
