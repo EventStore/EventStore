@@ -18,6 +18,7 @@ using Grpc.Core;
 using Grpc.Net.Client;
 using NUnit.Framework;
 using StatusCode = Grpc.Core.StatusCode;
+using ContentType = EventStore.Transport.Http.ContentType;
 
 namespace EventStore.Core.Tests.Integration;
 
@@ -59,7 +60,7 @@ public abstract class authenticated_requests_made_from_a_follower<TLogFormat, TS
 
 			using var response = await httpClient.PostAsync($"/streams/{ProtectedStream}",
 				new ReadOnlyMemoryContent(content) {
-					Headers = { ContentType = new MediaTypeHeaderValue("application/vnd.eventstore.events+json") }
+					Headers = { ContentType = new MediaTypeHeaderValue(ContentType.EventsJson) }
 				});
 
 			_statusCode = response.StatusCode;

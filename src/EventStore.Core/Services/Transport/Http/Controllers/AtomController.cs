@@ -52,7 +52,8 @@ public class AtomController : CommunicationController {
 
 	private static readonly ICodec[] AtomCodecsWithoutBatches = {
 		Codec.EventStoreXmlCodec,
-		Codec.EventStoreJsonCodec,
+		Codec.KurrentJsonCodec,
+		Codec.LegacyEventStoreJsonCodec,
 		Codec.Xml,
 		Codec.ApplicationXml,
 		Codec.Json
@@ -60,40 +61,50 @@ public class AtomController : CommunicationController {
 
 	private static readonly ICodec[] AtomCodecs = {
 		Codec.DescriptionJson,
+		Codec.LegacyDescriptionJson,
 		Codec.EventStoreXmlCodec,
-		Codec.EventStoreJsonCodec,
+		Codec.KurrentJsonCodec,
+		Codec.LegacyEventStoreJsonCodec,
 		Codec.Xml,
 		Codec.ApplicationXml,
 		Codec.Json,
 		Codec.EventXml,
 		Codec.EventJson,
+		Codec.LegacyEventJson,
 		Codec.EventsXml,
 		Codec.EventsJson,
+		Codec.LegacyEventsJson,
 		Codec.Raw,
 	};
 
 	private static readonly ICodec[] AtomWithHtmlCodecs = {
 		Codec.DescriptionJson,
+		Codec.LegacyDescriptionJson,
 		Codec.EventStoreXmlCodec,
-		Codec.EventStoreJsonCodec,
+		Codec.KurrentJsonCodec,
+		Codec.LegacyEventStoreJsonCodec,
 		Codec.Xml,
 		Codec.ApplicationXml,
 		Codec.Json,
 		Codec.EventXml,
 		Codec.EventJson,
+		Codec.LegacyEventJson,
 		Codec.EventsXml,
 		Codec.EventsJson,
+		Codec.LegacyEventsJson,
 		HtmlFeedCodec // initialization order matters
 	};
 
 	private static readonly ICodec[] DefaultCodecs = {
 		Codec.EventStoreXmlCodec,
-		Codec.EventStoreJsonCodec,
+		Codec.KurrentJsonCodec,
+		Codec.LegacyEventStoreJsonCodec,
 		Codec.Xml,
 		Codec.ApplicationXml,
 		Codec.Json,
 		Codec.EventXml,
 		Codec.EventJson,
+		Codec.LegacyEventJson,
 		Codec.Raw,
 		HtmlFeedCodec // initialization order matters
 	};
@@ -234,7 +245,8 @@ public class AtomController : CommunicationController {
 	}
 
 	private bool GetDescriptionDocument(HttpEntityManager manager, UriTemplateMatch match) {
-		if (manager.ResponseCodec.ContentType == ContentType.DescriptionDocJson) {
+		if (manager.ResponseCodec.ContentType == ContentType.DescriptionDocJson ||
+		    manager.ResponseCodec.ContentType == ContentType.LegacyDescriptionDocJson) {
 			var stream = match.BoundVariables["stream"];
 			var accepts = (manager.HttpEntity.Request.AcceptTypes?.Length ?? 0) == 0 ||
 						  manager.HttpEntity.Request.AcceptTypes.Contains(ContentType.Any);
@@ -313,7 +325,7 @@ public class AtomController : CommunicationController {
 			var header = new[]
 				{new KeyValuePair<string, string>("Location", uri)};
 			manager.ReplyTextContent("Forwarding to idempotent URI", HttpStatusCode.RedirectKeepVerb,
-				"Temporary Redirect", "text/plain", header, e => { });
+				"Temporary Redirect", ContentType.PlainText, header, e => { });
 			return;
 		}
 
@@ -875,13 +887,13 @@ public class AtomController : CommunicationController {
 
 	private bool GetRequireLeader(HttpEntityManager manager, out bool requireLeader) {
 		requireLeader = false;
-		
+
 		var onlyLeader = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.RequireLeader);
 		var onlyMaster = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.RequireMaster);
-		
+
 		if (StringValues.IsNullOrEmpty(onlyLeader) && StringValues.IsNullOrEmpty(onlyMaster))
 			return true;
-	
+
 		if (string.Equals(onlyLeader, "True", StringComparison.OrdinalIgnoreCase) ||
 		    string.Equals(onlyMaster, "True", StringComparison.OrdinalIgnoreCase)) {
 			requireLeader = true;

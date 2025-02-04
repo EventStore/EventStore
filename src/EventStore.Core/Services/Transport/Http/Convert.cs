@@ -68,7 +68,7 @@ public static class Convert {
 	}
 
 	public static FeedElement ToStreamEventBackwardFeed(ClientMessage.ReadStreamEventsBackwardCompleted msg,
-		Uri requestedUrl, EmbedLevel embedContent, bool headOfStream) {
+		Uri requestedUrl, EmbedLevel embedContent, bool headOfStream, string contentType) {
 		Ensure.NotNull(msg, "msg");
 
 		string escapedStreamId = Uri.EscapeDataString(msg.EventStreamId);
@@ -81,11 +81,10 @@ public static class Convert {
 			? msg.Events[0].Event.TimeStamp
 			: DateTime.MinValue.ToUniversalTime());
 		feed.SetAuthor(AtomSpecs.Author);
-		feed.SetHeadOfStream(headOfStream); //TODO AN: remove this ?
+		feed.SetHeadOfStream(headOfStream);
 		feed.SetSelfUrl(self);
-		//TODO AN: remove this ?
 		if (headOfStream) //NOTE: etag workaround - to be fixed with better http handling model
-			feed.SetETag(Configure.GetPositionETag(msg.LastEventNumber, ContentType.AtomJson));
+			feed.SetETag(Configure.GetPositionETag(msg.LastEventNumber, contentType));
 
 		var prevEventNumber = Math.Min(msg.FromEventNumber, msg.LastEventNumber) + 1;
 		var nextEventNumber = msg.FromEventNumber - msg.MaxCount;
@@ -301,26 +300,27 @@ public static class Convert {
 	}
 
 	public static DescriptionDocument ToDescriptionDocument(Uri requestedUrl, string streamId,
-		string[] subscriptions) {
+		string[] subscriptions, string contentType) {
 		string escapedStreamId = Uri.EscapeDataString(streamId);
 		var descriptionDocument = new DescriptionDocument();
 		descriptionDocument.SetTitle(string.Format("Description document for '{0}'", streamId));
 		descriptionDocument.SetDescription(
 			@"The description document will be presented when no accept header is present or it was requested");
 
-		descriptionDocument.SetSelf("/streams/" + escapedStreamId,
-			Codec.DescriptionJson.ContentType);
+		descriptionDocument.SetSelf("/streams/" + escapedStreamId, contentType);
 
 		descriptionDocument.SetStream("/streams/" + escapedStreamId,
 			Codec.EventStoreXmlCodec.ContentType,
-			Codec.EventStoreJsonCodec.ContentType);
+			Codec.KurrentJsonCodec.ContentType,
+			Codec.LegacyEventStoreJsonCodec.ContentType);
 
 		if (subscriptions != null) {
 			foreach (var group in subscriptions) {
 				descriptionDocument.AddStreamSubscription(
 					String.Format("/subscriptions/{0}/{1}", escapedStreamId, group),
 					Codec.CompetingXml.ContentType,
-					Codec.CompetingJson.ContentType);
+					Codec.CompetingJson.ContentType,
+					Codec.LegacyCompetingJson.ContentType);
 			}
 		}
 

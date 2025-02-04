@@ -64,7 +64,7 @@ public class TestController : CommunicationController {
 		var b = match.BoundVariables["b"];
 
 		http.Reply(new {a = a, b = b, rawSegment = http.RequestedUrl.Segments[2]}.ToJson(), 200, "OK",
-			"application/json");
+			ContentType.Json);
 	}
 
 	private void TestEncodingHandler(HttpEntityManager http, UriTemplateMatch match, string a) {
@@ -77,7 +77,7 @@ public class TestController : CommunicationController {
 				rawSegment = http.RequestedUrl.Segments[1],
 				requestUri = match.RequestUri,
 				rawUrl = http.HttpEntity.Request.RawUrl
-			}.ToJson(), 200, "OK", "application/json");
+			}.ToJson(), 200, "OK", ContentType.Json);
 	}
 
 	private void TestTimeoutHandler(HttpEntityManager http, UriTemplateMatch match) {

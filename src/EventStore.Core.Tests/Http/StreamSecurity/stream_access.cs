@@ -9,9 +9,9 @@ using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Common.Utils;
 using EventStore.Core.Services;
-using EventStore.Core.Tests.Http.Users;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
+using ContentType = EventStore.Transport.Http.ContentType;
 
 namespace EventStore.Core.Tests.Http.StreamSecurity {
 	namespace stream_access {
@@ -68,7 +68,7 @@ namespace EventStore.Core.Tests.Http.StreamSecurity {
 						new[] { new { EventId = Guid.NewGuid(), EventType = "event-type", Data = new { Some = "Data" } } }
 							.ToJsonBytes()) {
 						Headers = {
-							ContentType = MediaTypeHeaderValue.Parse("application/vnd.eventstore.events+json")
+							ContentType = MediaTypeHeaderValue.Parse(ContentType.EventsJson)
 						}
 					}
 				};
