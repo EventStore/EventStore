@@ -85,7 +85,12 @@ This section is a work in progress. Access to the archive will work if the AWS C
 
 ## Metrics
 
-WIP
+The metrics relevant to Archiving in particular are `eventstore_logical_chunk_read_distribution_bucket` and `eventstore_io_record_read_duration_seconds_bucket` described in the [metrics](../diagnostics/metrics.md#events) documentation.
+
+The panels are available in the `Events Served` section of the [miscellaneous panels](https://grafana.com/grafana/dashboards/19461-eventstore-panels/) dashboard.
+
+![Chunk Read Distribution](images/archiving/chunk-read-distribution.png)
+![Reads by Source](images/archiving/reads-by-source.png)
 
 ## Limitations
 
