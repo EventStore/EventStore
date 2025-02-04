@@ -98,8 +98,8 @@ The panels are available in the `Events Served` section of the [miscellaneous pa
 This initial release has several limitations that we intend to improve in future releases.
 
 Work to improve the following limitations is about to begin or has already begun:
-- The headers of archived chunks are read on startup, just for local chunks. This will increase startup times when there are a lot of chunks in the archive.
-- Once uploaded to the archive, the chunks there are not scavenged.
+- The headers of archived chunks are read on startup, just as for local chunks. This will increase startup times when there are a lot of chunks in the archive.
+- Once uploaded to the archive, the chunks there are not scavenged any further.
 - Clients cannot yet opt out of their read reading from the archive.
 - Repeated reads of the same part of the archive are not cached locally.
 
