@@ -6,14 +6,14 @@ order: 1
 
 ## Overview
 
-EventStoreDB provides a native interface of AtomPub over HTTP. AtomPub is a RESTful protocol that can reuse many existing components, for example reverse proxies and a client's native HTTP caching. Since events stored in EventStoreDB are immutable, cache expiration can be infinite. EventStoreDB leverages content type negotiation and you can access appropriately serialised events can as JSON or XML according to the request headers.
+KurrentDB provides a native interface of AtomPub over HTTP. AtomPub is a RESTful protocol that can reuse many existing components, for example reverse proxies and a client's native HTTP caching. Since events stored in KurrentDB are immutable, cache expiration can be infinite. EventStoreDB leverages content type negotiation and you can access appropriately serialised events as JSON or according to the request headers.
 
 ### Compatibility with AtomPub
 
-EventStoreDB v5 is fully compatible with the [1.0 version of the Atom Protocol](https://datatracker.ietf.org/doc/html/rfc4287). EventStoreDB adds extensions to the protocol, such as headers for control and custom `rel` links.
+KurrentDB is compatible with the [1.0 version of the Atom Protocol](https://datatracker.ietf.org/doc/html/rfc4287). KurrentDB adds extensions to the protocol, such as headers for control and custom `rel` links.
 
 ::: warning
-The latest versions of EventStoreDB (v20+) have the AtomPub protocol disabled by default. We do not advise creating new applications using AtomPub as we plan to deprecate it. Please explore our new gRPC protocol available in v20. It provides more reliable real-time event streaming with wide range of platforms and language supported.
+KurrentDB has the AtomPub protocol disabled by default. We do not advise creating new applications using AtomPub as we plan to deprecate it. Please use the gRPC protocol available in v20. It provides more reliable real-time event streaming with wide range of platforms and language supported.
 :::
 
 #### Existing implementations
@@ -43,6 +43,7 @@ The accepted content types for POST requests are:
 - `application/xml`
 - `application/vnd.eventstore.events+xml`
 - `application/json`
+- `application/vnd.kurrent.events+json`
 - `application/vnd.eventstore.events+json`
 - `text/xml`
 
@@ -51,9 +52,11 @@ The accepted content types for GET requests are:
 - `application/xml`
 - `application/atom+xml`
 - `application/json`
+- `application/vnd.kurrent.atom+json`
 - `application/vnd.eventstore.atom+json`
 - `text/xml`
 - `text/html`
+- `application/vnd.kurrent.streamdesc+json`
 - `application/vnd.eventstore.streamdesc+json`
 
 ## Appending Events
@@ -62,7 +65,7 @@ You append to a stream over HTTP using a `POST` request to the resource of the s
 
 ### EventStoreDB media types
 
-EventStoreDB supports a custom media type for posting events, `application/vnd.eventstore.events+json` or `application/vnd.eventstore.events+xml`. This format allows for extra functionality that posting events as `application/json` or `application/xml` does not. For example it allows you to post multiple events in a single batch.
+EventStoreDB supports a custom media type for posting events, `application/vnd.kurrent.events+json`. This format allows for extra functionality that posting events as `application/json` does not. For example it allows you to post multiple events in a single batch.
 
 <!-- TODO: And more? Why not use it? And why are these examples not using it? -->
 
@@ -96,7 +99,7 @@ If you issue a `POST` request with data to a stream and the correct content type
 
 Some clients may not be able to generate a unique identifier (or may not want to) for the event ID. You need this ID for idempotence purposes and EventStoreDB can generate it for you.
 
-If you leave off the `ES-EventId` header you see different behavior:
+If you leave off the `Kurrent-EventId` header you see different behavior:
 
 ::: tabs
 @tab Request
@@ -157,7 +160,7 @@ To append events, issue a `POST` request to the same resource with a new `eventI
 
 ### Data-only events
 
-Use the `application/octet-stream` content type to support data-only binary events. When creating these events, you need to provide the `ES-EventType` and `ES-EventId` headers and cannot have metadata associated with the event. In the example below `SGVsbG8gV29ybGQ=` is the data you `POST` to the stream:
+Use the `application/octet-stream` content type to support data-only binary events. When creating these events, you need to provide the `Kurrent-EventType` and `Kurrent-EventId` headers and cannot have metadata associated with the event. In the example below `SGVsbG8gV29ybGQ=` is the data you `POST` to the stream:
 
 ::: tabs
 @tab Request
@@ -236,6 +239,7 @@ The accepted content types for `GET` requests are:
 - `application/xml`
 - `application/atom+xml`
 - `application/json`
+- `application/vnd.kurrent.atom+json`
 - `application/vnd.eventstore.atom+json`
 - `text/xml`
 - `text/html`
@@ -422,7 +426,7 @@ The version numbers do not start at zero but at where you soft deleted the strea
 
 ### Hard deleting
 
-You can hard delete a stream. To issue a permanent delete use the `ES-HardDelete` header.
+You can hard delete a stream. To issue a permanent delete use the `Kurrent-HardDelete` header.
 
 ::: warning
 A hard delete is permanent and the stream is not removed during a scavenge. If you hard delete a stream, you cannot recreate the stream.
@@ -474,7 +478,7 @@ There are three ways in which EventStoreDB returns the description document.
 - Attempting to read a stream with no accept header.
 - Requesting the description document explicitly.
 
-The client is able to request the description document by passing `application/vnd.eventstore.streamdesc+json` in the `accept` header, for example:
+The client is able to request the description document by passing `application/vnd.kurrent.streamdesc+json` in the `accept` header, for example:
 
 ::: tabs
 @tab Request
@@ -630,7 +634,7 @@ Stream metadata is stored internally as JSON, and you can access it over the HTT
 To read the metadata, issue a `GET` request to the attached metadata resource, which is typically of the form:
 
 ```http
-https://{eventstore-ip-address}/streams/{stream-name}/metadata
+https://{kurrentdb-ip-address}/streams/{stream-name}/metadata
 ```
 
 You should not access metadata by constructing this URL yourself, as the right to change the resource address is reserved. Instead, you should follow the link from the stream itself, which enables your client to tolerate future changes to the addressing structure.
@@ -645,7 +649,7 @@ You should not access metadata by constructing this URL yourself, as the right t
 Once you have the URI of the metadata stream, issue a `GET` request to retrieve the metadata:
 
 ```bash
-curl -i -H "Accept:application/vnd.eventstore.atom+json" https://127.0.0.1:2113/streams/%24users/metadata --user admin:changeit
+curl -i -H "Accept:application/vnd.kurrent.atom+json" https://127.0.0.1:2113/streams/%24users/metadata --user admin:changeit
 ```
 
 If you have security enabled, reading metadata may require that you pass credentials, as in the examples above. If credentials are required and you do not pass them, then you receive a `401 Unauthorized` response.
