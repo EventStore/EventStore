@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime;
+using System.Text;
 using Xunit;
 
 namespace EventStore.SystemRuntime.Tests;
@@ -16,8 +17,14 @@ public sealed class ProcessStatsTests : IDisposable {
 		string directoryPath = Path.Combine(Path.GetTempPath(), string.Format("ESX-{0}-{1}", Guid.NewGuid(), nameof(ProcessStatsTests)));
 		_directory = Directory.CreateDirectory(directoryPath);
 		var filePath = Path.Combine(directoryPath, "file.txt");
-		File.WriteAllText(filePath, "the data");
+		WriteAllText(filePath, "the data");
 		File.ReadAllText(filePath);
+	}
+
+	private static void WriteAllText(string path, string data) {
+		using var handle = File.OpenHandle(path, FileMode.Create, FileAccess.Write, FileShare.Read, FileOptions.WriteThrough);
+		RandomAccess.Write(handle, Encoding.UTF8.GetBytes(data), 0L);
+		RandomAccess.FlushToDisk(handle);
 	}
 
 	public void Dispose() {
