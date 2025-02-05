@@ -14,7 +14,7 @@ The headers supported are:
 |--------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
 | [Kurrent-ExpectedVersion](#expected-version)                                  | The expected version of the stream (allows optimistic concurrency)                                 |
 | [Kurrent-ResolveLinkTo](#resolve-linkto)                                      | Whether to resolve `linkTos` in stream                                                             |
-| [Kurrent-RequireLeader](#requires-leader)                                    | Whether this operation needs to run on the leader node                                             |
+| [Kurrent-RequireLeader](#require-leader)                                    | Whether this operation needs to run on the leader node                                             |
 | [Kurrent-TrustedAuth](@server/security/user-authentication.md#externalised-authentication) | Allows a trusted intermediary to handle authentication                                             |
 | [Kurrent-LongPoll](#longpoll)                                                 | Instructs the server to do a long poll operation on a stream read                                  |
 | [Kurrent-HardDelete](#harddelete)                                             | Instructs the server to hard delete the stream when deleting as opposed to the default soft delete |
@@ -64,9 +64,9 @@ If you view the event in the UI or with cURL it has the `EventType` of `SomeEven
 
 ::: tabs
 @tab Request
-@[code{curl}](@httpapi/read-event.sh)
+@[code](@httpapi/read-event.sh)
 @tab Response
-@[code{response}](@httpapi/read-event.sh)
+@[code](@httpapi/read-event.json)
 :::
 
 ## Expected Version
@@ -117,9 +117,9 @@ The `Kurrent-HardDelete` header controls deleting a stream. By default KurrentDB
 
 ::: tabs
 @tab Request
-@[code{curl}](@httpapi/delete-stream/hard-delete-stream.sh)
+@[code](@httpapi/delete-stream/hard-delete-stream.sh)
 @tab Response
-@[code{response}](@httpapi/delete-stream/hard-delete-stream.sh)
+@[code](@httpapi/delete-stream/hard-delete-stream.http)
 :::
 
 This changes the general behaviour from returning a `404` and the stream to be recreated (soft-delete) to the stream now return a `410 Deleted` response.
@@ -158,7 +158,7 @@ The entries section is empty (there is no further data to provide). Now try the 
 
 If you do not insert any events into the stream while this is running it takes 10 seconds for the HTTP request to finish. If you append an event to the stream while its running you see the result for that request when you append the event.
 
-## Requires Leader
+## Require Leader
 
 When running in a clustered environment there are times when you only want an operation to happen on the current leader node. A client can fetch information in an eventually consistent fashion by communicating with the servers. The TCP client included with the multi-node version does this.
 

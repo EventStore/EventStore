@@ -155,7 +155,7 @@ To append events, issue a `POST` request to the same resource with a new `eventI
 @tab Request
 @[code{curl}](@httpapi/append-event.sh)
 @tab Response
-@[code{curl}](@httpapi/append-event.sh)
+@[code{response}](@httpapi/append-event.sh)
 :::
 
 ### Data-only events
@@ -248,9 +248,9 @@ The non-atom version of the event has fewer details about the event.
 
 ::: tabs
 @tab Request
-@[code{curl}](@httpapi/read-event.sh)
+@[code](@httpapi/read-event.sh)
 @tab Response
-@[code{response}](@httpapi/read-event.sh)
+@[code](@httpapi/read-event.json)
 :::
 
 ### Feed paging
@@ -454,9 +454,9 @@ If you try to recreate the stream as in the above example you also receive a `41
 
 ::: tabs
 @tab Request
-@[code{curl}](@httpapi/delete-stream/append-event-deleted.sh)
+@[code](@httpapi/delete-stream/append-event-deleted.sh)
 @tab Response
-@[code{response}](@httpapi/delete-stream/append-event-deleted.sh)
+@[code](@httpapi/delete-stream/append-event-deleted.http)
 :::
 
 ## Description document

@@ -1,7 +1,7 @@
 #region curl
 curl -i -d @event-version.json "http://127.0.0.1:2113/streams/newstream" \
     -H "Content-Type:application/vnd.kurrent.events+json" \
-    -H "Kurrent-CurrentVersion: 0"
+    -H "Kurrent-ExpectedVersion: 0"
 #endregion curl
 
 #region response
