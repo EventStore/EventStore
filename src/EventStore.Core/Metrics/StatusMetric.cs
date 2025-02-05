@@ -15,10 +15,7 @@ public class StatusMetric {
 
 	public StatusMetric(Meter meter, string name, IClock clock = null) {
 		_clock = clock ?? Clock.Instance;
-
-		// The submetrics only go up, so we use a counter
-		// Observable because the value is the current time in seconds
-		meter.CreateObservableCounter(name, Observe);
+		meter.CreateObservableGauge(name, Observe);
 	}
 
 	public void Add(StatusSubMetric subMetric) {

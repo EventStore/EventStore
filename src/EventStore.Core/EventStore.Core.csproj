@@ -19,11 +19,11 @@
 		<PackageReference Include="JetBrains.Annotations" Version="2024.3.0" />
 		<PackageReference Include="librdkafka.redist" Version="2.5.0" />
 		<PackageReference Include="Microsoft.FASTER.Core" Version="1.9.16" />
-		<PackageReference Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" Version="1.4.0-rc.1" />
-		<PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.4.0-rc.1" />
+		<PackageReference Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" Version="1.11.0-beta.1" />
+		<PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.11.1" />
 		<PackageReference Include="Polly.Core" Version="8.5.2" />
 		<PackageReference Include="Quickenshtein" Version="1.5.1" />
-		<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
+		<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="9.0.1" />
 		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="8.0.0" />
 		<PackageReference Include="System.IO.Pipelines" Version="8.0.0" />
 		<PackageReference Include="System.Linq.Async" Version="6.0.1" />

@@ -23,7 +23,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using MidFunc = System.Func<
@@ -225,8 +224,9 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 								.. Enumerable.Range(0, count: 19).Select(x => 1 << x)
 							]
 						};
-					else if (i.Name.StartsWith("eventstore-") &&
-						i.Name.EndsWith("-latency-seconds"))
+					else if (i.Name.StartsWith("kurrentdb-") &&
+						i.Name.EndsWith("-latency") &&
+						i.Unit == "seconds")
 						return new ExplicitBucketHistogramConfiguration {
 							Boundaries = [
 								0.001, //    1 ms
@@ -239,8 +239,8 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 								5,     // 5000 ms
 							]
 						};
-					else if (i.Name.StartsWith("eventstore-") &&
-						i.Name.EndsWith("-seconds"))
+					else if (i.Name.StartsWith("kurrentdb-") &&
+						i.Unit == "seconds")
 						return new ExplicitBucketHistogramConfiguration {
 							Boundaries = [
 								0.000_001, // 1 microsecond

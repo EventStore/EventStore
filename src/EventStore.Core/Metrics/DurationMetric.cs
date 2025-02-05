@@ -13,7 +13,7 @@ public class DurationMetric {
 
 	public DurationMetric(Meter meter, string name, IClock clock = null) {
 		_clock = clock ?? Clock.Instance;
-		_histogram = meter.CreateHistogram<double>(name + "-seconds");
+		_histogram = meter.CreateHistogram<double>(name, "seconds");
 	}
 
 	public Duration Start(string durationName) =>

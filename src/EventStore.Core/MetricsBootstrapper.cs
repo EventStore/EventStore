@@ -173,11 +173,13 @@ public static class MetricsBootstrapper {
 			coreMeter.CreateObservableUpDownCounter("eventstore-persistent-sub-in-flight-messages", tracker.ObserveInFlightMessages);
 			coreMeter.CreateObservableUpDownCounter("eventstore-persistent-sub-oldest-parked-message-seconds", tracker.ObserveOldestParkedMessage);
 
+			// these only go up, but are not strictly counters; should not have `_total` appended
+			coreMeter.CreateObservableUpDownCounter("eventstore-persistent-sub-last-known-event-number", tracker.ObserveLastKnownEvent);
+			coreMeter.CreateObservableUpDownCounter("eventstore-persistent-sub-last-known-event-commit-position", tracker.ObserveLastKnownEventCommitPosition);
+			coreMeter.CreateObservableUpDownCounter("eventstore-persistent-sub-checkpointed-event-number", tracker.ObserveLastCheckpointedEvent);
+			coreMeter.CreateObservableUpDownCounter("eventstore-persistent-sub-checkpointed-event-commit-position", tracker.ObserveLastCheckpointedEventCommitPosition);
+
 			coreMeter.CreateObservableCounter("eventstore-persistent-sub-items-processed", tracker.ObserveItemsProcessed);
-			coreMeter.CreateObservableCounter("eventstore-persistent-sub-last-known-event-number", tracker.ObserveLastKnownEvent);
-			coreMeter.CreateObservableCounter("eventstore-persistent-sub-last-known-event-commit-position", tracker.ObserveLastKnownEventCommitPosition);
-			coreMeter.CreateObservableCounter("eventstore-persistent-sub-checkpointed-event-number", tracker.ObserveLastCheckpointedEvent);
-			coreMeter.CreateObservableCounter("eventstore-persistent-sub-checkpointed-event-commit-position", tracker.ObserveLastCheckpointedEventCommitPosition);
 		}
 
 		// checkpoints

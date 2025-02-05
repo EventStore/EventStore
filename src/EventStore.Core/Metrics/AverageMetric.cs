@@ -16,7 +16,7 @@ public class AverageMetric {
 
 	public AverageMetric(Meter meter, string name, string unit, Func<string, Tag> genTag) {
 		_genTag = genTag;
-		meter.CreateObservableCounter(name + "-" + unit, Observe);
+		meter.CreateObservableCounter(name, Observe, unit);
 	}
 
 	public void Register(string group, Func<double> subMetric) {
