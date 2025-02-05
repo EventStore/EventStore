@@ -15,7 +15,9 @@ public sealed class ProcessStatsTests : IDisposable {
 	public ProcessStatsTests() {
 		string directoryPath = Path.Combine(Path.GetTempPath(), string.Format("ESX-{0}-{1}", Guid.NewGuid(), nameof(ProcessStatsTests)));
 		_directory = Directory.CreateDirectory(directoryPath);
-		File.WriteAllText(Path.Combine(directoryPath, "file.txt"), "the data");
+		var filePath = Path.Combine(directoryPath, "file.txt");
+		File.WriteAllText(filePath, "the data");
+		File.ReadAllText(filePath);
 	}
 
 	public void Dispose() {
