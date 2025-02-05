@@ -1,9 +1,9 @@
 {
-  "name": "esdb-docs",
+  "name": "kurrentdb-docs",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "author": "Event Store Ltd",
+  "author": "Kurrent Inc",
   "devDependencies": {
     "@babel/cli": "^7.24.8",
     "@babel/core": "^7.24.9",

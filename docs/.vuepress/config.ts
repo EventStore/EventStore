@@ -13,7 +13,7 @@ const projectionSamplesPath = "https://raw.githubusercontent.com/EventStore/Even
 export default defineUserConfig({
     base: "/",
     dest: "public",
-    title: "EventStoreDB Docs",
+    title: "KurrentDB Docs",
     description: "Event-native database",
     bundler: viteBundler(),
     markdown: {importCode: false},

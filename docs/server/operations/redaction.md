@@ -33,7 +33,7 @@ Redaction requires a license key. Due to its sensitive nature, the tool is avail
 
 ## Running the redactor
 
-The binary needs to be extracted and run locally on an KurrentDB node. Similar to scavenging, redaction affects only the node where it's running. Thus, it must be run once on each node of the cluster.
+The binary needs to be extracted and run locally on a KurrentDB node. Similar to scavenging, redaction affects only the node where it's running. Thus, it must be run once on each node of the cluster.
 
 The redactor takes two mandatory parameters as input:
 

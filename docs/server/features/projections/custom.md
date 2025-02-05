@@ -186,7 +186,7 @@ the `handler(state, eventEnvelope)` method.
 
 ## Configuring projections
 
-By changing these settings, you can lessen the amount of pressure projections put on an KurrentDB node or
+By changing these settings, you can lessen the amount of pressure projections put on a KurrentDB node or
 improve projection performance. You can change these settings on a case-by-case basis, and monitor potential
 improvements.
 

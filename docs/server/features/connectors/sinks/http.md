@@ -6,7 +6,7 @@ order: 4
 ## Overview
 
 The HTTP sink allows for integration between KurrentDB and external
-APIs over HTTP or HTTPS. This connector consumes events from an KurrentDB
+APIs over HTTP or HTTPS. This connector consumes events from a KurrentDB
 stream and converts each event's data into JSON format before sending it in the
 request body to a specified Url. Events are sent individually as they are
 consumed from the stream, without batching. The event data is transmitted as the

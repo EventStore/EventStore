@@ -4,7 +4,7 @@ order: 3
 
 # Backup and restore
 
-Backing up an KurrentDB database is straightforward but relies on carrying out the steps below in the
+Backing up a KurrentDB database is straightforward but relies on carrying out the steps below in the
 correct order.
 
 ## Types of backups
