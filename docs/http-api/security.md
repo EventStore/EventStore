@@ -79,7 +79,7 @@ Access-Control-Allow-Methods: POST, DELETE, GET, OPTIONS
 Access-Control-Allow-Headers: Content-Type, X-Requested-With, X-PINGOTHER, Authorization, Kurrent-LongPoll, Kurrent-ExpectedVersion, Kurrent-EventId, Kurrent-EventType, Kurrent-RequireLeader, Kurrent-HardDelete, Kurrent-ResolveLinkTo, Kurrent-ExpectedVersion
 Access-Control-Allow-Origin: *
 Access-Control-Expose-Headers: Location, Kurrent-Position
-WWW-Authenticate: Basic realm="ES"
+WWW-Authenticate: Basic Realm="Kurrent"
 Content-Type: text/plain; charset=utf-8
 Server: Mono-HTTPAPI/1.0
 Date: Mon, 02 Mar 2015 15:21:27 GMT
