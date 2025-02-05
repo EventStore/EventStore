@@ -213,7 +213,7 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 			// OpenTelemetry
 			.AddOpenTelemetry()
 			.WithMetrics(meterOptions => meterOptions
-				.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("eventstore"))
+				.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("kurrentdb"))
 				.AddMeter(metricsConfiguration.Meters)
 				.AddView(i => {
 					if (i.Name == MetricsBootstrapper.LogicalChunkReadDistributionName)

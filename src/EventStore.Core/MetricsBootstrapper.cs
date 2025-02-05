@@ -62,7 +62,7 @@ public class GossipTrackers {
 }
 
 public static class MetricsBootstrapper {
-	public const string LogicalChunkReadDistributionName = "eventstore-logical-chunk-read-distribution";
+	public const string LogicalChunkReadDistributionName = "kurrentdb-logical-chunk-read-distribution";
 
 	public static void Bootstrap(
 		Conf conf,
@@ -77,33 +77,33 @@ public static class MetricsBootstrapper {
 		if (conf.ExpectedScrapeIntervalSeconds <= 0)
 			return;
 
-		var coreMeter = new Meter("EventStore.Core", version: "1.0.0");
-		var statusMetric = new StatusMetric(coreMeter, "eventstore-statuses");
-		var grpcMethodMetric = new DurationMetric(coreMeter, "eventstore-grpc-method-duration");
-		var gossipLatencyMetric = new DurationMetric(coreMeter, "eventstore-gossip-latency");
-		var gossipProcessingMetric = new DurationMetric(coreMeter, "eventstore-gossip-processing-duration");
-		var queueQueueingDurationMaxMetric = new DurationMaxMetric(coreMeter, "eventstore-queue-queueing-duration-max");
-		var queueProcessingDurationMetric = new DurationMetric(coreMeter, "eventstore-queue-processing-duration");
-		var queueBusyMetric = new AverageMetric(coreMeter, "eventstore-queue-busy", "seconds", label => new("queue", label));
-		var byteMetric = new CounterMetric(coreMeter, "eventstore-io", unit: "bytes");
-		var eventMetric = new CounterMetric(coreMeter, "eventstore-io", unit: "events");
-		var recordReadDurationMetric = new DurationMetric(coreMeter, "eventstore-io-record-read-duration");
-		var electionsCounterMetric = new CounterMetric(coreMeter, "eventstore-elections-count", unit: "");
+		var coreMeter = new Meter("KurrentDB.Core", version: "1.0.0");
+		var statusMetric = new StatusMetric(coreMeter, "kurrentdb-statuses");
+		var grpcMethodMetric = new DurationMetric(coreMeter, "kurrentdb-grpc-method-duration");
+		var gossipLatencyMetric = new DurationMetric(coreMeter, "kurrentdb-gossip-latency");
+		var gossipProcessingMetric = new DurationMetric(coreMeter, "kurrentdb-gossip-processing-duration");
+		var queueQueueingDurationMaxMetric = new DurationMaxMetric(coreMeter, "kurrentdb-queue-queueing-duration-max");
+		var queueProcessingDurationMetric = new DurationMetric(coreMeter, "kurrentdb-queue-processing-duration");
+		var queueBusyMetric = new AverageMetric(coreMeter, "kurrentdb-queue-busy", "seconds", label => new("queue", label));
+		var byteMetric = new CounterMetric(coreMeter, "kurrentdb-io-bytes", unit: "bytes");
+		var eventMetric = new CounterMetric(coreMeter, "kurrentdb-io-events", unit: "events");
+		var recordReadDurationMetric = new DurationMetric(coreMeter, "kurrentdb-io-record-read-duration");
+		var electionsCounterMetric = new CounterMetric(coreMeter, "kurrentdb-elections-count", unit: "");
 
 		// incoming grpc calls
 		var enabledCalls = conf.IncomingGrpcCalls.Where(kvp => kvp.Value).Select(kvp => kvp.Key).ToArray();
 		if (enabledCalls.Length > 0) {
 			_ = new IncomingGrpcCallsMetric(
 				coreMeter,
-				"eventstore-current-incoming-grpc-calls",
-				"eventstore-incoming-grpc-calls",
+				"kurrentdb-current-incoming-grpc-calls",
+				"kurrentdb-incoming-grpc-calls",
 				enabledCalls);
 		}
 
 		// cache hits/misses
 		var enabledCacheHitsMisses = conf.CacheHitsMisses.Where(kvp => kvp.Value).Select(kvp => kvp.Key).ToArray();
 		if (enabledCacheHitsMisses.Length > 0) {
-			var metric = new CacheHitsMissesMetric(coreMeter, enabledCacheHitsMisses, "eventstore-cache-hits-misses", new() {
+			var metric = new CacheHitsMissesMetric(coreMeter, enabledCacheHitsMisses, "kurrentdb-cache-hits-misses", new() {
 				{ Conf.Cache.StreamInfo, "stream-info" },
 				{ Conf.Cache.Chunk, "chunk" },
 			});
@@ -112,7 +112,7 @@ public static class MetricsBootstrapper {
 
 		// dynamic cache resources
 		if (conf.CacheResources) {
-			var metrics = new CacheResourcesMetrics(coreMeter, "eventstore-cache-resources");
+			var metrics = new CacheResourcesMetrics(coreMeter, "kurrentdb-cache-resources");
 			trackers.CacheResourcesTracker = new CacheResourcesTracker(metrics);
 		}
 
@@ -168,24 +168,24 @@ public static class MetricsBootstrapper {
 			var tracker = new PersistentSubscriptionTracker();
 			trackers.PersistentSubscriptionTracker = tracker;
 
-			coreMeter.CreateObservableUpDownCounter("eventstore-persistent-sub-connections", tracker.ObserveConnectionsCount);
-			coreMeter.CreateObservableUpDownCounter("eventstore-persistent-sub-parked-messages", tracker.ObserveParkedMessages);
-			coreMeter.CreateObservableUpDownCounter("eventstore-persistent-sub-in-flight-messages", tracker.ObserveInFlightMessages);
-			coreMeter.CreateObservableUpDownCounter("eventstore-persistent-sub-oldest-parked-message-seconds", tracker.ObserveOldestParkedMessage);
+			coreMeter.CreateObservableUpDownCounter("kurrentdb-persistent-sub-connections", tracker.ObserveConnectionsCount);
+			coreMeter.CreateObservableUpDownCounter("kurrentdb-persistent-sub-parked-messages", tracker.ObserveParkedMessages);
+			coreMeter.CreateObservableUpDownCounter("kurrentdb-persistent-sub-in-flight-messages", tracker.ObserveInFlightMessages);
+			coreMeter.CreateObservableUpDownCounter("kurrentdb-persistent-sub-oldest-parked-message-seconds", tracker.ObserveOldestParkedMessage);
 
 			// these only go up, but are not strictly counters; should not have `_total` appended
-			coreMeter.CreateObservableUpDownCounter("eventstore-persistent-sub-last-known-event-number", tracker.ObserveLastKnownEvent);
-			coreMeter.CreateObservableUpDownCounter("eventstore-persistent-sub-last-known-event-commit-position", tracker.ObserveLastKnownEventCommitPosition);
-			coreMeter.CreateObservableUpDownCounter("eventstore-persistent-sub-checkpointed-event-number", tracker.ObserveLastCheckpointedEvent);
-			coreMeter.CreateObservableUpDownCounter("eventstore-persistent-sub-checkpointed-event-commit-position", tracker.ObserveLastCheckpointedEventCommitPosition);
+			coreMeter.CreateObservableUpDownCounter("kurrentdb-persistent-sub-last-known-event-number", tracker.ObserveLastKnownEvent);
+			coreMeter.CreateObservableUpDownCounter("kurrentdb-persistent-sub-last-known-event-commit-position", tracker.ObserveLastKnownEventCommitPosition);
+			coreMeter.CreateObservableUpDownCounter("kurrentdb-persistent-sub-checkpointed-event-number", tracker.ObserveLastCheckpointedEvent);
+			coreMeter.CreateObservableUpDownCounter("kurrentdb-persistent-sub-checkpointed-event-commit-position", tracker.ObserveLastCheckpointedEventCommitPosition);
 
-			coreMeter.CreateObservableCounter("eventstore-persistent-sub-items-processed", tracker.ObserveItemsProcessed);
+			coreMeter.CreateObservableCounter("kurrentdb-persistent-sub-items-processed", tracker.ObserveItemsProcessed);
 		}
 
 		// checkpoints
 		_ = new CheckpointMetric(
 			coreMeter,
-			"eventstore-checkpoints",
+			"kurrentdb-checkpoints",
 			conf.Checkpoints.Where(x => x.Value).Select(x => x.Key switch {
 				Conf.Checkpoint.Chaser => dbConfig.ChaserCheckpoint,
 				Conf.Checkpoint.Epoch => dbConfig.EpochCheckpoint,
@@ -224,7 +224,7 @@ public static class MetricsBootstrapper {
 		// storage writer
 		if (conf.Writer.Count > 0) {
 			if (conf.Writer.TryGetValue(Conf.WriterTracker.FlushSize, out var flushSizeEnabled) && flushSizeEnabled) {
-				var maxMetric = new MaxMetric<long>(coreMeter, "eventstore-writer-flush-size-max");
+				var maxMetric = new MaxMetric<long>(coreMeter, "kurrentdb-writer-flush-size-max");
 				trackers.WriterFlushSizeTracker = new MaxTracker<long>(
 					metric: maxMetric,
 					name: null,
@@ -232,7 +232,7 @@ public static class MetricsBootstrapper {
 			}
 
 			if (conf.Writer.TryGetValue(Conf.WriterTracker.FlushDuration, out var flushDurationEnabled) && flushDurationEnabled) {
-				var maxDurationmetric = new DurationMaxMetric(coreMeter, "eventstore-writer-flush-duration-max");
+				var maxDurationmetric = new DurationMaxMetric(coreMeter, "kurrentdb-writer-flush-duration-max");
 				trackers.WriterFlushDurationTracker = new DurationMaxTracker(
 					maxDurationmetric,
 					name: null,
@@ -261,27 +261,27 @@ public static class MetricsBootstrapper {
 
 		// kestrel
 		if (conf.Kestrel.TryGetValue(Conf.KestrelTracker.ConnectionCount, out var kestrelConnections) && kestrelConnections) {
-			_ = new ConnectionMetric(coreMeter, "eventstore-kestrel-connections");
+			_ = new ConnectionMetric(coreMeter, "kurrentdb-kestrel-connections");
 		}
 
 		var timeout = TimeSpan.FromSeconds(1);
 
 		// system
 		var systemMetrics = new SystemMetrics(coreMeter, timeout, conf.System);
-		systemMetrics.CreateLoadAverageMetric("eventstore-sys-load-avg", new() {
+		systemMetrics.CreateLoadAverageMetric("kurrentdb-sys-load-avg", new() {
 			{ Conf.SystemTracker.LoadAverage1m, "1m" },
 			{ Conf.SystemTracker.LoadAverage5m, "5m" },
 			{ Conf.SystemTracker.LoadAverage15m, "15m" },
 		});
 
-		systemMetrics.CreateCpuMetric("eventstore-sys-cpu");
+		systemMetrics.CreateCpuMetric("kurrentdb-sys-cpu");
 
-		systemMetrics.CreateMemoryMetric("eventstore-sys-mem", new() {
+		systemMetrics.CreateMemoryMetric("kurrentdb-sys-mem", new() {
 			{ Conf.SystemTracker.FreeMem, "free" },
 			{ Conf.SystemTracker.TotalMem, "total" },
 		});
 
-		systemMetrics.CreateDiskMetric("eventstore-sys-disk", dbConfig.Path, new() {
+		systemMetrics.CreateDiskMetric("kurrentdb-sys-disk", dbConfig.Path, new() {
 			{ Conf.SystemTracker.DriveTotalBytes, "total" },
 			{ Conf.SystemTracker.DriveUsedBytes, "used" },
 		});
@@ -289,44 +289,44 @@ public static class MetricsBootstrapper {
 		// process
 		var processMetrics = new ProcessMetrics(coreMeter, timeout, conf.ExpectedScrapeIntervalSeconds, conf.Process);
 		processMetrics.CreateObservableMetrics(new() {
-			{ Conf.ProcessTracker.UpTime, "eventstore-proc-up-time" },
-			{ Conf.ProcessTracker.Cpu, "eventstore-proc-cpu" },
-			{ Conf.ProcessTracker.ThreadCount, "eventstore-proc-thread-count" },
-			{ Conf.ProcessTracker.ThreadPoolPendingWorkItemCount, "eventstore-proc-thread-pool-pending-work-item-count" },
-			{ Conf.ProcessTracker.LockContentionCount, "eventstore-proc-contention-count" },
-			{ Conf.ProcessTracker.ExceptionCount, "eventstore-proc-exception-count" },
-			{ Conf.ProcessTracker.TimeInGc, "eventstore-gc-time-in-gc" },
-			{ Conf.ProcessTracker.HeapSize, "eventstore-gc-heap-size" },
-			{ Conf.ProcessTracker.HeapFragmentation, "eventstore-gc-heap-fragmentation" },
-			{ Conf.ProcessTracker.TotalAllocatedBytes, "eventstore-gc-total-allocated" },
-			{ Conf.ProcessTracker.GcPauseDuration, "eventstore-gc-pause-duration-max" },
+			{ Conf.ProcessTracker.UpTime, "kurrentdb-proc-up-time" },
+			{ Conf.ProcessTracker.Cpu, "kurrentdb-proc-cpu" },
+			{ Conf.ProcessTracker.ThreadCount, "kurrentdb-proc-thread-count" },
+			{ Conf.ProcessTracker.ThreadPoolPendingWorkItemCount, "kurrentdb-proc-thread-pool-pending-work-item-count" },
+			{ Conf.ProcessTracker.LockContentionCount, "kurrentdb-proc-contention-count" },
+			{ Conf.ProcessTracker.ExceptionCount, "kurrentdb-proc-exception-count" },
+			{ Conf.ProcessTracker.TimeInGc, "kurrentdb-gc-time-in-gc" },
+			{ Conf.ProcessTracker.HeapSize, "kurrentdb-gc-heap-size" },
+			{ Conf.ProcessTracker.HeapFragmentation, "kurrentdb-gc-heap-fragmentation" },
+			{ Conf.ProcessTracker.TotalAllocatedBytes, "kurrentdb-gc-allocated" },
+			{ Conf.ProcessTracker.GcPauseDuration, "kurrentdb-gc-pause-duration-max" },
 		});
 
-		processMetrics.CreateMemoryMetric("eventstore-proc-mem", new() {
+		processMetrics.CreateMemoryMetric("kurrentdb-proc-mem", new() {
 			{ Conf.ProcessTracker.MemWorkingSet, "working-set" },
 			{ Conf.ProcessTracker.MemPagedBytes, "paged-bytes" },
 			{ Conf.ProcessTracker.MemVirtualBytes, "virtual-bytes" },
 		});
 
-		processMetrics.CreateGcGenerationSizeMetric("eventstore-gc-generation-size", new() {
+		processMetrics.CreateGcGenerationSizeMetric("kurrentdb-gc-generation-size", new() {
 			{ Conf.ProcessTracker.Gen0Size, "gen0" },
 			{ Conf.ProcessTracker.Gen1Size, "gen1" },
 			{ Conf.ProcessTracker.Gen2Size, "gen2" },
 			{ Conf.ProcessTracker.LohSize, "loh" },
 		});
 
-		processMetrics.CreateGcCollectionCountMetric("eventstore-gc-collection-count", new() {
+		processMetrics.CreateGcCollectionCountMetric("kurrentdb-gc-collection-count", new() {
 			{ Conf.ProcessTracker.Gen0CollectionCount, "gen0" },
 			{ Conf.ProcessTracker.Gen1CollectionCount, "gen1" },
 			{ Conf.ProcessTracker.Gen2CollectionCount, "gen2" },
 		});
 
-		processMetrics.CreateDiskBytesMetric("eventstore-disk-io", new() {
+		processMetrics.CreateDiskBytesMetric("kurrentdb-disk-io-bytes", new() {
 			{ Conf.ProcessTracker.DiskReadBytes, "read" },
 			{ Conf.ProcessTracker.DiskWrittenBytes, "written" },
 		});
 
-		processMetrics.CreateDiskOpsMetric("eventstore-disk-io", new() {
+		processMetrics.CreateDiskOpsMetric("kurrentdb-disk-io-operations", new() {
 			{ Conf.ProcessTracker.DiskReadOps, "read" },
 			{ Conf.ProcessTracker.DiskWrittenOps, "written" },
 		});

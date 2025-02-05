@@ -3,8 +3,8 @@
 	"ExpectedScrapeIntervalSeconds": 15,
 
 	"Meters": [
-		"EventStore.Core",
-		"EventStore.Projections.Core"
+		"KurrentDB.Core",
+		"KurrentDB.Projections.Core"
 	],
 
 	"Statuses": {
