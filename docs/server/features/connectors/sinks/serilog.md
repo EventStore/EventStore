@@ -77,7 +77,7 @@ Here is an example:
 
 ## Settings
 
-Adjust these settings to specify the behavior and interaction of your serilog sink connector with EventStoreDB, ensuring it operates according to your requirements and preferences.
+Adjust these settings to specify the behavior and interaction of your serilog sink connector with KurrentDB, ensuring it operates according to your requirements and preferences.
 
 ::: tip
 The serilog sink inherits a set of common settings that are used to configure the connector. The settings can be found in

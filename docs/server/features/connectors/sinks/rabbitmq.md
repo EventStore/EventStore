@@ -71,7 +71,7 @@ management API endpoints in the [API Reference](../manage.md).
 
 ## Settings
 
-Adjust these settings to specify the behavior and interaction of your RabbitMQ sink connector with EventStoreDB, ensuring it operates according to your requirements and preferences.
+Adjust these settings to specify the behavior and interaction of your RabbitMQ sink connector with KurrentDB, ensuring it operates according to your requirements and preferences.
 
 ::: tip
 The RabbitMQ sink inherits a set of common settings that are used to configure the connector. The settings can be found in
