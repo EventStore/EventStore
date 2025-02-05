@@ -110,8 +110,6 @@ Anonymous access is still always granted to `/ping`, `/info`, the static content
 
 ## FIPS 140-2 
 
-<Badge type="info" vertical="middle" text="License Required"/>
-
 KurrentDB runs on FIPS 140-2 enabled operating systems.
 
 The Federal Information Processing Standards (FIPS) of the United States are a set of publicly announced standards that the National Institute of Standards and Technology (NIST) has developed for use in computer systems of non-military United States government agencies and contractors.
