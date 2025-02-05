@@ -23,7 +23,7 @@ Keep-Alive: timeout=15,max=100
   "updated": "2017-12-15T12:19:32.021776Z",
   "streamId": "newstream",
   "author": {
-    "name": "KurrentDB"
+    "name": "Kurrent"
   },
   "headOfStream": true,
   "selfUrl": "http://127.0.0.1:2113/streams/newstream",
@@ -52,7 +52,7 @@ Keep-Alive: timeout=15,max=100
       "id": "http://127.0.0.1:2113/streams/newstream/0",
       "updated": "2017-12-15T12:19:32.021776Z",
       "author": {
-        "name": "KurrentDB"
+        "name": "Kurrent"
       },
       "summary": "event-type",
       "links": [

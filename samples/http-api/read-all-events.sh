@@ -23,7 +23,7 @@ Keep-Alive: timeout=15,max=100
   "id": "<http://127.0.0.1:2113/streams/%24all">,
   "updated": "2015-03-13T16:19:06.548415Z",
   "author": {
-    "name": "KurrentDB"
+    "name": "Kurrent"
   },
   "headOfStream": false,
   "links": [

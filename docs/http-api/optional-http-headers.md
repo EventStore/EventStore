@@ -192,7 +192,7 @@ Date: Thu, 27 Jun 2013 14:48:37 GMT
   "updated": "2013-06-27T14:48:15.2596358Z",
   "streamId": "stream",
   "author": {
-    "name": "KurrentDB"
+    "name": "Kurrent"
   },
   "links": [
     {
@@ -222,7 +222,7 @@ Date: Thu, 27 Jun 2013 14:48:37 GMT
       "id": "http://127.0.0.1:32004/streams/stream/0",
       "updated": "2013-06-27T14:48:15.2596358Z",
       "author": {
-        "name": "KurrentDB"
+        "name": "Kurrent"
       },
       "summary": "TakeSomeSpaceEvent",
       "links": [

@@ -547,7 +547,7 @@ Keep-Alive: timeout=15,max=100
 	"id": "http://127.0.0.1:2113/streams/newstream444",
 	"updated": "2012-09-06T16:39:44.695643Z",
 	"author": {
-		"name": "KurrentDB"
+		"name": "Kurrent"
 	},
 	"links": [
 		{
@@ -565,7 +565,7 @@ Keep-Alive: timeout=15,max=100
 			"id": "http://127.0.0.1:2113/streams/newstream444/1",
 			"updated": "2012-09-06T16:39:44.695643Z",
 			"author": {
-				"name": "KurrentDB"
+				"name": "Kurrent"
 			},
 			"summary": "Entry #1",
 			"links": [
@@ -594,7 +594,7 @@ Keep-Alive: timeout=15,max=100
 			"id": "http://127.0.0.1:2113/streams/newstream444/0",
 			"updated": "2012-09-06T16:39:44.695631Z",
 			"author": {
-				"name": "KurrentDB"
+				"name": "Kurrent"
 			},
 			"summary": "Entry #0",
 			"links": [

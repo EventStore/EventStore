@@ -23,7 +23,7 @@ Keep-Alive: timeout=15,max=100
   "updated": "0001-01-01T00:00:00Z",
   "streamId": "newstream",
   "author": {
-    "name": "KurrentDB"
+    "name": "Kurrent"
   },
   "headOfStream": false,
   "links": [

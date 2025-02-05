@@ -23,7 +23,7 @@ Keep-Alive: timeout=15,max=100
   "id": "http://127.0.0.1:2113/streams/shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1167/0",
   "updated": "2018-08-28T12:56:15.263731Z",
   "author": {
-    "name": "KurrentDB"
+    "name": "Kurrent"
   },
   "summary": "ItemAdded",
   "content": {

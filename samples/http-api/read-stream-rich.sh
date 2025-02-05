@@ -24,7 +24,7 @@ Keep-Alive: timeout=15,max=100
   "updated": "2015-03-13T12:13:42.492473Z",
   "streamId": "newstream",
   "author": {
-    "name": "KurrentDB"
+    "name": "Kurrent"
   },
   "headOfStream": true,
   "selfUrl": "<http://127.0.0.1:2113/streams/newstream">,
@@ -62,7 +62,7 @@ Keep-Alive: timeout=15,max=100
       "id": "<http://127.0.0.1:2113/streams/newstream/0">,
       "updated": "2015-03-13T12:13:42.492473Z",
       "author": {
-        "name": "KurrentDB"
+        "name": "Kurrent"
       },
       "summary": "event-type",
       "links": [

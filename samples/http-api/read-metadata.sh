@@ -24,7 +24,7 @@ Keep-Alive: timeout=15,max=100
   "updated": "2018-08-23T09:19:37.880827Z",
   "streamId": "$users",
   "author": {
-    "name": "KurrentDB"
+    "name": "Kurrent"
   },
   "headOfStream": true,
   "selfUrl": "http://127.0.0.1:2113/streams/%24users",
@@ -53,7 +53,7 @@ Keep-Alive: timeout=15,max=100
       "id": "http://127.0.0.1:2113/streams/%24users/3",
       "updated": "2018-08-23T09:19:37.880827Z",
       "author": {
-        "name": "KurrentDB"
+        "name": "Kurrent"
       },
       "summary": "$User",
       "links": [
@@ -72,7 +72,7 @@ Keep-Alive: timeout=15,max=100
       "id": "http://127.0.0.1:2113/streams/%24users/2",
       "updated": "2018-08-23T09:08:40.499762Z",
       "author": {
-        "name": "KurrentDB"
+        "name": "Kurrent"
       },
       "summary": "$User",
       "links": [
@@ -91,7 +91,7 @@ Keep-Alive: timeout=15,max=100
       "id": "http://127.0.0.1:2113/streams/%24users/1",
       "updated": "2018-08-23T07:55:39.833203Z",
       "author": {
-        "name": "KurrentDB"
+        "name": "Kurrent"
       },
       "summary": "$User",
       "links": [
@@ -110,7 +110,7 @@ Keep-Alive: timeout=15,max=100
       "id": "http://127.0.0.1:2113/streams/%24users/0",
       "updated": "2018-08-23T07:55:39.829589Z",
       "author": {
-        "name": "KurrentDB"
+        "name": "Kurrent"
       },
       "summary": "$User",
       "links": [
