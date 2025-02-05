@@ -355,7 +355,7 @@ projection on the Legacy runtime versus the Interpreted runtime.
 |:---------------------|:--------------------------------|
 | Command line         | `--projection-runtime`          |
 | YAML                 | `ProjectionRuntime`             |
-| Environment variable | `EVENTSTORE_PROJECTION_RUNTIME` |
+| Environment variable | `KURRENTDB_PROJECTION_RUNTIME`  |
 
 **Default**: `Interpreted`, use the new Interpreted runtime by default.
 
@@ -384,7 +384,7 @@ Finally, you can set `RunProjections` to `All` and it will enable both system an
 |:---------------------|:-----------------------------|
 | Command line         | `--run-projections`          |
 | YAML                 | `RunProjections`             |
-| Environment variable | `EVENTSTORE_RUN_PROJECTIONS` |
+| Environment variable | `KURRENTDB_RUN_PROJECTIONS`  |
 
 **Default**: `None`, all projections are disabled by default.
 
@@ -414,7 +414,7 @@ Use the `ProjectionThreads` option to adjust the number of threads dedicated to 
 |:---------------------|:--------------------------------|
 | Command line         | `--projection-threads`          |
 | YAML                 | `ProjectionThreads`             |
-| Environment variable | `EVENTSTORE_PROJECTION_THREADS` |
+| Environment variable | `KURRENTDB_PROJECTION_THREADS`  |
 
 **Default**: `3`
 
@@ -435,6 +435,6 @@ to `true`.
 |:---------------------|:--------------------------------------------|
 | Command line         | `--fault-out-of-order-projections`          |
 | YAML                 | `FaultOutOfOrderProjections`                |
-| Environment variable | `EVENTSTORE_FAULT_OUT_OF_ORDER_PROJECTIONS` |
+| Environment variable | `KURRENTDB_FAULT_OUT_OF_ORDER_PROJECTIONS`  |
 
 **Default**: `false`

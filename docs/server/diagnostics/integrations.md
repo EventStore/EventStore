@@ -90,7 +90,7 @@ in [Datadog documentation](https://docs.datadoghq.com/integrations/eventstore/).
 > Vector is a lightweight and ultra-fast tool for building observability pipelines.
 > (from Vector website)
 
-You can use [Vector] for extracting metrics or logs from your self-managed EventStore server.
+You can use [Vector] for extracting metrics or logs from your self-managed KurrentDB server.
 
 It's also possible to collect metrics from the Kurrent Cloud managed cluster or instance, as long as the
 Vector agent is running on a machine that has a direct connection to the KurrentDB server. You cannot,
@@ -118,8 +118,8 @@ There is an official [KurrentDB source] that you can use to pull relevant metric
 Below you can find an example that you can use in your `vector.toml` configuration file:
 
 ```toml
-[sources.eventstoredb_metrics]
-type = "eventstoredb_metrics"
+[sources.kurrentdb_metrics]
+type = "kurrentdb_metrics"
 endpoint = "https://{hostname}:{http_port}/stats"
 scrape_interval_secs = 3
 ```
@@ -134,10 +134,10 @@ collection, Vector must run on the same machine as KurrentDB server as it collec
 the local file system.
 
 ```toml
-[sources.eventstoredb_logs]
+[sources.kurrentdb_logs]
 type = "file"
 # If you changed the default log location, please update the filepath accordingly.
-include = ["/var/log/eventstore"]
+include = ["/var/log/kurrentdb"]
 read_from = "end"
 ```
 
@@ -146,25 +146,25 @@ read_from = "end"
 In this example, Vector runs on the same machine as KurrentDB, collects metrics and logs, and then sends them to Datadog. Notice that despite the KurrentDB HTTP is, in theory, accessible via `localhost`, it won't work if the server SSL certificate doesn't have `localhost` in the certificate CN or SAN.
 
 ```toml
-[sources.eventstoredb_metrics]
-type = "eventstoredb_metrics"
-endpoint = "https://node1.esdb.acme.company:2113/stats"
+[sources.kurrentdb_metrics]
+type = "kurrentdb_metrics"
+endpoint = "https://node1.kurrentdb.acme.company:2113/stats"
 scrape_interval_secs = 10
 
-[sources.eventstoredb_logs]
+[sources.kurrentdb_logs]
 type = "file"
-include = ["/var/log/eventstore"]
+include = ["/var/log/kurrentdb"]
 read_from = "end"
 
 [sinks.dd_metrics]
 type = "datadog_metrics"
-inputs = ["eventstoredb_metrics"]
+inputs = ["kurrentdb_metrics"]
 api_key = "${DD_API_KEY}"
 default_namespace = "service"
 
 [sinks.dd_logs]
 type = "datadog_logs"
-inputs = ["sources.eventstoredb_logs"]
+inputs = ["sources.kurrentdb_logs"]
 default_api_key = "${DD_API_KEY}"
 compression = "gzip"
 ```
@@ -366,7 +366,7 @@ output {
 You can play with such configuration through the [sample docker-compose](https://github.com/EventStore/samples/blob/2829b0a90a6488e1eee73fad0be33a3ded7d13d2/Logging/Elastic/FilebeatWithLogstash/docker-compose.yml).
 
 [Vector]: https://vector.dev/docs/
-[KurrentDB source]: https://vector.dev/docs/reference/configuration/sources/eventstoredb_metrics/
+[KurrentDB source]: https://vector.dev/docs/reference/configuration/sources/kurrentdb_metrics/
 [file source]: https://vector.dev/docs/reference/configuration/sources/file/
 [many different sinks]: https://vector.dev/docs/reference/configuration/sinks/
 [Console]: https://vector.dev/docs/reference/configuration/sinks/console/

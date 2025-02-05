@@ -110,7 +110,7 @@ exist_ or _definitely does not exist_. If a stream definitely does not exist the
 looking through the index to find information about it. This is particularly useful when creating new
 streams (i.e. appending to stream that did not previously exist).
 
-Additional information can be found in this [`blog post`](https://www.eventstore.com/blog/bloom-filters).
+Additional information can be found in this [`blog post`](https://www.kurrent.io/blog/bloom-filters).
 
 ## Configuration options
 

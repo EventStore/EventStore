@@ -39,7 +39,7 @@ Licensing:
 Environment variable:
 
 ```
-EVENTSTORE_LICENSING__LICENSE_KEY
+KURRENTDB_LICENSING__LICENSE_KEY
 ```
 
 For most features that require a license, KurrentDB will not start if the feature is enabled but the license key is not provided or is invalid.
