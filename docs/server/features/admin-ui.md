@@ -4,10 +4,10 @@ order: 1
 
 # Admin UI
 
-The EventStoreDB Admin UI is available at _SERVER_IP:2113_ and helps you interact with and manage a cluster in a visual way. This guide explains the tabs of the interface and what they do.
+The KurrentDB Admin UI is available at _SERVER_IP:2113_ and helps you interact with and manage a cluster in a visual way. This guide explains the tabs of the interface and what they do.
 
 ::: tip
-The embedded EventStoreDB web interface is reaching its end of life. We are working on a replacement, and you can try using the Early Preview of [Event Store Navigator](https://learn.eventstore.com/event-store-navigator-preview) app instead. It doesn't have full feature parity with the embedded web UI, but it already has usability improvements compared to it.
+The embedded KurrentDB web interface is reaching its end of life. We are working on a replacement, and you can try using the Early Preview of [Kurrent Navigator](https://learn.eventstore.com/event-store-navigator-preview) app instead. It doesn't have full feature parity with the embedded web UI, but it already has usability improvements compared to it.
 :::
 
 ## Dashboard
@@ -16,7 +16,7 @@ The embedded EventStoreDB web interface is reaching its end of life. We are work
 
 The _Dashboard_ tab shows an overview of active queues with associated statistics in the top half. The _+_ icon indicates a queue group, click it to reveal the queues that are part of the group.
 
-The second half of the tab shows active connections to EventStoreDB and information about them.
+The second half of the tab shows active connections to KurrentDB and information about them.
 
 Click the _Snapshot_ button in the top right to output a snapshot of all queue statistics at the time you clicked the button.
 
@@ -53,7 +53,7 @@ The buttons on the left above the events when you are viewing an event stream ar
 
 ![Web admin interface projections tab](images/wai-projections.png)
 
-The _Projections_ tab shows system and user created projections defined in EventStoreDB, the buttons above the list do the following:
+The _Projections_ tab shows system and user created projections defined in KurrentDB, the buttons above the list do the following:
 
 - _Disable All_: Disable all running projections.
 - _Enable All_: Enable all stopped projections.
@@ -98,13 +98,13 @@ Clicking the _+_ icon next to a stream name reveals the subscription name and mo
 
 ![Web admin interface admin](images/wai-admin.png)
 
-The _Admin_ tab shows subsystems enabled (currently only [projections](projections/README.md)) on EventStoreDB and [scavenges](../operations/scavenge.md) run. You can start a new scavenge operation by clicking the _Scavenge_ button, and shut EventStoreDB down by clicking the _Shutdown Server_ button.
+The _Admin_ tab shows subsystems enabled (currently only [projections](projections/README.md)) on KurrentDB and [scavenges](../operations/scavenge.md) run. You can start a new scavenge operation by clicking the _Scavenge_ button, and shut KurrentDB down by clicking the _Shutdown Server_ button.
 
 ## Users
 
 ![Web admin interface projections tab](images/wai-users.png)
 
-The _Users_ tab shows [the users defined in EventStoreDB](../security/user-authentication.md), clicking an individual user shows a JSON representation of that user's details.
+The _Users_ tab shows [the users defined in KurrentDB](../security/user-authentication.md), clicking an individual user shows a JSON representation of that user's details.
 
 ## Log out
 
