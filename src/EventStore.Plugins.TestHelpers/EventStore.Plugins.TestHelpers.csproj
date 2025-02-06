@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
 	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<Platforms>AnyCPU;x64</Platforms>
 	</PropertyGroup>
 
+	<ItemGroup>
+		<PackageReference Include="EventStore.Plugins" Version="25.2.5" />
+	</ItemGroup>
 </Project>

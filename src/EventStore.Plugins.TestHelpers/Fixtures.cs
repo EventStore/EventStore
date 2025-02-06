@@ -5,7 +5,7 @@ using System.Reactive.Subjects;
 using EventStore.Plugins.Licensing;
 using Microsoft.IdentityModel.JsonWebTokens;
 
-namespace EventStore.Plugins.Tests;
+namespace EventStore.Plugins.TestHelpers;
 
 public static class Fixtures {
 	static readonly Dictionary<string, string> _hardCodedTokens = new() {

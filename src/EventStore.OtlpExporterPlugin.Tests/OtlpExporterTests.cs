@@ -5,7 +5,7 @@ using System.Diagnostics.Metrics;
 using EventStore.Plugins;
 using EventStore.Plugins.Diagnostics;
 using EventStore.Plugins.Licensing;
-using EventStore.Plugins.Tests;
+using EventStore.Plugins.TestHelpers;
 using FluentAssertions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -125,7 +125,7 @@ public class OtlpExporterTests {
 					.AddMeter("EventStore.TestMeter")
 					.AddPrometheusExporter());
 
-		var sut = new EventStore.OtlpExporterPlugin.OtlpExporterPlugin(_logger);
+		var sut = new OtlpExporterPlugin(_logger);
 		((IPlugableComponent)sut).ConfigureServices(builder.Services, builder.Configuration);
 
 		var app = builder.Build();
