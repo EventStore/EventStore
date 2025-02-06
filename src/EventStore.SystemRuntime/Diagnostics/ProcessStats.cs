@@ -35,8 +35,13 @@ public static class ProcessStats {
                         result = result with { ReadOps = readOps };
                     else if (TryExtractIoValue(line, "syscw", out var writeOps)) {
                         result = result with { WriteOps = writeOps };
-                        break;
                     }
+
+                    if (result.ReadBytes is not 0 &&
+                        result.WrittenBytes is not 0 &&
+                        result.ReadOps is not 0 &&
+                        result.WriteOps is not 0)
+                        break;
                 }
 
                 return result;
