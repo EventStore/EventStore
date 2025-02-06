@@ -21,5 +21,6 @@
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\EventStore.SystemRuntime\EventStore.SystemRuntime.csproj" />
+		<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
 	</ItemGroup>
 </Project>
