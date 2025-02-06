@@ -6,7 +6,7 @@
 		<GenerateSupportedRuntime>false</GenerateSupportedRuntime>
 	</PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="SharpDotYaml.Extensions.Configuration" Version="0.3.0" />
+		<PackageReference Include="SharpDotYaml.Extensions.Configuration" Version="0.3.1" />
 		<PackageReference Include="System.ComponentModel.Composition" Version="8.0.0" />
 	</ItemGroup>
 	<ItemGroup>
