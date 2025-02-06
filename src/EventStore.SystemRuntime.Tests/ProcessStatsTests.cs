@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime;
 using System.Text;
+using EventStore.Core.TransactionLog.Unbuffered;
 using Xunit;
 
 namespace EventStore.SystemRuntime.Tests;
@@ -18,7 +19,17 @@ public sealed class ProcessStatsTests : IDisposable {
 		_directory = Directory.CreateDirectory(directoryPath);
 		var filePath = Path.Combine(directoryPath, "file.txt");
 		WriteAllText(filePath, "the data");
-		File.ReadAllText(filePath);
+		ReadAllText(filePath);
+	}
+
+	private static void ReadAllText(string path) {
+		// use UnbufferedFileStream to attempt to skip the OS's file cache
+		using var stream =
+			UnbufferedFileStream.Create(path, FileMode.Open, FileAccess.Read, FileShare.Read,
+				internalWriteBufferSize: 1024, internalReadBufferSize: 1024, writeThrough: false, minBlockSize: 1024);
+		var buffer = new byte[8];
+		stream.ReadExactly(buffer);
+		Assert.Equal("the data", Encoding.UTF8.GetString(buffer));
 	}
 
 	private static void WriteAllText(string path, string data) {
