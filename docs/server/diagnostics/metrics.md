@@ -8,7 +8,7 @@ KurrentDB collects metrics in [Prometheus format](https://prometheus.io/docs/ins
 
 In addition, KurrentDB can actively export metrics to a specified endpoint using the [OpenTelemetry Protocol](https://opentelemetry.io/docs/specs/otel/protocol/) (OTLP). <Badge type="info" text="License Required" vertical="middle"></Badge>
 
-A [Cluster Summary](https://grafana.com/grafana/dashboards/19455-eventstore-cluster-summary/) Grafana dashboard is available, as well as [miscellaneous panels](https://grafana.com/grafana/dashboards/19461-eventstore-panels/).
+A [Cluster Summary](https://grafana.com/grafana/dashboards/22824) Grafana dashboard is available, as well as [miscellaneous panels](https://grafana.com/grafana/dashboards/22823).
 
 ## Metrics reference
 
