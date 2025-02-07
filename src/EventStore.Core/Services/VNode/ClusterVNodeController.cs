@@ -24,10 +24,10 @@ namespace EventStore.Core.Services.VNode;
 
 public abstract class ClusterVNodeController {
 	protected static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNodeController>();
+	public static readonly TimeSpan ShutdownTimeout = TimeSpan.FromSeconds(5);
 }
 
 public sealed class ClusterVNodeController<TStreamId> : ClusterVNodeController {
-	public static readonly TimeSpan ShutdownTimeout = TimeSpan.FromSeconds(5);
 	public static readonly TimeSpan LeaderReconnectionDelay = TimeSpan.FromMilliseconds(500);
 	private static readonly TimeSpan LeaderSubscriptionRetryDelay = TimeSpan.FromMilliseconds(500);
 	private static readonly TimeSpan LeaderSubscriptionTimeout = TimeSpan.FromMilliseconds(1000);

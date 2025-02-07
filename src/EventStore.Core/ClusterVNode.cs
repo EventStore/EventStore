@@ -93,6 +93,9 @@ namespace EventStore.Core;
 public abstract class ClusterVNode {
 	protected static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNode>();
 
+	public static readonly TimeSpan ShutdownTimeout =
+		ClusterVNodeController.ShutdownTimeout + TimeSpan.FromSeconds(1);
+
 	public static ClusterVNode<TStreamId> Create<TStreamId>(
 		ClusterVNodeOptions options,
 		ILogFormatAbstractorFactory<TStreamId> logFormatAbstractorFactory,
@@ -142,8 +145,6 @@ public class ClusterVNode<TStreamId> :
 	IHandle<SystemMessage.BecomeShutdown>,
 	IHandle<SystemMessage.SystemStart>,
 	IHandle<ClientMessage.ReloadConfig> {
-	private static readonly TimeSpan DefaultShutdownTimeout =
-		ClusterVNodeController<TStreamId>.ShutdownTimeout + TimeSpan.FromSeconds(1);
 
 	private readonly ClusterVNodeOptions _options;
 
@@ -1631,7 +1632,7 @@ public class ClusterVNode<TStreamId> :
 				Log.Information("Truncation successful. Shutting down.");
 				var shutdownGuid = Guid.NewGuid();
 				using var linked = CancellationTokenSource.CreateLinkedTokenSource(token);
-				linked.CancelAfter(DefaultShutdownTimeout);
+				linked.CancelAfter(ShutdownTimeout);
 
 				await HandleAsync(
 						new SystemMessage.BecomeShuttingDown(shutdownGuid, exitProcess: true, shutdownHttp: true),
@@ -1799,7 +1800,7 @@ public class ClusterVNode<TStreamId> :
 		_mainQueue.Publish(new ClientMessage.RequestShutdown(false, true));
 
 		try {
-			await _shutdownSource.Task.WaitAsync(timeout ?? DefaultShutdownTimeout, cancellationToken);
+			await _shutdownSource.Task.WaitAsync(timeout ?? ShutdownTimeout, cancellationToken);
 		} catch (Exception) {
 			Log.Error("Graceful shutdown not complete. Forcing shutdown now.");
 			throw;
