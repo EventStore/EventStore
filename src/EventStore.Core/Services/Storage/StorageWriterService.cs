@@ -204,7 +204,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 	}
 
 	void IHandle<SystemMessage.SystemInit>.Handle(SystemMessage.SystemInit message) {
-		Bus.Publish(new SystemMessage.ServiceInitialized("StorageWriter"));
+		Bus.Publish(new SystemMessage.ServiceInitialized(nameof(StorageWriterService)));
 	}
 
 	public virtual async ValueTask HandleAsync(SystemMessage.StateChangeMessage message, CancellationToken token) {
@@ -897,5 +897,5 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 
 file static class MessageBusHelpers {
 	internal static void PublishStorageWriterShutdown(this IPublisher publisher)
-		=> publisher.Publish(new SystemMessage.ServiceShutdown("StorageWriter"));
+		=> publisher.Publish(new SystemMessage.ServiceShutdown(nameof(StorageWriterService)));
 }

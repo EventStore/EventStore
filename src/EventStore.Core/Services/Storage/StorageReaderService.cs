@@ -90,7 +90,7 @@ public class StorageReaderService<TStreamId> : StorageReaderService, IHandle<Sys
 	}
 
 	void IHandle<SystemMessage.SystemInit>.Handle(SystemMessage.SystemInit message) {
-		_bus.Publish(new SystemMessage.ServiceInitialized("StorageReader"));
+		_bus.Publish(new SystemMessage.ServiceInitialized(nameof(StorageReaderService)));
 	}
 
 	async ValueTask IAsyncHandle<SystemMessage.BecomeShuttingDown>.HandleAsync(SystemMessage.BecomeShuttingDown message, CancellationToken token) {
@@ -100,7 +100,7 @@ public class StorageReaderService<TStreamId> : StorageReaderService, IHandle<Sys
 			Log.Error(exc, "Error while stopping readers multi handler.");
 		}
 
-		_bus.Publish(new SystemMessage.ServiceShutdown("StorageReader"));
+		_bus.Publish(new SystemMessage.ServiceShutdown(nameof(StorageReaderService)));
 	}
 
 	void IHandle<SystemMessage.BecomeShutdown>.Handle(SystemMessage.BecomeShutdown message) {

@@ -111,7 +111,7 @@ public class StorageChaser<TStreamId> : StorageChaser, IMonitoredQueue,
 			// with no concurrency issues with writer, as writer before jumping
 			// into leader mode and accepting writes will wait till chaser caught up.
 			await _indexCommitterService.Init(_chaser.Checkpoint.Read(), _stopToken);
-			_leaderBus.Publish(new SystemMessage.ServiceInitialized("StorageChaser"));
+			_leaderBus.Publish(new SystemMessage.ServiceInitialized(nameof(StorageChaser)));
 
 			while (!_stopToken.IsCancellationRequested) {
 				if (_systemStarted)
@@ -137,7 +137,7 @@ public class StorageChaser<TStreamId> : StorageChaser, IMonitoredQueue,
 
 		_writerCheckpoint.Flushed -= OnWriterFlushed;
 		_chaser.Close();
-		_leaderBus.Publish(new SystemMessage.ServiceShutdown(Name));
+		_leaderBus.Publish(new SystemMessage.ServiceShutdown(nameof(StorageChaser)));
 	}
 
 	private void OnWriterFlushed(long obj) {

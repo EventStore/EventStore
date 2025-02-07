@@ -107,6 +107,7 @@ public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCom
 	}
 
 	async void IThreadPoolWorkItem.Execute() {
+		_publisher.Publish(new SystemMessage.ServiceInitialized(nameof(IndexCommitterService)));
 		try {
 			_queueStats.Start();
 			QueueMonitor.Default.Register(this);
@@ -146,7 +147,7 @@ public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCom
 			QueueMonitor.Default.Unregister(this);
 		}
 
-		_publisher.Publish(new SystemMessage.ServiceShutdown(Name));
+		_publisher.Publish(new SystemMessage.ServiceShutdown(nameof(IndexCommitterService)));
 	}
 
 	private async ValueTask ProcessCommitReplicated(StorageMessage.CommitAck message, CancellationToken token) {

@@ -74,7 +74,7 @@ public class ReplicationTrackingService :
 	}
 
 	private void TrackReplication() {
-
+		_publisher.Publish(new SystemMessage.ServiceInitialized(nameof(ReplicationTrackingService)));
 		try {
 			while (!_stop) {
 				_replicationChange.Reset();

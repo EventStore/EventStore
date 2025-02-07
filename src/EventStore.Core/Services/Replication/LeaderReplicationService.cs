@@ -441,6 +441,7 @@ public class LeaderReplicationService : IMonitoredQueue,
 
 	private async void MainLoop() {
 		try {
+			_publisher.Publish(new SystemMessage.ServiceInitialized(nameof(LeaderReplicationService)));
 			_queueStats.Start();
 			QueueMonitor.Default.Register(this);
 
@@ -485,7 +486,7 @@ public class LeaderReplicationService : IMonitoredQueue,
 
 			_db.Config.WriterCheckpoint.Flushed -= OnWriterFlushed;
 
-			_publisher.Publish(new SystemMessage.ServiceShutdown(Name));
+			_publisher.Publish(new SystemMessage.ServiceShutdown(nameof(LeaderReplicationService)));
 			_tcs.TrySetResult();
 		} catch (Exception e) {
 			_tcs.TrySetException(e);

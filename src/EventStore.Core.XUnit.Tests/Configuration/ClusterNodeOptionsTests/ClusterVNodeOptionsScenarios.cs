@@ -12,6 +12,8 @@ using EventStore.Core.Certificates;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Tests;
 using EventStore.Core.Tests.Services.Transport.Tcp;
+using EventStore.Core.Transforms.Identity;
+using EventStore.Plugins.Transforms;
 using NUnit.Framework;
 
 namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests;
@@ -49,7 +51,11 @@ public abstract class SingleNodeScenario<TLogFormat, TStreamId> : SpecificationW
 					options.Application.AllowAnonymousStreamAccess,
 					options.Application.OverrideAnonymousEndpointAccessForGossip).Create(c.MainQueue)]))),
 			certificateProvider: new OptionsCertificateProvider());
-		await _node.StartAsync(waitUntilReady: false, CancellationToken.None);
+
+		_node.Db.TransformManager.LoadTransforms([new IdentityDbTransform()]);
+		_node.Db.TransformManager.SetActiveTransform(TransformType.Identity);
+
+		await _node.StartAsync(waitUntilReady: true, CancellationToken.None);
 	}
 
 	[OneTimeTearDown]
@@ -90,6 +96,13 @@ public abstract class ClusterMemberScenario<TLogFormat, TStreamId> {
 					_options.Application.AllowAnonymousStreamAccess,
 					_options.Application.OverrideAnonymousEndpointAccessForGossip).Create(c.MainQueue)]))),
 			certificateProvider: new OptionsCertificateProvider());
+
+		_node.Db.TransformManager.LoadTransforms([new IdentityDbTransform()]);
+		_node.Db.TransformManager.SetActiveTransform(TransformType.Identity);
+
+		// we do not wait until ready because in some cases we will never become ready.
+		// becoming ready involves writing the admin user, which we will never in the test
+		// cases that a node that is configured to be part of a cluster.
 		await _node.StartAsync(waitUntilReady: false, CancellationToken.None);
 	}
 

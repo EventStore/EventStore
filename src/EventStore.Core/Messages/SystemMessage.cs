@@ -197,11 +197,13 @@ public static partial class SystemMessage {
 	[DerivedMessage(CoreMessage.System)]
 	public partial class ServiceShutdown : Message {
 		public readonly string ServiceName;
+		public string Details { get; }
 
-		public ServiceShutdown(string serviceName) {
-			if (String.IsNullOrEmpty(serviceName))
-				throw new ArgumentNullException("serviceName");
+		public ServiceShutdown(string serviceName, string details = "") {
+			ArgumentNullException.ThrowIfNull(serviceName, nameof(serviceName));
+			ArgumentNullException.ThrowIfNull(details, nameof(details));
 			ServiceName = serviceName;
+			Details = details;
 		}
 	}
 
