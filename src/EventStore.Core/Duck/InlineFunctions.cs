@@ -11,13 +11,13 @@ using DuckDB.NET.Data;
 using DuckDB.NET.Data.Reader;
 using DuckDB.NET.Data.Writer;
 using DuckDB.NET.Native;
+using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Duck.Infrastructure;
 using EventStore.Core.Services.Transport.Common;
 using EventStore.Core.TransactionLog;
 using Serilog;
-using Serilog.Core;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Core.Duck;
@@ -33,7 +33,7 @@ public class InlineFunctions<TStreamId>(DuckDb db, IPublisher publisher) {
 		new("log_position", typeof(ulong))
 	];
 
-	static readonly ILogger log = Log.ForContext(Constants.SourceContextPropertyName, "InlineFunctions");
+	static readonly ILogger log = Log.Logger.ForContext("InlineFunctions");
 
 	[Experimental("DuckDBNET001")]
 	public void Run() {

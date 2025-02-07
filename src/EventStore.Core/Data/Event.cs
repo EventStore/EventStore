@@ -15,8 +15,7 @@ public class Event {
 	public readonly byte[] Metadata;
 
 	public Event(Guid eventId, string eventType, bool isJson, string data, string metadata)
-		: this(
-			eventId, eventType, isJson, Helper.UTF8NoBom.GetBytes(data),
+		: this(eventId, eventType, isJson, Helper.UTF8NoBom.GetBytes(data),
 			metadata != null ? Helper.UTF8NoBom.GetBytes(metadata) : null) {
 	}
 
@@ -37,7 +36,7 @@ public class Event {
 		EventId = eventId;
 		EventType = eventType;
 		IsJson = isJson;
-		Data = data ?? Array.Empty<byte>();
-		Metadata = metadata ?? Array.Empty<byte>();
+		Data = data ?? [];
+		Metadata = metadata ?? [];
 	}
 }

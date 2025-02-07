@@ -9,7 +9,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using MudBlazor;
 
-namespace EventStore.ClusterNode.Components.Pages;
+namespace EventStore.ClusterNode.Components.Cluster;
 
 public partial class Cluster {
 	ClientClusterInfo _clusterInfo;
@@ -50,10 +50,10 @@ public partial class Cluster {
 		Task.Run(RefreshStatus);
 		_cpu = MonitoringService.CalculateCpu() * 100;
 		var ram = MonitoringService.CalculateRam();
+		_ram = ram.Used / ram.Total * 100;
 		AddData(_cpuChart, _cpu);
-		AddData(_ramChart, ram.Used / ram.Total * 100);
+		AddData(_ramChart, _ram);
 
-		_cpuDonut = [_cpu, 100-_cpu];
 		Refresh();
 		return;
 
@@ -86,7 +86,6 @@ public partial class Cluster {
 	TimeSeriesChartSeries _cpuChart;
 	TimeSeriesChartSeries _ramChart;
 	readonly List<TimeSeriesChartSeries> _series = [];
-	double[] _cpuDonut = [0, 100];
 	int _index = -1;
 
 	bool IsClusterHealthy => _clusterInfo?.Members?.All(x => x.IsAlive) ?? true;
@@ -95,6 +94,7 @@ public partial class Cluster {
 	int CardWidth => 12 / (_clusterInfo?.Members?.Length ?? 1);
 	static string LocalOs => RuntimeInformation.OSDescription;
 	double _cpu;
+	double _ram;
 
 	public void Dispose() {
 		MonitoringService.DataUpdated -= MonitoringServiceOnDataUpdated;

@@ -119,8 +119,7 @@ public partial record ClusterVNodeOptions {
 		[Description("Show version.")] public bool Version { get; init; } = false;
 
 		[Description("Configuration files.")]
-		public string Config { get; init; } =
-			Path.Combine(Locations.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile);
+		public string Config { get; init; } = Path.Combine(Locations.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile);
 
 		[Description("Print effective configuration to console and then exit.")]
 		public bool WhatIf { get; init; } = false;
@@ -130,33 +129,30 @@ public partial record ClusterVNodeOptions {
 
 		[Description("Disable HTTP caching.")] public bool DisableHttpCaching { get; init; } = false;
 
-		[Description("The number of seconds between statistics gathers."),
-		 Unit("s")]
+		[Description("The number of seconds between statistics gathers."), Unit("s")]
 		public int StatsPeriodSec { get; init; } = 30;
 
 		[Description("The number of threads to use for pool of worker services. Set to '0' to scale automatically (Default)")]
 		public int WorkerThreads { get; init; } = 0;
 
-		[Description("Enables the tracking of various histograms in the backend, " +
-		             "typically only used for debugging, etc.")]
+		[Description("Enables the tracking of various histograms in the backend, typically only used for debugging, etc.")]
 		[Deprecated("The EnableHistograms setting has been deprecated as of version 24.10.0 and currently has no effect. " +
 					"Please contact EventStore if this feature is of interest to you.")]
 		public bool EnableHistograms { get; init; } = false;
 
-		[Description("Log Http Requests and Responses before processing them.")]
+		[Description("Log HTTP requests and responses before processing them.")]
 		public bool LogHttpRequests { get; init; } = false;
 
 		[Description("Log the failed authentication attempts.")]
 		public bool LogFailedAuthenticationAttempts { get; init; } = false;
 
-		[Description("Skip Index Scan on Reads. This skips the index scan which was used " +
-		             "to stop reading duplicates.")]
+		[Description("Skip Index Scan on Reads. This skips the index scan which was used to stop reading duplicates.")]
 		public bool SkipIndexScanOnReads { get; init; } = false;
 
 		[Description("The maximum size of appends, in bytes. May not exceed 16MB.")]
 		public int MaxAppendSize { get; init; } = 1_024 * 1_024;
 
-		[Description("Disable Authentication, Authorization and TLS on all TCP/HTTP interfaces.")]
+		[Description("Disable authentication, authorization and TLS on all TCP/HTTP interfaces.")]
 		public bool Insecure { get; init; } = false;
 
 		[Description("Allow anonymous access to HTTP API endpoints.")]
@@ -184,7 +180,7 @@ public partial record ClusterVNodeOptions {
 		[Description("Sets the minimum log level. For more granular settings, please edit logconfig.json.")]
 		public LogLevel LogLevel { get; init; } = LogLevel.Default;
 
-		[Description("Which format (plain, json) to use when writing to the console.")]
+		[Description("Which format (plain, JSON) to use when writing to the console.")]
 		public LogConsoleFormat LogConsoleFormat { get; init; } = LogConsoleFormat.Plain;
 
 		[Description("Maximum size of each log file.")]
@@ -225,25 +221,20 @@ public partial record ClusterVNodeOptions {
 		             "If you have intermediate certificates, they should be bundled together in a PEM or PKCS #12 file containing the node's certificate followed by the intermediate certificates.")]
 		public string? CertificateFile { get; init; }
 
-		[Description("The path to the certificate private key file (.key) if an X.509 (.pem, .crt, .cer, .der) " +
-		             "certificate file is provided.")]
+		[Description("The path to the certificate private key file (.key) if an X.509 (.pem, .crt, .cer, .der) certificate file is provided.")]
 		public string? CertificatePrivateKeyFile { get; init; }
 
-		[Description("The password to the certificate if a PKCS #12 (.p12/.pfx) certificate file is provided."),
-		 Sensitive]
+		[Description("The password to the certificate if a PKCS #12 (.p12/.pfx) certificate file is provided."), Sensitive]
 		public string? CertificatePassword { get; init; }
 
-		[Description("The password to the certificate private key file if an encrypted PKCS #8 private key file is provided."),
-		 Sensitive]
+		[Description("The password to the certificate private key file if an encrypted PKCS #8 private key file is provided."), Sensitive]
 		public string? CertificatePrivateKeyPassword { get; init; }
 	}
 
 	[Description("Certificate Options")]
 	public record CertificateOptions {
-		[Description("The path to a directory which contains trusted X.509 (.pem, .crt, .cer, .der) " +
-		             "root certificate files.")]
-		public string? TrustedRootCertificatesPath { get; init; } =
-			Locations.DefaultTrustedRootCertificateDirectory;
+		[Description("The path to a directory which contains trusted X.509 (.pem, .crt, .cer, .der) root certificate files.")]
+		public string? TrustedRootCertificatesPath { get; init; } = Locations.DefaultTrustedRootCertificateDirectory;
 
 		[Description("The pattern the CN (Common Name) of a connecting EventStoreDB node must match to be authenticated. A wildcard FQDN can be specified if using wildcard certificates or if the CN is not the same on all nodes. Leave empty to automatically use the CN of this node's certificate.")]
 		public string CertificateReservedNodeCommonName { get; init; } = string.Empty;

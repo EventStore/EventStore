@@ -358,8 +358,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 			}
 
 			bool softUndeleteMetastream = _systemStreams.IsMetaStream(streamId)
-			                              && await _indexWriter.IsSoftDeleted(_systemStreams.OriginalStreamOf(streamId),
-				                              token);
+			                              && await _indexWriter.IsSoftDeleted(_systemStreams.OriginalStreamOf(streamId), token);
 
 			// note: the stream & event type records are indexed separately and must not be pre-committed to the main index
 			_indexWriter.PreCommit(CollectionsMarshal.AsSpan(prepares)[^msg.Events.Length..]);

@@ -47,7 +47,7 @@ public abstract class RequestManagerBase :
 	protected bool Registered;
 	protected long CommitPosition = -1;
 
-	private readonly HashSet<long> _prepareLogPositions = new HashSet<long>();
+	private readonly HashSet<long> _prepareLogPositions = [];
 
 	private bool _allEventsWritten;
 	private bool _allPreparesWritten;
@@ -71,11 +71,13 @@ public abstract class RequestManagerBase :
 		int prepareCount = 0,
 		long transactionId = -1,
 		bool waitForCommit = false) {
-		Ensure.NotEmptyGuid(internalCorrId, nameof(internalCorrId));
-		Ensure.NotEmptyGuid(clientCorrId, nameof(clientCorrId));
-		Ensure.NotNull(publisher, nameof(publisher));
-		Ensure.NotNull(clientResponseEnvelope, nameof(clientResponseEnvelope));
-		Ensure.NotNull(commitSource, nameof(commitSource));
+		Debug.Assert(internalCorrId != Guid.Empty);
+		Debug.Assert(clientCorrId != Guid.Empty);
+		Ensure.NotEmptyGuid(internalCorrId);
+		Ensure.NotEmptyGuid(clientCorrId);
+		Ensure.NotNull(publisher);
+		Ensure.NotNull(clientResponseEnvelope);
+		Ensure.NotNull(commitSource);
 
 		Publisher = publisher;
 		Timeout = timeout;

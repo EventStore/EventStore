@@ -21,7 +21,7 @@ public class ClusterWebUiController(IPublisher publisher, NodeSubsystems[] enabl
 
 	protected override void SubscribeCore(IUriRouter router) {
 		_clusterNodeWeb.RegisterControllerActions(router);
-		router.RegisterRedirectAction("/", "/ui/query");
+		router.RegisterRedirectAction("/", "/ui/cluster");
 		router.RegisterRedirectAction("/web", "/web/index.html");
 
 		router.RegisterAction(new("/sys/subsystems", HttpMethod.Get, Codec.NoCodecs, [Codec.Json], new Operation(Operations.Node.Information.Subsystems)), OnListNodeSubsystems);

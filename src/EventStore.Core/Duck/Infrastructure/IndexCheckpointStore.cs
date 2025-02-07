@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Common.Log;
 using EventStore.Core.Duck.Default;
 using Eventuous.Subscriptions.Checkpoints;
 using Serilog;
@@ -8,7 +9,7 @@ using Serilog;
 namespace EventStore.Core.Duck.Infrastructure;
 
 public class IndexCheckpointStore<TStreamId>(DefaultIndex<TStreamId> defaultIndex, DefaultIndexHandler<TStreamId> handler) : ICheckpointStore {
-	static readonly ILogger Log = Serilog.Log.ForContext<IndexCheckpointStore<TStreamId>>();
+	static readonly ILogger Log = Serilog.Log.Logger.ForContext("IndexCheckpointStore");
 
 	public ValueTask<Checkpoint> GetLastCheckpoint(string checkpointId, CancellationToken cancellationToken) {
 		var lastPosition = defaultIndex.GetLastPosition();
@@ -30,7 +31,6 @@ public class IndexCheckpointStore<TStreamId>(DefaultIndex<TStreamId> defaultInde
 			}
 		}
 
-		Log.Information("Commited checkpoint {Checkpoint}", checkpoint);
 		return checkpoint;
 	}
 }

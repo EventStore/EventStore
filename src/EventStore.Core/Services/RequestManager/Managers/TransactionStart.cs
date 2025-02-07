@@ -8,37 +8,25 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Services.RequestManager.Managers;
 
-public class TransactionStart : RequestManagerBase {
-	private readonly string _streamId;
-
-	public TransactionStart(
-				IPublisher publisher,
-				TimeSpan timeout,
-				IEnvelope clientResponseEnvelope,
-				Guid internalCorrId,
-				Guid clientCorrId,
-				string streamId,
-				long expectedVersion,
-				CommitSource commitSource)
-		: base(
-				 publisher,
-				 timeout,
-				 clientResponseEnvelope,
-				 internalCorrId,
-				 clientCorrId,
-				 expectedVersion,
-				 commitSource,
-				 prepareCount: 1) {
-		_streamId = streamId;
-	}
-	
+public class TransactionStart(
+	IPublisher publisher,
+	TimeSpan timeout,
+	IEnvelope clientResponseEnvelope,
+	Guid internalCorrId,
+	Guid clientCorrId,
+	string streamId,
+	long expectedVersion,
+	CommitSource commitSource)
+	: RequestManagerBase(publisher,
+		timeout,
+		clientResponseEnvelope,
+		internalCorrId,
+		clientCorrId,
+		expectedVersion,
+		commitSource,
+		prepareCount: 1) {
 	protected override Message WriteRequestMsg =>
-		new StorageMessage.WriteTransactionStart(
-				InternalCorrId,
-				WriteReplyEnvelope,
-				_streamId,
-				ExpectedVersion,
-				LiveUntil);
+		new StorageMessage.WriteTransactionStart(InternalCorrId, WriteReplyEnvelope, streamId, ExpectedVersion, LiveUntil);
 
 	protected override void AllEventsWritten() {
 		if (CommitSource.ReplicationPosition >= LastEventPosition) {
@@ -50,17 +38,8 @@ public class TransactionStart : RequestManagerBase {
 	}
 
 	protected override Message ClientSuccessMsg =>
-		 new ClientMessage.TransactionStartCompleted(
-					ClientCorrId,
-					TransactionId,
-					OperationResult.Success,
-					null);
+		new ClientMessage.TransactionStartCompleted(ClientCorrId, TransactionId, OperationResult.Success, null);
 
 	protected override Message ClientFailMsg =>
-		 new ClientMessage.TransactionStartCompleted(
-					ClientCorrId,
-					TransactionId,
-					Result,
-					FailureMessage);
-
+		new ClientMessage.TransactionStartCompleted(ClientCorrId, TransactionId, Result, FailureMessage);
 }

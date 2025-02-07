@@ -1,8 +1,8 @@
 @page "/ui/cluster"
 @implements IDisposable
 @using EventStore.Core.Bus
-@using EventStore.ClusterNode.Components.Tools
 @using EventStore.ClusterNode.Services
+@using EventStore.ClusterNode.Components.Cluster.Monitoring
 @inject IPublisher Publisher
 @inject MonitoringService MonitoringService
 
@@ -35,41 +35,32 @@
 			<ClusterMember Member="member"></ClusterMember>
 		</MudItem>
 	}
-</MudGrid>
-
-<MudGrid Spacing="6" Justify="Justify.Center">
 	<MudItem>
 		<MudPaper Width="300px" Height="300px" Class="pa-16 ma-2" Outlined="true">
 			<MudText Typo="Typo.h5" Align="Align.Center">Connections</MudText>
-			<MudText Typo="Typo.h3" Align="Align.Center" Color="Color.Primary">@MonitoringService.ActiveConnections</MudText>
+			<MudText Typo="Typo.h3" Align="Align.Center"
+			         Color="Color.Primary">@MonitoringService.ActiveConnections</MudText>
 		</MudPaper>
 	</MudItem>
 	<MudItem>
-		<MudPaper Class="pa-2 ma-2" Width="300px" Height="300px" Outlined="true">
-			<MudChart
-				ChartType="ChartType.Donut"
-				InputData="@_cpuDonut" InputLabels="@(new[] { "Used CPU", "Total CPU" })">
-				<CustomGraphics>
-					<text class="donut-inner-text" x="50%" y="35%" dominant-baseline="middle" text-anchor="middle"
-					      fill="var(--mud-palette-text-primary)" font-family="Helvetica" font-size="2">CPU usage
-					</text>
-					<text class="donut-inner-text" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle"
-					      fill="var(--mud-palette-text-primary)" font-family="Helvetica"
-					      font-size="5">@((_cpu / 100).ToString("P1"))</text>
-				</CustomGraphics>
-			</MudChart>
-		</MudPaper>
+		<MetricDonut Value="@_cpu" Name="CPU"></MetricDonut>
+	</MudItem>
+	<MudItem>
+		<MetricDonut Value="@_ram" Name="Memory"></MetricDonut>
 	</MudItem>
 	<MudItem>
 		<MudPaper Class="pa-16 ma-2" Outlined="true"></MudPaper>
 	</MudItem>
+	<MudItem xs="6">
+		<MudPaper Outlined="true">
+			<MudTimeSeriesChart
+				ChartSeries="@_series"
+				@bind-SelectedIndex="_index"
+				Width="100%"
+				Height="350px"
+				ChartOptions="@_options"
+				CanHideSeries
+				TimeLabelSpacing="TimeSpan.FromMinutes(5)"/>
+		</MudPaper>
+	</MudItem>
 </MudGrid>
-<MudTimeSeriesChart
-	ChartSeries="@_series"
-	@bind-SelectedIndex="_index"
-	Width="100%"
-	Height="350px"
-	ChartOptions="@_options"
-	CanHideSeries
-	TimeLabelSpacing="TimeSpan.FromMinutes(5)"/>
-

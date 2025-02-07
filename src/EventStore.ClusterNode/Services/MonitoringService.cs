@@ -18,7 +18,9 @@ public sealed class MonitoringService : IDisposable {
 	public MonitoringService() {
 		_meterListener.InstrumentPublished = (instrument, listener) => {
 			Log.Information("Instrument published: {instrument}", instrument.Name);
-			if (instrument.Name.StartsWith("http") || instrument.Name.StartsWith("kestrel") || instrument.Name.StartsWith("dotnet.process")) {
+			if (instrument.Name.StartsWith("http")
+			    || instrument.Name.StartsWith("kestrel")) {
+			    // || instrument.Name.StartsWith("eventstore")) {
 				listener.EnableMeasurementEvents(instrument);
 			}
 		};
@@ -33,7 +35,10 @@ public sealed class MonitoringService : IDisposable {
 		T measurement,
 		ReadOnlySpan<KeyValuePair<string, object>> tags,
 		object state) {
-		Console.WriteLine($"{instrument.Name} recorded measurement ({typeof(T).Name}) {measurement}");
+		if (instrument.Name.StartsWith("eventstore")) {
+			Console.WriteLine($"{instrument.Name} recorded measurement ({typeof(T).Name}) {measurement}");
+		}
+
 		if (instrument.Name == "kestrel.active_connections" && measurement is long l) {
 			Interlocked.Add(ref _nrActiveConnections, l);
 			DataUpdated?.Invoke(null, EventArgs.Empty);
@@ -46,7 +51,6 @@ public sealed class MonitoringService : IDisposable {
 	public long ActiveConnections => _nrActiveConnections;
 
 	long _nrActiveConnections = 0;
-	// ConcurrentDictionary<long, string> _activeConnections;
 
 	public void Dispose() {
 		_meterListener.Dispose();

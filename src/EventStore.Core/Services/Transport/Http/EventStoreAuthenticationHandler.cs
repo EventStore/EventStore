@@ -24,9 +24,7 @@ public class EventStoreAuthenticationHandler(IOptionsMonitor<AuthenticationSchem
 		if (!Context.User.Identity.IsAuthenticated)
 			return Task.FromResult(AuthenticateResult.Fail("Not authenticated"));
 
-		var ticket = new AuthenticationTicket(
-			principal: Context.User,
-			authenticationScheme: "es auth");
+		var ticket = new AuthenticationTicket(principal: Context.User, authenticationScheme: "es auth");
 
 		return Task.FromResult(AuthenticateResult.Success(ticket));
 	}

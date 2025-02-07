@@ -34,11 +34,7 @@ public class TestMeterListener<T> : IDisposable where T : struct {
 
 	// gets the measurements for a given instrument and clears them
 	public IReadOnlyList<TestMeasurement> RetrieveMeasurements(string instrumentName) {
-		if (!_measurementsByInstrument.Remove(instrumentName, out var measurements)) {
-			return Array.Empty<TestMeasurement>();
-		}
-
-		return measurements;
+		return !_measurementsByInstrument.Remove(instrumentName, out var measurements) ? [] : measurements;
 	}
 
 	private void OnMeasurement(
@@ -49,7 +45,7 @@ public class TestMeterListener<T> : IDisposable where T : struct {
 
 		var instrumentName = GenName(instrument);
 		if (!_measurementsByInstrument.TryGetValue(instrumentName, out var measurements)) {
-			measurements = new();
+			measurements = [];
 			_measurementsByInstrument[instrumentName] = measurements;
 		}
 

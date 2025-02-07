@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,31 +22,26 @@ public static partial class StorageMessage {
 		long ExpectedVersion { get; }
 	}
 
-	public interface IFlushableMessage {
-	}
+	public interface IFlushableMessage;
 
-	public interface ILeaderWriteMessage {
-	}
+	public interface ILeaderWriteMessage;
 
 	[DerivedMessage(CoreMessage.Storage)]
-	public partial class WritePrepares : Message, IPreconditionedWriteMessage, IFlushableMessage, ILeaderWriteMessage {
-		public Guid CorrelationId { get; private set; }
-		public IEnvelope Envelope { get; private set; }
+	public partial class WritePrepares(
+		Guid correlationId,
+		IEnvelope envelope,
+		string eventStreamId,
+		long expectedVersion,
+		Event[] events,
+		CancellationToken cancellationToken)
+		: Message, IPreconditionedWriteMessage, IFlushableMessage, ILeaderWriteMessage {
+		public Guid CorrelationId { get; private set; } = correlationId;
+		public IEnvelope Envelope { get; private set; } = envelope;
 
-		public string EventStreamId { get; private set; }
-		public long ExpectedVersion { get; private set; }
-		public CancellationToken CancellationToken { get; }
-		public readonly Event[] Events;
-
-		public WritePrepares(Guid correlationId, IEnvelope envelope, string eventStreamId, long expectedVersion,
-			Event[] events, CancellationToken cancellationToken) {
-			CorrelationId = correlationId;
-			Envelope = envelope;
-			EventStreamId = eventStreamId;
-			ExpectedVersion = expectedVersion;
-			CancellationToken = cancellationToken;
-			Events = events;
-		}
+		public string EventStreamId { get; private set; } = eventStreamId;
+		public long ExpectedVersion { get; private set; } = expectedVersion;
+		public CancellationToken CancellationToken { get; } = cancellationToken;
+		public readonly Event[] Events = events;
 
 		public override string ToString() =>
 			$"{GetType().Name} " +
@@ -83,16 +79,10 @@ public static partial class StorageMessage {
 	}
 
 	[DerivedMessage(CoreMessage.Storage)]
-	public partial class WriteCommit : Message, IFlushableMessage, ILeaderWriteMessage {
-		public readonly Guid CorrelationId;
-		public readonly IEnvelope Envelope;
-		public readonly long TransactionPosition;
-
-		public WriteCommit(Guid correlationId, IEnvelope envelope, long transactionPosition) {
-			CorrelationId = correlationId;
-			Envelope = envelope;
-			TransactionPosition = transactionPosition;
-		}
+	public partial class WriteCommit(Guid correlationId, IEnvelope envelope, long transactionPosition) : Message, IFlushableMessage, ILeaderWriteMessage {
+		public readonly Guid CorrelationId = correlationId;
+		public readonly IEnvelope Envelope = envelope;
+		public readonly long TransactionPosition = transactionPosition;
 	}
 
 	[DerivedMessage(CoreMessage.Storage)]
@@ -122,36 +112,26 @@ public static partial class StorageMessage {
 	}
 
 	[DerivedMessage(CoreMessage.Storage)]
-	public partial class WriteTransactionData : Message, IFlushableMessage, ILeaderWriteMessage {
-		public readonly Guid CorrelationId;
-		public readonly IEnvelope Envelope;
-		public readonly long TransactionId;
-		public readonly Event[] Events;
-
-		public WriteTransactionData(Guid correlationId, IEnvelope envelope, long transactionId, Event[] events) {
-			CorrelationId = correlationId;
-			Envelope = envelope;
-			TransactionId = transactionId;
-			Events = events;
-		}
+	public partial class WriteTransactionData(Guid correlationId, IEnvelope envelope, long transactionId, Event[] events)
+		: Message, IFlushableMessage, ILeaderWriteMessage {
+		public readonly Guid CorrelationId = correlationId;
+		public readonly IEnvelope Envelope = envelope;
+		public readonly long TransactionId = transactionId;
+		public readonly Event[] Events = events;
 	}
 
 	[DerivedMessage(CoreMessage.Storage)]
-	public partial class WriteTransactionEnd : Message, IFlushableMessage, ILeaderWriteMessage {
-		public readonly Guid CorrelationId;
-		public readonly IEnvelope Envelope;
-		public readonly long TransactionId;
+	public partial class WriteTransactionEnd(
+		Guid correlationId,
+		IEnvelope envelope,
+		long transactionId,
+		DateTime liveUntil)
+		: Message, IFlushableMessage, ILeaderWriteMessage {
+		public readonly Guid CorrelationId = correlationId;
+		public readonly IEnvelope Envelope = envelope;
+		public readonly long TransactionId = transactionId;
 
-		public readonly DateTime LiveUntil;
-
-		public WriteTransactionEnd(Guid correlationId, IEnvelope envelope, long transactionId,
-			DateTime liveUntil) {
-			CorrelationId = correlationId;
-			Envelope = envelope;
-			TransactionId = transactionId;
-
-			LiveUntil = liveUntil;
-		}
+		public readonly DateTime LiveUntil = liveUntil;
 	}
 
 	[DerivedMessage(CoreMessage.Storage)]
@@ -161,8 +141,8 @@ public static partial class StorageMessage {
 		public readonly PrepareFlags Flags;
 
 		public PrepareAck(Guid correlationId, long logPosition, PrepareFlags flags) {
-			Ensure.NotEmptyGuid(correlationId, "correlationId");
-			Ensure.Nonnegative(logPosition, "logPosition");
+			Debug.Assert(correlationId != Guid.Empty);
+			Debug.Assert(logPosition >= 0);
 
 			CorrelationId = correlationId;
 			LogPosition = logPosition;
@@ -184,11 +164,11 @@ public static partial class StorageMessage {
 			Ensure.Nonnegative(logPosition, "logPosition");
 			Ensure.Nonnegative(transactionPosition, "transactionPosition");
 			if (firstEventNumber < -1)
-				throw new ArgumentOutOfRangeException("firstEventNumber",
-					string.Format("FirstEventNumber: {0}", firstEventNumber));
+				throw new ArgumentOutOfRangeException(nameof(firstEventNumber),
+					$"FirstEventNumber: {firstEventNumber}");
 			if (lastEventNumber - firstEventNumber + 1 < 0)
-				throw new ArgumentOutOfRangeException("lastEventNumber",
-					string.Format("LastEventNumber {0}, FirstEventNumber {1}.", lastEventNumber, firstEventNumber));
+				throw new ArgumentOutOfRangeException(nameof(lastEventNumber),
+					$"LastEventNumber {lastEventNumber}, FirstEventNumber {firstEventNumber}.");
 
 			CorrelationId = correlationId;
 			LogPosition = logPosition;
@@ -212,11 +192,9 @@ public static partial class StorageMessage {
 			Ensure.Nonnegative(logPosition, "logPosition");
 			Ensure.Nonnegative(transactionPosition, "transactionPosition");
 			if (firstEventNumber < -1)
-				throw new ArgumentOutOfRangeException("firstEventNumber",
-					string.Format("FirstEventNumber: {0}", firstEventNumber));
+				throw new ArgumentOutOfRangeException(nameof(firstEventNumber), $"FirstEventNumber: {firstEventNumber}");
 			if (lastEventNumber - firstEventNumber + 1 < 0)
-				throw new ArgumentOutOfRangeException("lastEventNumber",
-					string.Format("LastEventNumber {0}, FirstEventNumber {1}.", lastEventNumber, firstEventNumber));
+				throw new ArgumentOutOfRangeException(nameof(lastEventNumber), $"LastEventNumber {lastEventNumber}, FirstEventNumber {firstEventNumber}.");
 			CorrelationId = correlationId;
 			LogPosition = logPosition;
 			TransactionPosition = transactionPosition;
@@ -226,34 +204,20 @@ public static partial class StorageMessage {
 	}
 
 	[DerivedMessage(CoreMessage.Storage)]
-	public partial class EventCommitted : Message {
-		public readonly long CommitPosition;
-		public readonly EventRecord Event;
-		public readonly bool TfEof;
-
-		public EventCommitted(long commitPosition, EventRecord @event, bool isTfEof) {
-			CommitPosition = commitPosition;
-			Event = @event;
-			TfEof = isTfEof;
-		}
+	public partial class EventCommitted(long commitPosition, EventRecord @event, bool isTfEof) : Message {
+		public readonly long CommitPosition = commitPosition;
+		public readonly EventRecord Event = @event;
+		public readonly bool TfEof = isTfEof;
 	}
 
 	[DerivedMessage(CoreMessage.Storage)]
-	public partial class InMemoryEventCommitted : Message {
-		public readonly long CommitPosition;
-		public readonly EventRecord Event;
-
-		public InMemoryEventCommitted(long commitPosition, EventRecord @event) {
-			CommitPosition = commitPosition;
-			Event = @event;
-		}
+	public partial class InMemoryEventCommitted(long commitPosition, EventRecord @event) : Message {
+		public readonly long CommitPosition = commitPosition;
+		public readonly EventRecord Event = @event;
 	}
 
 	[DerivedMessage(CoreMessage.Storage)]
-	public partial class TfEofAtNonCommitRecord : Message {
-		public TfEofAtNonCommitRecord() {
-		}
-	}
+	public partial class TfEofAtNonCommitRecord : Message;
 
 	[DerivedMessage(CoreMessage.Storage)]
 	public partial class AlreadyCommitted : Message {
@@ -268,7 +232,7 @@ public static partial class StorageMessage {
 			long lastEventNumber, long logPosition) {
 			Ensure.NotEmptyGuid(correlationId, "correlationId");
 			Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-			Ensure.Nonnegative(firstEventNumber, "FirstEventNumber");
+			Ensure.Nonnegative(firstEventNumber, "firstEventNumber");
 
 			CorrelationId = correlationId;
 			EventStreamId = eventStreamId;
@@ -278,19 +242,13 @@ public static partial class StorageMessage {
 		}
 
 		public override string ToString() {
-			return string.Format(
-				"EventStreamId: {0}, CorrelationId: {1}, FirstEventNumber: {2}, LastEventNumber: {3}",
-				EventStreamId, CorrelationId, FirstEventNumber, LastEventNumber);
+			return $"EventStreamId: {EventStreamId}, CorrelationId: {CorrelationId}, FirstEventNumber: {FirstEventNumber}, LastEventNumber: {LastEventNumber}";
 		}
 	}
 
 	[DerivedMessage(CoreMessage.Storage)]
-	public partial class InvalidTransaction : Message {
-		public readonly Guid CorrelationId;
-
-		public InvalidTransaction(Guid correlationId) {
-			CorrelationId = correlationId;
-		}
+	public partial class InvalidTransaction(Guid correlationId) : Message {
+		public readonly Guid CorrelationId = correlationId;
 	}
 
 	[DerivedMessage(CoreMessage.Storage)]
@@ -331,9 +289,7 @@ public static partial class StorageMessage {
 
 	[DerivedMessage(CoreMessage.Storage)]
 	public partial class RequestManagerTimerTick : Message {
-		public DateTime UtcNow {
-			get { return _now ?? DateTime.UtcNow; }
-		}
+		public DateTime UtcNow => _now ?? DateTime.UtcNow;
 
 		private readonly DateTime? _now;
 
@@ -359,37 +315,21 @@ public static partial class StorageMessage {
 	}
 
 	[DerivedMessage(CoreMessage.Storage)]
-	public partial class EffectiveStreamAclRequest : Message {
-		public readonly string StreamId;
-		public readonly IEnvelope Envelope;
-		public readonly CancellationToken CancellationToken;
-
-		public EffectiveStreamAclRequest(string streamId, IEnvelope envelope, CancellationToken cancellationToken) {
-			StreamId = streamId;
-			Envelope = envelope;
-			CancellationToken = cancellationToken;
-		}
+	public partial class EffectiveStreamAclRequest(string streamId, IEnvelope envelope, CancellationToken cancellationToken) : Message {
+		public readonly string StreamId = streamId;
+		public readonly IEnvelope Envelope = envelope;
+		public readonly CancellationToken CancellationToken = cancellationToken;
 	}
 
 	[DerivedMessage(CoreMessage.Storage)]
-	public partial class EffectiveStreamAclResponse : Message {
-		public readonly EffectiveAcl Acl;
-
-		public EffectiveStreamAclResponse(EffectiveAcl acl) {
-			Acl = acl;
-		}
+	public partial class EffectiveStreamAclResponse(EffectiveAcl acl) : Message {
+		public readonly EffectiveAcl Acl = acl;
 	}
 
-	public class EffectiveAcl {
-		public readonly StreamAcl Stream;
-		public readonly StreamAcl System;
-		public readonly StreamAcl Default;
-
-		public EffectiveAcl(StreamAcl stream, StreamAcl system, StreamAcl @default) {
-			Stream = stream;
-			System = system;
-			Default = @default;
-		}
+	public class EffectiveAcl(StreamAcl stream, StreamAcl system, StreamAcl @default) {
+		public readonly StreamAcl Stream = stream;
+		public readonly StreamAcl System = system;
+		public readonly StreamAcl Default = @default;
 
 		public static Task<EffectiveAcl> LoadAsync(IPublisher publisher, string streamId, CancellationToken cancellationToken) {
 			var envelope = new RequestEffectiveAclEnvelope();
@@ -398,11 +338,8 @@ public static partial class StorageMessage {
 		}
 
 		class RequestEffectiveAclEnvelope : IEnvelope {
-			private readonly TaskCompletionSource<EffectiveAcl> _tcs;
+			private readonly TaskCompletionSource<EffectiveAcl> _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-			public RequestEffectiveAclEnvelope() {
-				_tcs = new TaskCompletionSource<EffectiveAcl>(TaskCreationOptions.RunContinuationsAsynchronously);
-			}
 			public void ReplyWith<T>(T message) where T : Message {
 				if (message == null) throw new ArgumentNullException(nameof(message));
 				if (message is EffectiveStreamAclResponse response) {
@@ -421,33 +358,19 @@ public static partial class StorageMessage {
 	}
 
 	[DerivedMessage(CoreMessage.Storage)]
-	public partial class OperationCancelledMessage : Message {
-		public CancellationToken CancellationToken { get; }
-
-		public OperationCancelledMessage(CancellationToken cancellationToken) {
-			CancellationToken = cancellationToken;
-		}
+	public partial class OperationCancelledMessage(CancellationToken cancellationToken) : Message {
+		public CancellationToken CancellationToken { get; } = cancellationToken;
 	}
 
 	[DerivedMessage(CoreMessage.Storage)]
-	public partial class StreamIdFromTransactionIdRequest : Message {
-		public readonly long TransactionId;
-		public readonly IEnvelope Envelope;
-		public readonly CancellationToken CancellationToken;
-
-		public StreamIdFromTransactionIdRequest(in long transactionId, IEnvelope envelope, CancellationToken cancellationToken) {
-			CancellationToken = cancellationToken;
-			TransactionId = transactionId;
-			Envelope = envelope;
-		}
+	public partial class StreamIdFromTransactionIdRequest(in long transactionId, IEnvelope envelope, CancellationToken cancellationToken) : Message {
+		public readonly long TransactionId = transactionId;
+		public readonly IEnvelope Envelope = envelope;
+		public readonly CancellationToken CancellationToken = cancellationToken;
 	}
 
 	[DerivedMessage(CoreMessage.Storage)]
-	public partial class StreamIdFromTransactionIdResponse : Message {
-		public readonly string StreamId;
-
-		public StreamIdFromTransactionIdResponse(string streamId){
-			StreamId = streamId;
-		}
+	public partial class StreamIdFromTransactionIdResponse(string streamId) : Message {
+		public readonly string StreamId = streamId;
 	}
 }

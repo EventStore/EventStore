@@ -17,6 +17,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Transport.Tcp;
+using static EventStore.Core.Messages.MonitoringMessage;
 using ILogger = Serilog.ILogger;
 using Timeout = System.Threading.Timeout;
 
@@ -35,14 +36,13 @@ public class MonitoringService : IHandle<SystemMessage.SystemInit>,
 	IAsyncHandle<SystemMessage.BecomeShuttingDown>,
 	IHandle<SystemMessage.BecomeShutdown>,
 	IHandle<ClientMessage.WriteEventsCompleted>,
-	IAsyncHandle<MonitoringMessage.GetFreshStats>,
-	IHandle<MonitoringMessage.GetFreshTcpConnectionStats> {
+	IAsyncHandle<GetFreshStats>,
+	IHandle<GetFreshTcpConnectionStats> {
 	private static readonly ILogger RegularLog =
 		Serilog.Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, "REGULAR-STATS-LOGGER");
 	private static readonly ILogger Log = Serilog.Log.ForContext<MonitoringService>();
 
-	private static readonly string StreamMetadata =
-		string.Format("{{\"$maxAge\":{0}}}", (int)TimeSpan.FromDays(10).TotalSeconds);
+	private static readonly string StreamMetadata = $"{{\"$maxAge\":{(int)TimeSpan.FromDays(10).TotalSeconds}}}";
 
 	public static readonly TimeSpan MemoizePeriod = TimeSpan.FromSeconds(1);
 	private static readonly IEnvelope NoopEnvelope = new NoopEnvelope();
@@ -52,7 +52,7 @@ public class MonitoringService : IHandle<SystemMessage.SystemInit>,
 	private readonly IPublisher _mainQueue;
 	private readonly StatsStorage _statsStorage;
 	private readonly TimeSpan _statsCollectionPeriod;
-	private SystemStatsHelper _systemStats;
+	private readonly SystemStatsHelper _systemStats;
 
 	private DateTime _lastStatsRequestTime = DateTime.UtcNow;
 	private StatsContainer _memoizedStats;
@@ -65,8 +65,8 @@ public class MonitoringService : IHandle<SystemMessage.SystemInit>,
 	private Guid _streamMetadataWriteCorrId;
 	private IMonitoredTcpConnection[] _memoizedTcpConnections;
 	private DateTime _lastTcpConnectionsRequestTime;
-	private IPEndPoint _tcpEndpoint;
-	private IPEndPoint _tcpSecureEndpoint;
+	private readonly IPEndPoint _tcpEndpoint;
+	private readonly IPEndPoint _tcpSecureEndpoint;
 
 	public MonitoringService(IQueuedHandler monitoringQueue,
 		IAsyncHandle<Message> statsCollectionDispatcher,
@@ -77,14 +77,9 @@ public class MonitoringService : IHandle<SystemMessage.SystemInit>,
 		IPEndPoint tcpEndpoint,
 		IPEndPoint tcpSecureEndpoint,
 		SystemStatsHelper systemStatsHelper) {
-		Ensure.NotNull(monitoringQueue, "monitoringQueue");
-		Ensure.NotNull(statsCollectionDispatcher, nameof(statsCollectionDispatcher));
-		Ensure.NotNull(mainQueue, nameof(mainQueue));
-		Ensure.NotNull(nodeEndpoint, "nodeEndpoint");
-
-		_monitoringQueue = monitoringQueue;
-		_statsCollectionDispatcher = statsCollectionDispatcher;
-		_mainQueue = mainQueue;
+		_monitoringQueue = Ensure.NotNull(monitoringQueue);
+		_statsCollectionDispatcher = Ensure.NotNull(statsCollectionDispatcher);
+		_mainQueue = Ensure.NotNull(mainQueue);
 		_statsStorage = statsStorage;
 
 		_statsCollectionPeriod = statsCollectionPeriod;
@@ -96,7 +91,7 @@ public class MonitoringService : IHandle<SystemMessage.SystemInit>,
 			_timerToken = new(canceled: true);
 		}
 
-		_nodeStatsStream = $"{SystemStreams.StatsStreamPrefix}-{nodeEndpoint}";
+		_nodeStatsStream = $"{SystemStreams.StatsStreamPrefix}-{Ensure.NotNull(nodeEndpoint)}";
 		_tcpEndpoint = tcpEndpoint;
 		_tcpSecureEndpoint = tcpSecureEndpoint;
 
@@ -151,9 +146,7 @@ public class MonitoringService : IHandle<SystemMessage.SystemInit>,
 		var statsContainer = new StatsContainer();
 		try {
 			statsContainer.Add(_systemStats.GetSystemStats());
-			await _statsCollectionDispatcher.HandleAsync(
-				new MonitoringMessage.InternalStatsRequest(new StatsCollectorEnvelope(statsContainer)),
-				token);
+			await _statsCollectionDispatcher.HandleAsync(new InternalStatsRequest(new StatsCollectorEnvelope(statsContainer)), token);
 		} catch (OperationCanceledException e) when (e.CancellationToken == token) {
 			statsContainer = null;
 		} catch (Exception ex) {
@@ -220,7 +213,7 @@ public class MonitoringService : IHandle<SystemMessage.SystemInit>,
 			new ClientMessage.WriteEvents(
 				_streamMetadataWriteCorrId, _streamMetadataWriteCorrId, _monitoringQueue,
 				false, SystemStreams.MetastreamOf(_nodeStatsStream), ExpectedVersion.NoStream,
-				new[] {new Event(Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, metadata, null)},
+				[new Event(Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, metadata, null)],
 				SystemAccounts.System));
 	}
 
@@ -260,10 +253,9 @@ public class MonitoringService : IHandle<SystemMessage.SystemInit>,
 		}
 	}
 
-	public async ValueTask HandleAsync(MonitoringMessage.GetFreshStats message, CancellationToken token) {
+	public async ValueTask HandleAsync(GetFreshStats message, CancellationToken token) {
 		try {
-			StatsContainer stats;
-			if (!TryGetMemoizedStats(out stats)) {
+			if (!TryGetMemoizedStats(out var stats)) {
 				stats = await CollectStats(token);
 				if (stats != null) {
 					_memoizedStats = stats;
@@ -278,17 +270,15 @@ public class MonitoringService : IHandle<SystemMessage.SystemInit>,
 					selectedStats = message.StatsSelector(selectedStats);
 			}
 
-			message.Envelope.ReplyWith(
-				new MonitoringMessage.GetFreshStatsCompleted(success: selectedStats != null, stats: selectedStats));
+			message.Envelope.ReplyWith(new GetFreshStatsCompleted(success: selectedStats != null, stats: selectedStats));
 		} catch (Exception ex) {
 			Log.Error(ex, "Error on getting fresh stats");
 		}
 	}
 
-	public void Handle(MonitoringMessage.GetFreshTcpConnectionStats message) {
+	public void Handle(GetFreshTcpConnectionStats message) {
 		try {
-			IMonitoredTcpConnection[] connections = null;
-			if (!TryGetMemoizedTcpConnections(out connections)) {
+			if (!TryGetMemoizedTcpConnections(out var connections)) {
 				connections = TcpConnectionMonitor.Default.GetTcpConnectionStats();
 				if (connections != null) {
 					_memoizedTcpConnections = connections;
@@ -296,46 +286,46 @@ public class MonitoringService : IHandle<SystemMessage.SystemInit>,
 				}
 			}
 
-			List<MonitoringMessage.TcpConnectionStats> connStats = new List<MonitoringMessage.TcpConnectionStats>();
+			List<TcpConnectionStats> connStats = [];
 			foreach (var conn in connections) {
-				var tcpConn = conn as TcpConnection;
-				if (tcpConn != null) {
-					var isExternalConnection = _tcpEndpoint != null && _tcpEndpoint.Port == tcpConn.LocalEndPoint.GetPort();
-					connStats.Add(new MonitoringMessage.TcpConnectionStats {
-						IsExternalConnection = isExternalConnection,
-						RemoteEndPoint = tcpConn.RemoteEndPoint.ToString(),
-						LocalEndPoint = tcpConn.LocalEndPoint.ToString(),
-						ConnectionId = tcpConn.ConnectionId,
-						ClientConnectionName = tcpConn.ClientConnectionName,
-						TotalBytesSent = tcpConn.TotalBytesSent,
-						TotalBytesReceived = tcpConn.TotalBytesReceived,
-						PendingSendBytes = tcpConn.PendingSendBytes,
-						PendingReceivedBytes = tcpConn.PendingReceivedBytes,
-						IsSslConnection = false
-					});
-				}
-
-				var tcpConnSsl = conn as TcpConnectionSsl;
-				if (tcpConnSsl != null) {
-					var isExternalConnection = _tcpSecureEndpoint != null &&
-					                           _tcpSecureEndpoint.Port == tcpConnSsl.LocalEndPoint.GetPort();
-					connStats.Add(new MonitoringMessage.TcpConnectionStats {
-						IsExternalConnection = isExternalConnection,
-						RemoteEndPoint = tcpConnSsl.RemoteEndPoint.ToString(),
-						LocalEndPoint = tcpConnSsl.LocalEndPoint.ToString(),
-						ConnectionId = tcpConnSsl.ConnectionId,
-						ClientConnectionName = tcpConnSsl.ClientConnectionName,
-						TotalBytesSent = tcpConnSsl.TotalBytesSent,
-						TotalBytesReceived = tcpConnSsl.TotalBytesReceived,
-						PendingSendBytes = tcpConnSsl.PendingSendBytes,
-						PendingReceivedBytes = tcpConnSsl.PendingReceivedBytes,
-						IsSslConnection = true
-					});
+				switch (conn) {
+					case TcpConnection tcpConn: {
+						var isExternalConnection = _tcpEndpoint != null && _tcpEndpoint.Port == tcpConn.LocalEndPoint.GetPort();
+						connStats.Add(new TcpConnectionStats {
+							IsExternalConnection = isExternalConnection,
+							RemoteEndPoint = tcpConn.RemoteEndPoint.ToString(),
+							LocalEndPoint = tcpConn.LocalEndPoint.ToString(),
+							ConnectionId = tcpConn.ConnectionId,
+							ClientConnectionName = tcpConn.ClientConnectionName,
+							TotalBytesSent = tcpConn.TotalBytesSent,
+							TotalBytesReceived = tcpConn.TotalBytesReceived,
+							PendingSendBytes = tcpConn.PendingSendBytes,
+							PendingReceivedBytes = tcpConn.PendingReceivedBytes,
+							IsSslConnection = false
+						});
+						break;
+					}
+					case TcpConnectionSsl tcpConnSsl: {
+						var isExternalConnection = _tcpSecureEndpoint != null &&
+						                           _tcpSecureEndpoint.Port == tcpConnSsl.LocalEndPoint.GetPort();
+						connStats.Add(new TcpConnectionStats {
+							IsExternalConnection = isExternalConnection,
+							RemoteEndPoint = tcpConnSsl.RemoteEndPoint.ToString(),
+							LocalEndPoint = tcpConnSsl.LocalEndPoint.ToString(),
+							ConnectionId = tcpConnSsl.ConnectionId,
+							ClientConnectionName = tcpConnSsl.ClientConnectionName,
+							TotalBytesSent = tcpConnSsl.TotalBytesSent,
+							TotalBytesReceived = tcpConnSsl.TotalBytesReceived,
+							PendingSendBytes = tcpConnSsl.PendingSendBytes,
+							PendingReceivedBytes = tcpConnSsl.PendingReceivedBytes,
+							IsSslConnection = true
+						});
+						break;
+					}
 				}
 			}
 
-			message.Envelope.ReplyWith(
-				new MonitoringMessage.GetFreshTcpConnectionStatsCompleted(connStats)
+			message.Envelope.ReplyWith(new GetFreshTcpConnectionStatsCompleted(connStats)
 			);
 		} catch (Exception ex) {
 			Log.Error(ex, "Error on getting fresh tcp connection stats");

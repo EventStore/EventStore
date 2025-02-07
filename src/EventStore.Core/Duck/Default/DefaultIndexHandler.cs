@@ -2,9 +2,11 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using DuckDB.NET.Data;
+using EventStore.Common.Log;
 using Eventuous.Subscriptions;
 using Eventuous.Subscriptions.Context;
 using Serilog;
+using Serilog.Core;
 
 namespace EventStore.Core.Duck.Default;
 
@@ -17,7 +19,7 @@ public sealed class DefaultIndexHandler<TStreamId> : IEventHandler, IDisposable 
 	int _page;
 	DuckDBAppender _appender;
 
-	static readonly ILogger Logger = Log.ForContext<DefaultIndexHandler<TStreamId>>();
+	static readonly ILogger Logger = Log.Logger.ForContext("DefaultIndexHandler");
 
 	public DefaultIndexHandler(DuckDb db, DefaultIndex<TStreamId> defaultIndex) {
 		_defaultIndex = defaultIndex;
@@ -79,7 +81,7 @@ public sealed class DefaultIndexHandler<TStreamId> : IEventHandler, IDisposable 
 		_appender.CloseWithRetry("Default");
 		_appender.Dispose();
 		_appenderDisposed = true;
-		Logger.Information("Committed {Count} records to index at sequence {Seq}", _page, _seq);
+		Logger.Debug("Committed {Count} records to index at sequence {Seq}", _page, _seq);
 		_page = 0;
 		if (!reopen) return;
 		_appender = _connection.CreateAppender("idx_all");
