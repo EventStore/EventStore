@@ -2,12 +2,15 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNext;
+using DotNext.Buffers;
 using DotNext.IO;
+using DotNext.Runtime;
 using EventStore.Plugins.Transforms;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
@@ -18,6 +21,7 @@ internal sealed class WriterWorkItem : Disposable {
 	public Stream WorkingStream { get; private set; }
 
 	private readonly ChunkDataWriteStream _fileStream;
+	private readonly IBufferedWriter _cachedWriter;
 	private Stream _memStream;
 	public readonly IncrementalHash MD5;
 
@@ -43,6 +47,21 @@ internal sealed class WriterWorkItem : Disposable {
 
 		WorkingStream = _fileStream = chunkWriteTransform.TransformData(chunkDataWriteStream);
 		MD5 = md5;
+		_cachedWriter = Intrinsics.IsExactTypeOf<ChunkDataWriteStream>(_fileStream)
+			? fileStream as IBufferedWriter
+			: null;
+	}
+
+	public Memory<byte> TryGetDirectBuffer(int length) {
+		Memory<byte> buffer;
+		if (_cachedWriter is PoolingBufferedStream { HasBufferedDataToRead: false }
+		    && (buffer = _cachedWriter.Buffer).Length >= length) {
+			buffer = buffer.Slice(0, length);
+		} else {
+			buffer = Memory<byte>.Empty;
+		}
+
+		return buffer;
 	}
 
 	public void SetMemStream(UnmanagedMemoryStream memStream) {
@@ -57,6 +76,18 @@ internal sealed class WriterWorkItem : Disposable {
 
 		// as we are always append-only, stream's position should be right here
 		return _fileStream?.WriteAsync(buf, token) ?? ValueTask.CompletedTask;
+	}
+
+	internal void AppendData(int length) {
+		Debug.Assert(_cachedWriter is not null);
+
+		ReadOnlySpan<byte> buffer = _cachedWriter.Buffer.Span.Slice(0, length);
+
+		// MEMORY (in-memory write doesn't require async I/O)
+		_memStream?.Write(buffer);
+
+		_cachedWriter.Produce(length);
+		MD5.AppendData(buffer);
 	}
 
 	public void ResizeFileStream(long fileSize) {
