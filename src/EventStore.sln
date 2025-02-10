@@ -87,6 +87,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Auth.LegacyAutho
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Auth.LegacyAuthorizationWithStreamAuthorizationDisabled.Tests", "EventStore.Auth.LegacyAuthorizationWithStreamAuthorizationDisabled.Tests\EventStore.Auth.LegacyAuthorizationWithStreamAuthorizationDisabled.Tests.csproj", "{609FAD32-F476-4F4F-9CE7-694EECB23B34}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Auth.OAuth", "EventStore.Auth.OAuth\EventStore.Auth.OAuth.csproj", "{72106D64-1BBD-4998-B19C-07244CBA2961}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Auth.OAuth.Tests", "EventStore.Auth.OAuth.Tests\EventStore.Auth.OAuth.Tests.csproj", "{E75E364B-C6F4-4EA1-AB70-F16D44CA2C43}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -529,6 +533,30 @@ Global
 		{609FAD32-F476-4F4F-9CE7-694EECB23B34}.Release|ARM64.Build.0 = Release|x64
 		{609FAD32-F476-4F4F-9CE7-694EECB23B34}.Release|x64.ActiveCfg = Release|x64
 		{609FAD32-F476-4F4F-9CE7-694EECB23B34}.Release|x64.Build.0 = Release|x64
+		{72106D64-1BBD-4998-B19C-07244CBA2961}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{72106D64-1BBD-4998-B19C-07244CBA2961}.Debug|Any CPU.Build.0 = Debug|x64
+		{72106D64-1BBD-4998-B19C-07244CBA2961}.Debug|ARM64.ActiveCfg = Debug|x64
+		{72106D64-1BBD-4998-B19C-07244CBA2961}.Debug|ARM64.Build.0 = Debug|x64
+		{72106D64-1BBD-4998-B19C-07244CBA2961}.Debug|x64.ActiveCfg = Debug|x64
+		{72106D64-1BBD-4998-B19C-07244CBA2961}.Debug|x64.Build.0 = Debug|x64
+		{72106D64-1BBD-4998-B19C-07244CBA2961}.Release|Any CPU.ActiveCfg = Release|x64
+		{72106D64-1BBD-4998-B19C-07244CBA2961}.Release|Any CPU.Build.0 = Release|x64
+		{72106D64-1BBD-4998-B19C-07244CBA2961}.Release|ARM64.ActiveCfg = Release|x64
+		{72106D64-1BBD-4998-B19C-07244CBA2961}.Release|ARM64.Build.0 = Release|x64
+		{72106D64-1BBD-4998-B19C-07244CBA2961}.Release|x64.ActiveCfg = Release|x64
+		{72106D64-1BBD-4998-B19C-07244CBA2961}.Release|x64.Build.0 = Release|x64
+		{E75E364B-C6F4-4EA1-AB70-F16D44CA2C43}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{E75E364B-C6F4-4EA1-AB70-F16D44CA2C43}.Debug|Any CPU.Build.0 = Debug|x64
+		{E75E364B-C6F4-4EA1-AB70-F16D44CA2C43}.Debug|ARM64.ActiveCfg = Debug|x64
+		{E75E364B-C6F4-4EA1-AB70-F16D44CA2C43}.Debug|ARM64.Build.0 = Debug|x64
+		{E75E364B-C6F4-4EA1-AB70-F16D44CA2C43}.Debug|x64.ActiveCfg = Debug|x64
+		{E75E364B-C6F4-4EA1-AB70-F16D44CA2C43}.Debug|x64.Build.0 = Debug|x64
+		{E75E364B-C6F4-4EA1-AB70-F16D44CA2C43}.Release|Any CPU.ActiveCfg = Release|x64
+		{E75E364B-C6F4-4EA1-AB70-F16D44CA2C43}.Release|Any CPU.Build.0 = Release|x64
+		{E75E364B-C6F4-4EA1-AB70-F16D44CA2C43}.Release|ARM64.ActiveCfg = Release|x64
+		{E75E364B-C6F4-4EA1-AB70-F16D44CA2C43}.Release|ARM64.Build.0 = Release|x64
+		{E75E364B-C6F4-4EA1-AB70-F16D44CA2C43}.Release|x64.ActiveCfg = Release|x64
+		{E75E364B-C6F4-4EA1-AB70-F16D44CA2C43}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
