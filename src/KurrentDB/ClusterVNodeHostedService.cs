@@ -16,6 +16,7 @@ using EventStore.Core;
 using EventStore.Core.Authentication;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using System.Threading.Tasks;
+using EventStore.Auth.Ldaps;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authentication.PassthroughAuthentication;
 using EventStore.Core.Authorization;
@@ -230,7 +231,10 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 				}
 			};
 
-			foreach (var potentialPlugin in pluginLoader.Load<IAuthenticationPlugin>()) {
+			var authPlugins = pluginLoader.Load<IAuthenticationPlugin>().ToList();
+			authPlugins.Add(new LdapsAuthenticationPlugin());
+
+			foreach (var potentialPlugin in authPlugins) {
 				try {
 					var commandLine = potentialPlugin.CommandLineName.ToLowerInvariant();
 					Log.Information(
