@@ -41,6 +41,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\EventStore.Auth.UserCertificates\EventStore.Auth.UserCertificates.csproj" />
 		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
+		<ProjectReference Include="..\EventStore.Diagnostics.LogsEndpointPlugin\EventStore.Diagnostics.LogsEndpointPlugin.csproj" />
 		<ProjectReference Include="..\EventStore.Licensing\EventStore.Licensing.csproj" />
 		<ProjectReference Include="..\EventStore.LogV3\EventStore.LogV3.csproj" />
 		<ProjectReference Include="..\EventStore.Native\EventStore.Native.csproj" />

@@ -76,6 +76,7 @@ using EventStore.Core.TransactionLog.Scavenging.Stages;
 using EventStore.Core.Transforms;
 using EventStore.Core.Transforms.Identity;
 using EventStore.Core.Util;
+using EventStore.Diagnostics.LogsEndpointPlugin;
 using EventStore.Licensing;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
@@ -971,7 +972,8 @@ public class ClusterVNode<TStreamId> :
 			.WithPlugableComponent(_authenticationProvider)
 			.WithPlugableComponent(new OtlpExporterPlugin.OtlpExporterPlugin())
 			.WithPlugableComponent(new ArchivePlugableComponent(options.Cluster.Archiver))
-			.WithPlugableComponent(new UserCertificatesPlugin());
+			.WithPlugableComponent(new UserCertificatesPlugin())
+			.WithPlugableComponent(new LogsEndpointPlugin());
 
 		modifiedOptions = modifiedOptions.WithPlugableComponent(new LicensingPlugin(ex => {
 			Log.Warning("Shutting down due to licensing error: {Message}", ex.Message);
