@@ -46,6 +46,7 @@
 		<ProjectReference Include="..\EventStore.LogV3\EventStore.LogV3.csproj" />
 		<ProjectReference Include="..\EventStore.Native\EventStore.Native.csproj" />
 		<ProjectReference Include="..\EventStore.OtlpExporterPlugin\EventStore.OtlpExporterPlugin.csproj" />
+		<ProjectReference Include="..\EventStore.Security.EncryptionAtRest\EventStore.Security.EncryptionAtRest.csproj" />
 		<ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj" />
 		<ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj" />
 		<ProjectReference Include="..\EventStore.NETCore.Compatibility\EventStore.NETCore.Compatibility.csproj" />

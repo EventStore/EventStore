@@ -82,6 +82,7 @@ using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
 using EventStore.Plugins.Subsystems;
 using EventStore.Plugins.Transforms;
+using EventStore.Security.EncryptionAtRest;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Data.Sqlite;
@@ -973,7 +974,8 @@ public class ClusterVNode<TStreamId> :
 			.WithPlugableComponent(new OtlpExporterPlugin.OtlpExporterPlugin())
 			.WithPlugableComponent(new ArchivePlugableComponent(options.Cluster.Archiver))
 			.WithPlugableComponent(new UserCertificatesPlugin())
-			.WithPlugableComponent(new LogsEndpointPlugin());
+			.WithPlugableComponent(new LogsEndpointPlugin())
+			.WithPlugableComponent(new EncryptionAtRestPlugin());
 
 		modifiedOptions = modifiedOptions.WithPlugableComponent(new LicensingPlugin(ex => {
 			Log.Warning("Shutting down due to licensing error: {Message}", ex.Message);
