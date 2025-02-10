@@ -17,6 +17,7 @@ using EventStore.Core.Authentication;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using System.Threading.Tasks;
 using EventStore.Auth.Ldaps;
+using EventStore.Auth.LegacyAuthorizationWithStreamAuthorizationDisabled;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authentication.PassthroughAuthentication;
 using EventStore.Core.Authorization;
@@ -149,8 +150,10 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 			}
 
 			var authorizationTypeToPlugin = new Dictionary<string, AuthorizationProviderFactory> { };
+			var authzPlugins = pluginLoader.Load<IAuthorizationPlugin>().ToList();
+			authzPlugins.Add(new LegacyAuthorizationWithStreamAuthorizationDisabledPlugin());
 
-			foreach (var potentialPlugin in pluginLoader.Load<IAuthorizationPlugin>()) {
+			foreach (var potentialPlugin in authzPlugins) {
 				try {
 					var commandLine = potentialPlugin.CommandLineName.ToLowerInvariant();
 					Log.Information(
