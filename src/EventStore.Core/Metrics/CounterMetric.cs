@@ -11,11 +11,7 @@ public class CounterMetric {
 	private readonly object _lock = new();
 
 	public CounterMetric(Meter meter, string name, string unit) {
-		if (!string.IsNullOrWhiteSpace(unit)) {
-			name = name + "-" + unit;
-		}
-
-		meter.CreateObservableCounter(name, Observe);
+		meter.CreateObservableCounter(name, Observe, unit);
 	}
 
 	public void Add(CounterSubMetric subMetric) {

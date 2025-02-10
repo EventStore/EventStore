@@ -91,7 +91,7 @@ public class ProcessMetricsTests : IDisposable {
 	[Fact]
 	public void can_collect_proc_up_time() {
 		Assert.Collection(
-			_doubleListener.RetrieveMeasurements("eventstore-proc-up-time"),
+			_doubleListener.RetrieveMeasurements("eventstore-proc-up-time-seconds"),
 			m => {
 				Assert.True(m.Value > 0);
 				Assert.Collection(
@@ -146,7 +146,7 @@ public class ProcessMetricsTests : IDisposable {
 	[Fact]
 	public void can_collect_gc_total_allocated() {
 		Assert.Collection(
-			_longListener.RetrieveMeasurements("eventstore-gc-total-allocated"),
+			_longListener.RetrieveMeasurements("eventstore-gc-total-allocated-bytes"),
 			m => {
 				Assert.True(m.Value > 0);
 				Assert.Empty(m.Tags);

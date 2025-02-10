@@ -12,7 +12,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Proto.Collector.Metrics.V1;
 using OpenTelemetry.Resources;
@@ -122,16 +121,13 @@ public class OtlpExporterTests {
 			.AddOpenTelemetry()
 				.WithMetrics(meterOptions => meterOptions
 					.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("eventstore"))
-					.AddMeter("EventStore.TestMeter")
-					.AddPrometheusExporter());
+					.AddMeter("EventStore.TestMeter"));
 
 		var sut = new OtlpExporterPlugin(_logger);
 		((IPlugableComponent)sut).ConfigureServices(builder.Services, builder.Configuration);
 
 		var app = builder.Build();
 
-		// doesn't work without prometheus exporter, don't know why
-		app.UseOpenTelemetryPrometheusScrapingEndpoint();
 		app.MapGrpcService<FakeCollector>();
 		((IPlugableComponent)sut).ConfigureApplication(app, builder.Configuration);
 

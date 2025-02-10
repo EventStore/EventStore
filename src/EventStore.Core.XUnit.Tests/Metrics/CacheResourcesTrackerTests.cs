@@ -50,13 +50,16 @@ public sealed class CacheResourcesTrackerTests : IDisposable {
 			numChildren: 0));
 
 		listener.Observe();
-		AssertMeasurements(listener, "the-metric-entries",
+		// here we look up -entries-entries, but both the exporters (Prometheus and OTEL) deduplicate
+		// the fact that the metric name ends with the unit. we avoid having two metrics with the same
+		// name but different units.
+		AssertMeasurements(listener, "the-metric-entries-entries",
 			AssertMeasurement("cacheA", "capacity", 1),
 			AssertMeasurement("cacheA", "size", 2),
 			AssertMeasurement("cacheA", "count", 3),
 			AssertMeasurement("cacheB", "count", 6));
 
-		AssertMeasurements(listener, "the-metric-bytes",
+		AssertMeasurements(listener, "the-metric-bytes-bytes",
 			AssertMeasurement("cacheB", "capacity", 4),
 			AssertMeasurement("cacheB", "size", 5));
 	}

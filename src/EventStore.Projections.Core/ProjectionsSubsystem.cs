@@ -181,15 +181,15 @@ public sealed class ProjectionsSubsystem : ISubsystem,
 		if (!isEnabled)
 			return;
 
-		var projectionMeter = new Meter("EventStore.Projections.Core", version: "1.0.0");
+		var projectionMeter = new Meter("KurrentDB.Projections.Core", version: "1.0.0");
 
 		var tracker = new ProjectionTracker();
 		_projectionTracker = tracker;
 
-		projectionMeter.CreateObservableCounter("eventstore-projection-events-processed-after-restart-total", tracker.ObserveEventsProcessed);
-		projectionMeter.CreateObservableUpDownCounter("eventstore-projection-progress", tracker.ObserveProgress);
-		projectionMeter.CreateObservableUpDownCounter("eventstore-projection-running", tracker.ObserveRunning);
-		projectionMeter.CreateObservableUpDownCounter("eventstore-projection-status", tracker.ObserveStatus);
+		projectionMeter.CreateObservableCounter("kurrentdb-projection-events-processed-after-restart-total", tracker.ObserveEventsProcessed);
+		projectionMeter.CreateObservableUpDownCounter("kurrentdb-projection-progress", tracker.ObserveProgress);
+		projectionMeter.CreateObservableUpDownCounter("kurrentdb-projection-running", tracker.ObserveRunning);
+		projectionMeter.CreateObservableUpDownCounter("kurrentdb-projection-status", tracker.ObserveStatus);
 	}
 
 	public void ConfigureServices(IServiceCollection services, IConfiguration configuration) =>
