@@ -190,16 +190,14 @@ internal static class Program {
 			};
 
 			using (var hostedService = new ClusterVNodeHostedService(options, certificateProvider, configuration)) {
-				using var signal = new ManualResetEventSlim(false);
-				_ = Run(hostedService, signal);
-				// ReSharper disable MethodSupportsCancellation
-				signal.Wait();
-				// ReSharper restore MethodSupportsCancellation
+				// Synchronous Wait() because ClusterVNodeHostedService must be disposed on the same thread
+				// that it was constructed on, because it makes use of ExclusiveDbLock which uses a Mutex.
+				Run(hostedService).Wait();
 			}
 
 			return await exitCodeSource.Task;
 
-			async Task Run(ClusterVNodeHostedService hostedService, ManualResetEventSlim signal) {
+			async Task Run(ClusterVNodeHostedService hostedService) {
 				try {
 					await new HostBuilder()
 						.ConfigureHostConfiguration(builder => builder.AddEnvironmentVariables("DOTNET_").AddCommandLine(args))
@@ -208,7 +206,7 @@ internal static class Program {
 						.ConfigureServices(services => services
 							.Configure<KestrelServerOptions>(configuration.GetSection("Kestrel"))
 							.Configure<HostOptions>(x => {
-								x.ShutdownTimeout = TimeSpan.FromSeconds(5);
+								x.ShutdownTimeout = ClusterVNode.ShutdownTimeout + TimeSpan.FromSeconds(1);
 #if DEBUG
 								x.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.StopHost;
 #else
@@ -243,8 +241,6 @@ internal static class Program {
 				} catch (Exception ex) {
 					Log.Fatal(ex, "Exiting");
 					exitCodeSource.TrySetResult(1);
-				} finally {
-					signal.Set();
 				}
 			}
 
