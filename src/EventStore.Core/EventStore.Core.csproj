@@ -39,6 +39,7 @@
 		<PackageReference Include="Scrutor" Version="5.0.2" />
 	</ItemGroup>
 	<ItemGroup>
+		<ProjectReference Include="..\EventStore.Auth.UserCertificates\EventStore.Auth.UserCertificates.csproj" />
 		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
 		<ProjectReference Include="..\EventStore.Licensing\EventStore.Licensing.csproj" />
 		<ProjectReference Include="..\EventStore.LogV3\EventStore.LogV3.csproj" />

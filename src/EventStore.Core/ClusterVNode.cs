@@ -13,6 +13,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Auth.UserCertificates;
 using EventStore.Common.Configuration;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
@@ -969,7 +970,8 @@ public class ClusterVNode<TStreamId> :
 			.WithPlugableComponent(_authorizationProvider)
 			.WithPlugableComponent(_authenticationProvider)
 			.WithPlugableComponent(new OtlpExporterPlugin.OtlpExporterPlugin())
-			.WithPlugableComponent(new ArchivePlugableComponent(options.Cluster.Archiver));
+			.WithPlugableComponent(new ArchivePlugableComponent(options.Cluster.Archiver))
+			.WithPlugableComponent(new UserCertificatesPlugin());
 
 		modifiedOptions = modifiedOptions.WithPlugableComponent(new LicensingPlugin(ex => {
 			Log.Warning("Shutting down due to licensing error: {Message}", ex.Message);
