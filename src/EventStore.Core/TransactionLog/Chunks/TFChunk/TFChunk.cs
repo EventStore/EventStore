@@ -31,6 +31,14 @@ using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
+// Exception handling strategy on write: we generally do not attempt to recover from exceptions on write,
+// and instead leave the objects in an invalid state. The intention is that these should only be thrown
+// in catastrophic scenarios such as disk failure. The originator of the call takes suitable action:
+// typically shutdown the server (e.g. StorageWriter) or abandoning the chunk (e.g. Scavenge).
+//
+// If a CancellationToken we are passed is cancelled, we follow the normal practice and are allowed to
+// throw, but not if it would leave the object in an invalid state. It is up to the caller to not cancel
+// the call if doing so would cause the caller to shutdown the server.
 public partial class TFChunk : IChunkBlob {
 	public enum ChunkVersions : byte {
 		OriginalNotUsed = 1,
@@ -295,7 +303,7 @@ public partial class TFChunk : IChunkBlob {
 			reduceFileCachePressure, tracker, transformFactory, getTransformFactory, transformHeader, token);
 	}
 
-	// local only
+	// always local
 	public static async ValueTask<TFChunk> CreateWithHeader(
 		IChunkFileSystem fileSystem,
 		string filename,
@@ -934,6 +942,11 @@ public partial class TFChunk : IChunkBlob {
 
 		_chunkFooter = await WriteFooter(mapping, token); // WriteFooter always calls Flush
 
+		// cannot be canceled from here on
+		if (!_inMem) {
+			await _fileSystem.SetReadOnlyAsync(ChunkLocator, true, CancellationToken.None);
+		}
+
 		if (!_inMem) {
 			CreateReaderStreams();
 		}
@@ -942,10 +955,6 @@ public partial class TFChunk : IChunkBlob {
 
 		_writerWorkItem?.Dispose();
 		_writerWorkItem = null;
-
-		if (!_inMem) {
-			await _fileSystem.SetReadOnlyAsync(ChunkLocator, true, token);
-		}
 	}
 
 	public async ValueTask CompleteRaw(CancellationToken token) {
@@ -956,14 +965,6 @@ public partial class TFChunk : IChunkBlob {
 
 		await Flush(token);
 
-		if (!_inMem)
-			CreateReaderStreams();
-
-		IsReadOnly = true;
-
-		_writerWorkItem?.Dispose();
-		_writerWorkItem = null;
-
 		if (!_inMem) {
 			await _fileSystem.SetReadOnlyAsync(ChunkLocator, true, token);
 			await using var stream = _handle.CreateStream();
@@ -971,9 +972,21 @@ public partial class TFChunk : IChunkBlob {
 		} else {
 			_chunkFooter = await ReadFooter(_sharedMemStream, token);
 		}
+
+		// cannot be canceled from here on
+		if (!_inMem)
+			CreateReaderStreams();
+
+		IsReadOnly = true;
+
+		_writerWorkItem?.Dispose();
+		_writerWorkItem = null;
 	}
 
 	private async ValueTask<ChunkFooter> WriteFooter(IReadOnlyCollection<PosMap> mapping, CancellationToken token) {
+		token.ThrowIfCancellationRequested();
+
+		// cannot be canceled from here on
 		var workItem = _writerWorkItem;
 		int mapSize;
 
@@ -998,13 +1011,13 @@ public partial class TFChunk : IChunkBlob {
 
 			bufferFromPool = ArrayPool<byte>.Shared.Rent(Math.Max(mapSize, ChunkFooter.Size));
 			mapSize = WriteMapping(bufferFromPool, mapping);
-			await workItem.AppendData(bufferFromPool.AsMemory(0, mapSize), token);
+			await workItem.AppendData(bufferFromPool.AsMemory(0, mapSize), CancellationToken.None);
 		}
 
 		await _transform.Write.CompleteData(
 			footerSize: ChunkFooter.Size,
 			alignmentSize: _chunkHeader.Version >= (byte)ChunkVersions.Aligned ? AlignmentSize : 1,
-			token);
+			CancellationToken.None);
 
 		int fileSize;
 		ChunkFooter footerWithHash;
@@ -1019,7 +1032,7 @@ public partial class TFChunk : IChunkBlob {
 			//FILE
 			footerWithHash = new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize, workItem.MD5);
 			footerWithHash.Format(bufferFromPool);
-			fileSize = await _transform.Write.WriteFooter(new(bufferFromPool, 0, ChunkFooter.Size), token);
+			fileSize = await _transform.Write.WriteFooter(new(bufferFromPool, 0, ChunkFooter.Size), CancellationToken.None);
 		} finally {
 			ArrayPool<byte>.Shared.Return(bufferFromPool);
 		}

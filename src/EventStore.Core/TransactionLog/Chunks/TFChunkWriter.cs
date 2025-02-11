@@ -13,6 +13,7 @@ using Serilog.Events;
 
 namespace EventStore.Core.TransactionLog.Chunks;
 
+// see CancellationToken comment at the top of TFChunk.cs
 public class TFChunkWriter : ITransactionFileWriter {
 	public long Position => _writerCheckpoint.ReadNonFlushed();
 	public long FlushedPosition => _writerCheckpoint.Read();
@@ -65,13 +66,12 @@ public class TFChunkWriter : ITransactionFileWriter {
 		// Workaround: The transaction cannot be canceled in a middle, it should be atomic.
 		// There is no way to rollback it on cancellation
 		token.ThrowIfCancellationRequested();
-		token = CancellationToken.None;
 
 		OpenTransaction();
 
-		if (await WriteToTransaction(record, token) is not { } result) {
-			await CompleteChunkInTransaction(token);
-			await AddNewChunk(token: token);
+		if (await WriteToTransaction(record, CancellationToken.None) is not { } result) {
+			await CompleteChunkInTransaction(CancellationToken.None);
+			await AddNewChunk(token: CancellationToken.None);
 			CommitTransaction();
 			await Flush(token);
 			return (false, _nextRecordPosition);
@@ -123,10 +123,9 @@ public class TFChunkWriter : ITransactionFileWriter {
 		// Workaround: The transaction cannot be canceled in a middle, it should be atomic.
 		// There is no way to rollback it on cancellation
 		token.ThrowIfCancellationRequested();
-		token = CancellationToken.None;
 
 		OpenTransaction();
-		await CompleteChunkInTransaction(token);
+		await CompleteChunkInTransaction(CancellationToken.None);
 		CommitTransaction();
 		await Flush(token);
 	}
@@ -144,10 +143,9 @@ public class TFChunkWriter : ITransactionFileWriter {
 		// Workaround: The transaction cannot be canceled in a middle, it should be atomic.
 		// There is no way to rollback it on cancellation
 		token.ThrowIfCancellationRequested();
-		token = CancellationToken.None;
 
 		OpenTransaction();
-		await CompleteReplicatedRawChunkInTransaction(rawChunk, token);
+		await CompleteReplicatedRawChunkInTransaction(rawChunk, CancellationToken.None);
 		CommitTransaction();
 		await Flush(token);
 	}
