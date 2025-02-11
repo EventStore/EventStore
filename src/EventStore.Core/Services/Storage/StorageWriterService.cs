@@ -33,8 +33,17 @@ public abstract class StorageWriterService {
 }
 
 // StorageWriterService has its own queue. Messages are handled on that queue atomically, any exception
-// will shutdown the server. Messages therefore cannot be cancelled in the middle of processing
-// and instead Cancellation tokens are checked once at the top
+// will shutdown the server.
+//
+// The service ensures that the CancellationToken passed into the handlers is only cancelled
+// when the server is being shutdown.
+//
+// The handlers can therefore treat the CancellationToken argument as normal - throwing if it is
+// cancelled and passing it on to other methods. (They still should not throw due to cancellation
+// during atomic sequences - also per normal best practices).
+//
+// Some messages have a CancellationToken associated with the client operation. If this is cancelled
+// the handler must not throw. Instead it can ignore the message.
 public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>,
 	IAsyncHandle<SystemMessage.StateChangeMessage>,
 	IAsyncHandle<SystemMessage.WriteEpoch>,
@@ -196,6 +205,8 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		try {
 			await _writerBus.DispatchAsync(message, token);
 		} catch (Exception exc) {
+			// any exception, including the token being cancelled, terminates the process, because
+			// the message processing is atomic.
 			BlockWriter = true;
 			Log.Fatal(exc, "Unexpected error in StorageWriterService. Terminating the process...");
 			Application.Exit(ExitCode.Error,
@@ -273,12 +284,8 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		Interlocked.Decrement(ref FlushMessagesInQueue);
 
 		try {
-			// Workaround: The transaction cannot be canceled in a middle, it should be atomic.
-			// There is no way to rollback it on cancellation
-			if (msg.CancellationToken.IsCancellationRequested || token.IsCancellationRequested)
+			if (msg.CancellationToken.IsCancellationRequested)
 				return;
-
-			token = CancellationToken.None;
 
 			var logPosition = Writer.Position;
 			var prepares = new List<IPrepareLogRecord<TStreamId>>();
@@ -424,7 +431,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 				streamMetadataEventTypeId, modifiedMeta, Empty.ByteArray),
 			token);
 
-		_indexWriter.PreCommit(new[] { res.Prepare });
+		_indexWriter.PreCommit([res.Prepare]);
 	}
 
 	public bool SoftUndeleteRawMeta(ReadOnlyMemory<byte> rawMeta, long recreateFromEventNumber, out byte[] modifiedMeta) {
@@ -738,13 +745,12 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		// Workaround: The transaction cannot be canceled in a middle, it should be atomic.
 		// There is no way to rollback it on cancellation
 		token.ThrowIfCancellationRequested();
-		token = CancellationToken.None;
 
 		Writer.OpenTransaction();
 		var writerPos = Writer.Position;
 
 		foreach (var prepare in prepares) {
-			long newWriterPos = await Writer.WriteToTransaction(prepare, token)
+			long newWriterPos = await Writer.WriteToTransaction(prepare, CancellationToken.None)
 			                    ?? throw new InvalidOperationException("The transaction does not fit in the current chunk.");
 			if (newWriterPos - writerPos != prepare.GetSizeWithLengthPrefixAndSuffix())
 				throw new Exception($"Expected writer position to be at: {writerPos + prepare.GetSizeWithLengthPrefixAndSuffix()} but it was at {newWriterPos}");
@@ -857,7 +863,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		_indexWriter.PurgeNotProcessedTransactions(Db.Config.WriterCheckpoint.Read());
 	}
 
-	private struct WriteResult {
+	private readonly struct WriteResult {
 		public readonly long WrittenPos;
 		public readonly long NewPos;
 		public readonly IPrepareLogRecord<TStreamId> Prepare;
