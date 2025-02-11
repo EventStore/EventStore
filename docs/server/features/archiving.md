@@ -25,6 +25,10 @@ The extra copy of the data in S3 also acts as a backup that is kept up to date a
 - Nodes can then remove chunks from their local volumes to save space according to a _retention policy.
 - Read requests read transparently through to the archive as necessary.
 
+::: warning
+Read requests that read the archive will have comparatively high latency and at the moment can cause other reads to be queued.
+:::
+
 ### Populating the Archive
 
 - A designated _Archiver Node_ uploads chunk files to the archive as they are completed. The contents of each chunk file are the same as they were locally, except that merged chunks are unmerged for upload to make them trivial to locate.
@@ -102,6 +106,7 @@ Work to improve the following limitations is about to begin or has already begun
 - Once uploaded to the archive, the chunks there are not scavenged any further.
 - Clients cannot yet opt out of their read reading from the archive.
 - Repeated reads of the same part of the archive are not cached locally.
+- Requests that read the archive can cause other reads to be queued.
 
 Work on the following items may be added according to interest
 
