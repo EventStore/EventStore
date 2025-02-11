@@ -342,6 +342,8 @@ public class StorageReaderWorker<TStreamId> :
 			reply = new StorageMessage.EffectiveStreamAclResponse(acl);
 		} catch (OperationCanceledException e) when (e.CausedBy(cts, msg.CancellationToken)) {
 			reply = new StorageMessage.OperationCancelledMessage(msg.CancellationToken);
+		} catch (OperationCanceledException ex) when (ex.CancellationToken == cts?.Token) {
+			throw new OperationCanceledException(null, ex, cts.CancellationOrigin);
 		} finally {
 			cts?.Dispose();
 		}
@@ -800,8 +802,10 @@ public class StorageReaderWorker<TStreamId> :
 			var streamId = await _readIndex.GetEventStreamIdByTransactionId(message.TransactionId, token);
 			var streamName = await _readIndex.GetStreamName(streamId, token);
 			reply = new StorageMessage.StreamIdFromTransactionIdResponse(streamName);
-		} catch (OperationCanceledException e) when (e.CausedBy(cts, message.CancellationToken)) {
+		} catch (OperationCanceledException ex) when (ex.CausedBy(cts, message.CancellationToken)) {
 			reply = new StorageMessage.OperationCancelledMessage(message.CancellationToken);
+		} catch (OperationCanceledException ex) when (ex.CancellationToken == cts?.Token) {
+			throw new OperationCanceledException(null, ex, cts.CancellationOrigin);
 		} finally {
 			cts?.Dispose();
 		}
