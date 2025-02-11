@@ -34,16 +34,14 @@ public static partial class StorageMessage {
 
 		public string EventStreamId { get; private set; }
 		public long ExpectedVersion { get; private set; }
-		public CancellationToken CancellationToken { get; }
 		public readonly Event[] Events;
 
 		public WritePrepares(Guid correlationId, IEnvelope envelope, string eventStreamId, long expectedVersion,
-			Event[] events, CancellationToken cancellationToken) {
+			Event[] events, CancellationToken cancellationToken) : base(cancellationToken) {
 			CorrelationId = correlationId;
 			Envelope = envelope;
 			EventStreamId = eventStreamId;
 			ExpectedVersion = expectedVersion;
-			CancellationToken = cancellationToken;
 			Events = events;
 		}
 
@@ -64,11 +62,10 @@ public static partial class StorageMessage {
 		public IEnvelope Envelope { get; private set; }
 		public string EventStreamId { get; private set; }
 		public long ExpectedVersion { get; private set; }
-		public CancellationToken CancellationToken { get; }
 		public readonly bool HardDelete;
 
 		public WriteDelete(Guid correlationId, IEnvelope envelope, string eventStreamId, long expectedVersion,
-			bool hardDelete, CancellationToken cancellationToken = default) {
+			bool hardDelete, CancellationToken cancellationToken) : base(cancellationToken) {
 			Ensure.NotEmptyGuid(correlationId, "correlationId");
 			Ensure.NotNull(envelope, "envelope");
 			Ensure.NotNull(eventStreamId, "eventStreamId");
@@ -77,7 +74,6 @@ public static partial class StorageMessage {
 			Envelope = envelope;
 			EventStreamId = eventStreamId;
 			ExpectedVersion = expectedVersion;
-			CancellationToken = cancellationToken;
 			HardDelete = hardDelete;
 		}
 	}
@@ -362,12 +358,11 @@ public static partial class StorageMessage {
 	public partial class EffectiveStreamAclRequest : Message {
 		public readonly string StreamId;
 		public readonly IEnvelope Envelope;
-		public readonly CancellationToken CancellationToken;
 
-		public EffectiveStreamAclRequest(string streamId, IEnvelope envelope, CancellationToken cancellationToken) {
+		public EffectiveStreamAclRequest(string streamId, IEnvelope envelope, CancellationToken cancellationToken)
+			: base(cancellationToken) {
 			StreamId = streamId;
 			Envelope = envelope;
-			CancellationToken = cancellationToken;
 		}
 	}
 
@@ -422,10 +417,7 @@ public static partial class StorageMessage {
 
 	[DerivedMessage(CoreMessage.Storage)]
 	public partial class OperationCancelledMessage : Message {
-		public CancellationToken CancellationToken { get; }
-
-		public OperationCancelledMessage(CancellationToken cancellationToken) {
-			CancellationToken = cancellationToken;
+		public OperationCancelledMessage(CancellationToken cancellationToken) : base(cancellationToken) {
 		}
 	}
 
@@ -433,10 +425,9 @@ public static partial class StorageMessage {
 	public partial class StreamIdFromTransactionIdRequest : Message {
 		public readonly long TransactionId;
 		public readonly IEnvelope Envelope;
-		public readonly CancellationToken CancellationToken;
 
-		public StreamIdFromTransactionIdRequest(in long transactionId, IEnvelope envelope, CancellationToken cancellationToken) {
-			CancellationToken = cancellationToken;
+		public StreamIdFromTransactionIdRequest(in long transactionId, IEnvelope envelope, CancellationToken cancellationToken)
+			: base(cancellationToken) {
 			TransactionId = transactionId;
 			Envelope = envelope;
 		}

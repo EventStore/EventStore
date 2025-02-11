@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
 
 namespace EventStore.Core.Messaging;
 
@@ -21,4 +22,6 @@ public class DerivedMessageAttribute : Attribute {
 }
 
 [BaseMessage]
-public abstract partial class Message;
+public abstract partial class Message(CancellationToken token = default) {
+	public CancellationToken CancellationToken => token;
+}
