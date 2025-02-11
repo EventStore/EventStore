@@ -72,7 +72,7 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 	async void IThreadPoolWorkItem.Execute() {
 		do {
 			do {
-				await CacheUncacheReadOnlyChunks();
+				await CacheUncacheReadOnlyChunks(CancellationToken.None);
 			} while (Interlocked.Decrement(ref _backgroundPassesRemaining) > 0);
 
 			Interlocked.Exchange(ref _backgroundRunning, 0);
@@ -80,7 +80,7 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 		         && Interlocked.CompareExchange(ref _backgroundRunning, 1, 0) == 0);
 	}
 
-	private async ValueTask CacheUncacheReadOnlyChunks(CancellationToken token = default) {
+	private async ValueTask CacheUncacheReadOnlyChunks(CancellationToken token) {
 		int lastChunkToCache;
 
 		await _chunksLocker.AcquireAsync(token);
