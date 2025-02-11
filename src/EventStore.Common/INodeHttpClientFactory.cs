@@ -3,7 +3,7 @@
 
 using System.Net.Http;
 
-namespace EventStore.Core.Services.Transport.Http.NodeHttpClientFactory;
+namespace EventStore.Common;
 
 public interface INodeHttpClientFactory {
 	HttpClient CreateHttpClient(string[] additionalCertificateNames);

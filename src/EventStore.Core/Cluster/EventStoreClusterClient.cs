@@ -4,6 +4,7 @@
 using System;
 using System.Net;
 using System.Threading;
+using EventStore.Common;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Metrics;

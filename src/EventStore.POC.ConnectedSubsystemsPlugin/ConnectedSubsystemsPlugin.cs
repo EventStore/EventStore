@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using EventStore.Common.Utils;
+using EventStore.Core.Subsystems;
 using EventStore.PluginHosting;
 using EventStore.Plugins;
 using EventStore.Plugins.Subsystems;
