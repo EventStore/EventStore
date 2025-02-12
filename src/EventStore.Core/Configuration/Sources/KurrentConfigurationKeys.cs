@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
-using EventStore.Common.Configuration;
 using Microsoft.Extensions.Configuration;
 using static System.String;
 using static System.StringComparison;
@@ -16,7 +15,7 @@ using static System.StringComparison;
 namespace EventStore.Core.Configuration.Sources;
 
 public static class KurrentConfigurationKeys {
-	public const string Prefix = ConfigurationConstants.Prefix;
+	public const string Prefix = "KurrentDB";
 	public const string LegacyEventStorePrefix = "EventStore";
 
 	private const string EnvVarKeyDelimiter = "__";

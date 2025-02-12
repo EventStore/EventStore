@@ -14,8 +14,6 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Auth.UserCertificates;
-using EventStore.AutoScavenge;
-using EventStore.Common;
 using EventStore.Common.Configuration;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
@@ -90,7 +88,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using GossipMessage = EventStore.Core.Messages.GossipMessage;
 using ILogger = Serilog.ILogger;
 using LogLevel = EventStore.Common.Options.LogLevel;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
@@ -978,8 +975,7 @@ public class ClusterVNode<TStreamId> :
 			.WithPlugableComponent(new ArchivePlugableComponent(options.Cluster.Archiver))
 			.WithPlugableComponent(new UserCertificatesPlugin())
 			.WithPlugableComponent(new LogsEndpointPlugin())
-			.WithPlugableComponent(new EncryptionAtRestPlugin())
-			.WithPlugableComponent(new AutoScavengePlugin());
+			.WithPlugableComponent(new EncryptionAtRestPlugin());
 
 		modifiedOptions = modifiedOptions.WithPlugableComponent(new LicensingPlugin(ex => {
 			Log.Warning("Shutting down due to licensing error: {Message}", ex.Message);

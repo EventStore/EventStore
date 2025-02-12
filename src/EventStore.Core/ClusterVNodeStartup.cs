@@ -13,7 +13,6 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Grpc;
 using EventStore.Core.Services.Transport.Grpc.Cluster;
 using EventStore.Core.Services.Transport.Http;
-using EventStore.Core.Subsystems;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Plugins;
 using EventStore.Plugins.Authentication;
@@ -210,7 +209,6 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 			.AddSingleton(new Monitoring(_monitoringQueue))
 			.AddSingleton(new Redaction(_mainQueue, _authorizationProvider))
 			.AddSingleton<ServerFeatures>()
-			.AddConnectedSubsystem()
 
 			// OpenTelemetry
 			.AddOpenTelemetry()

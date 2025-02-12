@@ -5,7 +5,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.POC.IO.Core;
 
-namespace EventStore.Core.Subsystems;
+namespace EventStore.POC.ConnectedSubsystemsPlugin;
 
 public class InternalOperationsClient : IOperationsClient {
 	readonly IPublisher _publisher;

@@ -4,7 +4,6 @@
 using System;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
-using EventStore.Common;
 using EventStore.Common.Utils;
 using EventStore.Core.Settings;
 using Serilog;
