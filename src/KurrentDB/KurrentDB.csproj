@@ -25,6 +25,7 @@
 		<ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj" />
 		<ProjectReference Include="..\EventStore.Security.EncryptionAtRest\EventStore.Security.EncryptionAtRest.csproj" />
 		<ProjectReference Include="..\EventStore.AutoScavenge\EventStore.AutoScavenge.csproj" />
+		<ProjectReference Include="..\EventStore.TcpPlugin\EventStore.TcpPlugin.csproj" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Include="..\EventStore.Common\Utils\version.properties">
