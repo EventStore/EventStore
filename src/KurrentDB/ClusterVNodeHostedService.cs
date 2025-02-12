@@ -20,6 +20,7 @@ using EventStore.Auth.Ldaps;
 using EventStore.Auth.LegacyAuthorizationWithStreamAuthorizationDisabled;
 using EventStore.Auth.OAuth;
 using EventStore.Auth.UserCertificates;
+using EventStore.AutoScavenge;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authentication.PassthroughAuthentication;
 using EventStore.Core.Authorization;
@@ -38,7 +39,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using EventStore.Core.LogAbstraction;
-using EventStore.Core.Services.Archive;
 using EventStore.Diagnostics.LogsEndpointPlugin;
 using EventStore.OtlpExporterPlugin;
 using EventStore.POC.ConnectedSubsystemsPlugin;
@@ -277,6 +277,7 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 			plugins.Add(new LogsEndpointPlugin());
 			plugins.Add(new EncryptionAtRestPlugin());
 			plugins.Add(new ConnectedSubsystemsPlugin());
+			plugins.Add(new AutoScavengePlugin());
 
 			foreach (var plugin in plugins) {
 				Log.Information("Loaded SubsystemsPlugin plugin: {plugin} {version}.",
