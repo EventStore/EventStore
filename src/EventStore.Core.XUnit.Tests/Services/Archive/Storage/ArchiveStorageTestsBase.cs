@@ -18,7 +18,6 @@ using EventStore.Plugins.Transforms;
 namespace EventStore.Core.XUnit.Tests.Services.Archive.Storage;
 
 public abstract class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
-	protected const string AwsCliProfileName = "default";
 	protected const string AwsRegion = "eu-west-1";
 	protected const string AwsBucket = "archiver-unit-tests";
 
@@ -41,7 +40,6 @@ public abstract class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
 						Path = ArchivePath
 					},
 					S3 = new() {
-						AwsCliProfileName = AwsCliProfileName,
 						Bucket = AwsBucket,
 						Region = AwsRegion,
 					}
