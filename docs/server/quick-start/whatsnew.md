@@ -7,13 +7,13 @@ order: 2
 ## New features
 
 * Connectors:
-    * Kafka
-    * MongoDB
-    * RabbitMQ
-    * HTTP
-* Auto-scavenge: Schedule and execute scavenges automatically across a cluster.
-* Stream Policy: Define stream access policies based on stream prefixes rather than using stream ACLs.
-* Encryption-at-rest: Encrypt EventStoreDB chunks to secure them against attackers with file access to the database.
+    * [Kafka](#kafka-sink)
+    * [MongoDB](#mongodb-sink)
+    * [RabbitMQ](#rabbitmq-sink)
+    * [HTTP](#http-sink)
+* [Auto-scavenge](#auto-scavenge): Schedule and execute scavenges automatically across a cluster.
+* [Stream Policy](#stream-policy): Define stream access policies based on stream prefixes rather than using stream ACLs.
+* [Encryption-at-rest](#encryption-at-rest): Encrypt EventStoreDB chunks to secure them against attackers with file access to the database.
 
 ### Connectors
 
@@ -24,9 +24,7 @@ You can use the HTTP sink without a license, but a license is required for all o
 
 Refer to the [documentation](../features/connectors/README.md) for instructions on setting up and configuring connectors and sinks.
 
-#### Kafka sink
-
-<Badge type="info" vertical="middle" text="License Required"/>
+#### Kafka sink <Badge type="info" vertical="middle" text="License Required"/>
 
 The Kafka sink writes events from EventStoreDB to a Kafka topic.
 
@@ -35,9 +33,7 @@ features to handle transient errors.
 
 Refer to the [documentation](../features/connectors/sinks/kafka.md) for instructions on setting up a Kafka sink.
 
-#### MongoDB sink
-
-<Badge type="info" vertical="middle" text="License Required"/>
+#### MongoDB sink <Badge type="info" vertical="middle" text="License Required"/>
 
 The MongoDB sink pulls messages from an EventStoreDB stream and stores the messages to a collection.
 
@@ -45,9 +41,7 @@ It supports data transformation for modifying event data or metadata and the inc
 
 Refer to the [documentation](../features/connectors/sinks/mongo.md) for instructions on setting up a MongoDB sink.
 
-#### RabbitMQ sink
-
-<Badge type="info" vertical="middle" text="License Required"/>
+#### RabbitMQ sink <Badge type="info" vertical="middle" text="License Required"/>
 
 The RabbitMQ sink pulls messages from EventStoreDB and sends the messages to a RabbitMQ exchange using a specified routing key.
 
@@ -75,9 +69,7 @@ The Serilog sink logs detailed messages about the connector and record details.
 
 Refer to the [documentation](../features/connectors/sinks/serilog.md) for instructions on setting up a Serilog sink.
 
-### Auto-scavenge
-
-<Badge type="info" vertical="middle" text="License Required"/>
+### Auto-scavenge <Badge type="info" vertical="middle" text="License Required"/>
 
 The auto-scavenge feature automatically schedules _cluster scavenges_ which are composed of multiple _node scavenges_. Only one node scavenge can be executed at a time in the cluster. The auto-scavenge feature allows the scheduling of said _cluster scavenges_.
 
@@ -85,9 +77,7 @@ The auto-scavenge feature requires a license to use. EventStoreDB will only star
 
 Refer to the [documentation](../operations/auto-scavenge.md) for instructions on enabling and using this feature.
 
-### Stream Policy
-
-<Badge type="info" vertical="middle" text="License Required"/>
+### Stream Policy <Badge type="info" vertical="middle" text="License Required"/>
 
 Define stream access policies in one place based on stream prefixes rather than using stream ACLs.
 
@@ -95,9 +85,7 @@ Stream access policies can be created to grant users or groups read, write, dele
 
 The Stream Policy feature requires a license to use. Refer to the [documentation](../security/user-authorization.md#stream-policy-authorization) for more information about using and configuring this feature.
 
-### Encryption-at-rest
-
-<Badge type="info" vertical="middle" text="License Required"/>
+### Encryption-at-rest <Badge type="info" vertical="middle" text="License Required"/>
 
 Encrypt EventStoreDB chunks to secure them against attackers with file access to the database.
 
