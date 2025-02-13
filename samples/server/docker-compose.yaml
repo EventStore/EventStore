@@ -1,6 +1,6 @@
 services:
   eventstore.db:
-    image: docker.eventstore.com/eventstore/eventstoredb-ee:24.10.1
+    image: docker.eventstore.com/eventstore/eventstoredb-ee:24.10
     environment:
       - EVENTSTORE_CLUSTER_SIZE=1
       - EVENTSTORE_RUN_PROJECTIONS=All
