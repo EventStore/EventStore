@@ -5,7 +5,7 @@ order: 5
 
 # Upgrade guide for EventStoreDB 24.10
 
-As of version 24.10.0, all of our packages are hosted on [Cloudsmith](https://cloudsmith.io/~eventstore/repos/eventstore/packages/). Packages are available for [Debian](https://cloudsmith.io/~eventstore/repos/eventstore/setup/#formats-deb), [RedHat](https://cloudsmith.io/~eventstore/repos/eventstore/setup/#formats-rpm), [Docker](https://cloudsmith.io/~eventstore/repos/eventstore/setup/#formats-docker), and [NuGet](https://cloudsmith.io/~eventstore/repos/eventstore/setup/#formats-nuget).
+As of version 24.10, all of our packages are hosted on [Cloudsmith](https://cloudsmith.io/~eventstore/repos/eventstore/packages/). Packages are available for [Debian](https://cloudsmith.io/~eventstore/repos/eventstore/setup/#formats-deb), [RedHat](https://cloudsmith.io/~eventstore/repos/eventstore/setup/#formats-rpm), [Docker](https://cloudsmith.io/~eventstore/repos/eventstore/setup/#formats-docker), and [NuGet](https://cloudsmith.io/~eventstore/repos/eventstore/setup/#formats-nuget).
 
 You can also download the package files for each platform from our [website](https://www.eventstore.com/downloads).
 
