@@ -3,6 +3,8 @@ title: "Installation"
 order: 3
 ---
 
+<CloudBanner />
+
 ## Quick start
 
 EventStoreDB can run as a single node or as a highly-available cluster. For the cluster deployment, you'd need three server nodes.
