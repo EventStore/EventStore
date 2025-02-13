@@ -35,4 +35,23 @@ public class ClusterVNodeOptionsValidatorTests {
 			Assert.Throws<InvalidConfigurationException>(When);
 		}
 	}
+
+	[Fact]
+	public void archiver_not_compatible_with_unsafe_ignore_hard_delete() {
+		// because the archive is not scavenged at the moment and so the tombstones will not be removed
+		var options = new ClusterVNodeOptions {
+			Cluster = new() {
+				Archiver = true,
+				ClusterSize = 3,
+				ReadOnlyReplica = true,
+			},
+			Database = new() {
+				UnsafeIgnoreHardDelete = true,
+			}
+		};
+
+		Assert.Throws<InvalidConfigurationException>(() => {
+			ClusterVNodeOptionsValidator.Validate(options);
+		});
+	}
 }
