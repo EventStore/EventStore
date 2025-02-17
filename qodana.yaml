@@ -45,3 +45,10 @@ dependencyOverrides:
     licenses:
       - key: "MIT"
         url: "https://github.com/mono/mono/blob/main/LICENSE"
+
+  # not automatically detectable
+  - name: "OpenTelemetry.Exporter.Prometheus.AspNetCore"
+    version: "1.11.0-beta.1"
+    licenses:
+      - key: "Apache-2.0"
+        url: "https://github.com/open-telemetry/opentelemetry-dotnet/blob/main/LICENSE.TXT"
