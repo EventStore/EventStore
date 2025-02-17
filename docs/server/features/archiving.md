@@ -97,6 +97,8 @@ The panels are available in the `Events Served` section of the [miscellaneous pa
 
 ![Reads by Source](images/archiving/reads-by-source.png)
 
+![Experiment](images/archiving/test.drawio.svg)
+
 ## Limitations
 
 This initial release has several limitations that we intend to improve in future releases.
