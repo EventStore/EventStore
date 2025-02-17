@@ -95,7 +95,12 @@ public static class ClusterVNodeOptionsValidator {
 
 		if (options.Cluster.Archiver && !options.Cluster.ReadOnlyReplica) {
 			throw new InvalidConfigurationException(
-				"Only Read Only Replica nodes can be Archivers.");
+				"The Archiver node must also be a Read Only Replica.");
+		}
+
+		if (options.Cluster.Archiver && options.Database.UnsafeIgnoreHardDelete) {
+			throw new InvalidConfigurationException(
+				"The Archiving feature is not compatible with UnsafeIgnoreHardDelete.");
 		}
 	}
 
