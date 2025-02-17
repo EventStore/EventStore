@@ -12,9 +12,11 @@ exclude:
 # License Audit
 #
 
-# Dependencies to exclude from the License Audit
-dependencyIgnores:
-  - name: "EventStore.Plugins" # Our own software
+licenseRules:
+  - keys:
+      - "PROPRIETARY-LICENSE"
+    allowed:
+      - "Kurrent-1.0"
 
 customDependencies:
   # System.UriTemplate (source copied under src/EventStore.NETCore.Compatibility from .NET 4.8 with some modifications)
@@ -25,6 +27,13 @@ customDependencies:
 
 # Manually specify the licenses of the following packages
 dependencyOverrides:
+  # not automatically detectable
+  - name: "EventStore.Plugins"
+    version: "25.2.5"
+    licenses:
+      - key: "Kurrent-1.0"
+        url: "https://github.com/EventStore/EventStore/blob/master/LICENSE.md"
+
   # not automatically detectable, but the MIT license is in the nuget package
   - name: "NETStandard.Library"
     version: "2.0.3"
