@@ -1,5 +1,7 @@
 # "build" image
 ARG CONTAINER_RUNTIME=jammy
+ARG NUGET_CREDS_EVENTSTORE="*** required ***"
+ARG NUGET_CREDS_KURRENTDB="*** required ***"
 FROM mcr.microsoft.com/dotnet/sdk:8.0-jammy AS build
 ARG RUNTIME=linux-x64
 
@@ -7,6 +9,7 @@ WORKDIR /build
 COPY ./LICENSE.md .
 COPY ./LICENSE_CONTRIBUTIONS.md .
 COPY ./NOTICE.html .
+COPY ./nuget.config .
 
 WORKDIR /build/ci
 COPY ./ci ./
@@ -19,6 +22,8 @@ COPY ./src .
 
 WORKDIR /build/.git
 COPY ./.git/ .
+ENV NuGetPackageSourceCredentials_EventStore=${NUGET_CREDS_EVENTSTORE}
+ENV NuGetPackageSourceCredentials_KurrentDB=${NUGET_CREDS_KURRENTDB}
 
 WORKDIR /build/src
 RUN find /build/src -maxdepth 1 -type d -name "*.Tests" -print0 | xargs -I{} -0 -n1 sh -c \
