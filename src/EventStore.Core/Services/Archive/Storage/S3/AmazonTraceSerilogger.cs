@@ -13,51 +13,49 @@ public class AmazonTraceSerilogger : TraceListener {
 
 	public override void TraceData(TraceEventCache eventCache, string source, TraceEventType eventType, int id,
 		object data) {
-		Log(eventCache, source, eventType, id, data);
+		Log(eventType, data);
 	}
 
 	public override void TraceData(TraceEventCache eventCache, string source, TraceEventType eventType, int id,
 		params object[] data) {
-		Log(eventCache, source, eventType, id, data);
+		Log(eventType, data);
 	}
 
 	public override void TraceEvent(TraceEventCache eventCache, string source, TraceEventType eventType, int id) {
-		Log(eventCache, source, eventType, id);
 	}
 
 	public override void TraceEvent(TraceEventCache eventCache, string source, TraceEventType eventType, int id,
 		string format, params object[] args) {
-		Log(eventCache, source, eventType, id, string.Format(format, args));
+		Log(eventType, string.Format(format, args));
 	}
 
 	public override void TraceEvent(TraceEventCache eventCache, string source, TraceEventType eventType, int id,
 		string message) {
-		Log(eventCache, source, eventType, id, message);
+		Log(eventType, message);
 	}
 
 	public override void TraceTransfer(TraceEventCache eventCache, string source, int id, string message,
 		Guid relatedActivityId) {
-		Log(eventCache, source, TraceEventType.Transfer, id, relatedActivityId);
+		Log(TraceEventType.Transfer, relatedActivityId);
 	}
 
 	public override void Write(string message) {
 		if (message is not null)
-			TraceData(new TraceEventCache(), Name, TraceEventType.Information, 0, message);
+			Log(TraceEventType.Information, message);
 	}
 
 	public override void WriteLine(string message) {
 		if (message is not null)
-			TraceData(new TraceEventCache(), Name, TraceEventType.Information, 0, message);
+			Log(TraceEventType.Information, message);
 	}
 
-	private static void Log(TraceEventCache eventCache, string source, TraceEventType eventType, int eventId, params object[] data) {
+	private static void Log(TraceEventType eventType, params object[] data) {
 		if (data.Length is 0)
 			return;
 
-		var logMessage = data[0] as LogMessage;
 		var exception = data.Length > 1 ? data[1] as Exception : null;
 
-		if (logMessage is null)
+		if (data[0] is not LogMessage logMessage)
 			return;
 
 		var logLevel = GetLogLevel(eventType);
