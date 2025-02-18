@@ -360,6 +360,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 						endEventNumber: -1,
 						isSoftDeleted: false),
 					token);
+				return;
 			}
 
 			bool softUndeleteMetastream = _systemStreams.IsMetaStream(streamId)
