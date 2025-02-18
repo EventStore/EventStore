@@ -1,3 +1,6 @@
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
+
 using System;
 using System.Diagnostics;
 using Amazon.Runtime.Internal.Util;
@@ -6,7 +9,7 @@ using Serilog.Events;
 namespace EventStore.Core.Services.Archive.Storage.S3;
 
 public class AmazonTraceSerilogger : TraceListener {
-	private static readonly Serilog.ILogger Logger = Serilog.Log.ForContext("SourceContext", "Amazon");
+	private static readonly Serilog.ILogger Logger = Serilog.Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, "Amazon");
 
 	public override void TraceData(TraceEventCache eventCache, string source, TraceEventType eventType, int id,
 		object data) {
