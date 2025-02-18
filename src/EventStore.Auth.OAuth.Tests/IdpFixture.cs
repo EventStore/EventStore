@@ -28,10 +28,10 @@ internal class IdpFixture : IDisposable {
 	private static string IdentityServerSourceDirectory => Path.Combine(SourceDirectory, "IdentityServer");
 
 	private static string IdentityServerConfigurationFile =>
-		Path.Combine(TestSourceDirectory, "conf", "idsrv4.conf.json");
+		Path.Combine(Environment.CurrentDirectory, "conf", "idsrv4.conf.json");
 
 	private static string IdentityServerUserConfigurationFile =>
-		Path.Combine(TestSourceDirectory, "conf", "users.conf.json");
+		Path.Combine(Environment.CurrentDirectory, "conf", "users.conf.json");
 
 	private readonly ITestOutputHelper _output;
 	private readonly IContainerService _identityServer;
@@ -48,6 +48,7 @@ internal class IdpFixture : IDisposable {
 			.Mount(IdentityServerConfigurationFile, "/etc/idsrv4/idsrv4.conf", MountType.ReadOnly)
 			.Mount(IdentityServerUserConfigurationFile, "/etc/idsrv4/users.conf", MountType.ReadOnly)
 			.ExposePort(IdpPort, IdpPort)
+			.ReuseIfExists()
 			.Build();
 
 		_identityServer.StopOnDispose = true;

@@ -31,7 +31,7 @@ internal class Fixture : IDisposable {
 #endif
 
 	private static string SourceDirectory =>
-		Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, "../../../../src"));
+		Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, "../../../.."));
 
 	private static string BuildDirectory => Path.GetFullPath(Path.Combine(Environment.CurrentDirectory,
 		$"../../../../bin/{BuildConfiguration}"));
@@ -100,7 +100,7 @@ internal class Fixture : IDisposable {
 
 	private async ValueTask Start() {
 		await IdentityServer.Start();
-		await PublishPlugin(PluginSourceDirectory);
+		// await PublishPlugin(PluginSourceDirectory);
 		await WritePluginConfiguration();
 		await GenerateSelfSignedCertificateKeyPair(CertificateDirectory);
 		await Task.Delay(TimeSpan.FromSeconds(2));
@@ -125,7 +125,7 @@ internal class Fixture : IDisposable {
 			.UseImage(imageName)
 			.WithEnvironment(_containerEnv)
 			.WithName("es-oauth-tests")
-			.Mount(PluginPublishDirectory, "/opt/kurrentdb/plugins/oauth", MountType.ReadOnly)
+			// .Mount(PluginPublishDirectory, "/opt/kurrentdb/plugins/oauth", MountType.ReadOnly)
 			.Mount(CertificateDirectory, "/opt/kurrentdb/certs", MountType.ReadOnly)
 			.Mount(_pluginConfiguration.FullName, PluginConfigurationPath, MountType.ReadOnly)
 			.ExposePort(1113, 1113)
