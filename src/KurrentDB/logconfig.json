@@ -5,7 +5,8 @@
 			"EventStore.Core.Services.Transport.Enumerators": "Information",
 			"System": "Warning",
 			"Microsoft": "Warning",
-			"Grpc": "Fatal"
+			"Grpc": "Fatal",
+			"Amazon": "Warning"
 		}
 	}
 }
