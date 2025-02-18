@@ -31,7 +31,6 @@ public class S3BlobStorage : IBlobStorage {
 			throw new InvalidConfigurationException("Please specify an Archive S3 Region");
 
 		_awsBlobStorage = StorageFactory.Blobs.AwsS3(
-			awsCliProfileName: options.AwsCliProfileName,
 			bucketName: options.Bucket,
 			region: options.Region) as IAwsS3BlobStorage;
 	}

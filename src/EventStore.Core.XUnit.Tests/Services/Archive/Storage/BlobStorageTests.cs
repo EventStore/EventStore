@@ -17,7 +17,6 @@ namespace EventStore.Core.XUnit.Tests.Services.Archive.Storage;
 // some of the behavior of the blob storage implementations is covered by ArchiveStorageTests.cs
 [Collection("ArchiveStorageTests")]
 public class BlobStorageTests : DirectoryPerTest<BlobStorageTests> {
-	protected const string AwsCliProfileName = "default";
 	protected const string AwsRegion = "eu-west-1";
 	protected const string AwsBucket = "archiver-unit-tests";
 
@@ -36,7 +35,6 @@ public class BlobStorageTests : DirectoryPerTest<BlobStorageTests> {
 			}),
 		StorageType.S3 =>
 			new S3BlobStorage(new() {
-				AwsCliProfileName = AwsCliProfileName,
 				Bucket = AwsBucket,
 				Region = AwsRegion,
 			}),
