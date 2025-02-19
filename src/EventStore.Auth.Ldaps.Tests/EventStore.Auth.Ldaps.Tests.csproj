@@ -6,7 +6,6 @@
       <IsPublishable>false</IsPublishable>
 			<IsTestProject>true</IsTestProject>
       <Configurations>Release;Debug</Configurations>
-      <Platforms>x64</Platforms>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
