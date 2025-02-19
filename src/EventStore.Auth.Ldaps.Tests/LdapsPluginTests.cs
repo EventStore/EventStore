@@ -53,7 +53,7 @@ public class LdapsPluginTests {
 		throw new Exception("LDAPS fixture did not start up in time");
 	}
 
-	[Fact]
+	[SkipOnWindows]
 	public async Task authenticate_admin_user_returns_admin_role() {
 		var sut = new LdapsAuthenticationPlugin()
 			.GetAuthenticationProviderFactory(_configFile)
@@ -76,7 +76,7 @@ public class LdapsPluginTests {
 		}
 	}
 
-	[Fact]
+	[SkipOnWindows]
 	public async Task authenticate_with_incorrect_password_returns_unauthorized() {
 		var sut = new LdapsAuthenticationPlugin()
 			.GetAuthenticationProviderFactory(_configFile)
@@ -96,7 +96,7 @@ public class LdapsPluginTests {
 		}
 	}
 
-	[Fact]
+	[SkipOnWindows]
 	public async Task authenticate_with_non_existent_user_returns_unauthorized() {
 		var sut = new LdapsAuthenticationPlugin()
 			.GetAuthenticationProviderFactory(_configFile)
@@ -116,7 +116,7 @@ public class LdapsPluginTests {
 		}
 	}
 
-	[Fact]
+	[SkipOnWindows]
 	public async Task authenticate_user_with_custom_role_returns_expected_roles() {
 		var sut = new LdapsAuthenticationPlugin()
 			.GetAuthenticationProviderFactory(_configFile)
