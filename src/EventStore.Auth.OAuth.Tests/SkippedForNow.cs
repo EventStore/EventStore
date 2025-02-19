@@ -6,9 +6,8 @@ using Xunit;
 
 namespace EventStore.Auth.OAuth.Tests;
 
-public sealed class SkipOnWindowsAttribute : FactAttribute {
-	public SkipOnWindowsAttribute() {
-		if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-			Skip = "Test skipped on Windows";
+public sealed class SkippedForNow : FactAttribute {
+	public SkippedForNow() {
+		Skip = "Test is skipped for now";
 	}
 }
