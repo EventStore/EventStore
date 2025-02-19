@@ -12,6 +12,7 @@ using EventStore.Core.XUnit.Tests.Scavenge.Sqlite;
 using EventStore.LogCommon;
 using Xunit;
 using static EventStore.Core.XUnit.Tests.Scavenge.Infrastructure.StreamMetadatas;
+#pragma warning disable CS0162 // Unreachable code detected
 
 namespace EventStore.Core.XUnit.Tests.Scavenge.PortedFromOldScavenge;
 
@@ -405,7 +406,7 @@ public class ScavengeTestScenarioPortedScavengeTests : SqliteDbPerTest<ScavengeT
 			.WithUnsafeIgnoreHardDeletes(true)
 			.WithDb(x => x
 				.Chunk(
-					Rec.Write(t++, "bla"), 
+					Rec.Write(t++, "bla"),
 					Rec.Write(t++, "bla"))
 				.Chunk(
 					Rec.CommittedDelete(t++, "bla"))

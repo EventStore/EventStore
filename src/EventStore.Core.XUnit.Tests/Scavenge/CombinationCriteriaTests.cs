@@ -11,6 +11,7 @@ using EventStore.Core.XUnit.Tests.Scavenge.Infrastructure;
 using EventStore.Core.XUnit.Tests.Scavenge.Sqlite;
 using Xunit;
 using static EventStore.Core.XUnit.Tests.Scavenge.Infrastructure.StreamMetadatas;
+#pragma warning disable CS0162 // Unreachable code detected
 
 namespace EventStore.Core.XUnit.Tests.Scavenge;
 
@@ -45,7 +46,7 @@ public class CombinationCriteriaTests : SqliteDbPerTest<CombinationCriteriaTests
 				.Chunk(
 					Rec.Write(t++, "ab-1", timestamp: Expired), // 0
 					Rec.Write(t++, "ab-1", timestamp: Expired), // 1 <-- maxage discard
-					Rec.Write(t++, "ab-1", timestamp: Active), // 2 
+					Rec.Write(t++, "ab-1", timestamp: Active), // 2
 					Rec.Write(t++, "ab-1", timestamp: Active), // 3 <-- maxcount discard
 					Rec.Write(t++, "ab-1", timestamp: Active), // 4 <-- keep
 					Rec.Write(t++, "$$ab-1", "$metadata", metadata: new StreamMetadata(
@@ -68,7 +69,7 @@ public class CombinationCriteriaTests : SqliteDbPerTest<CombinationCriteriaTests
 				.Chunk(
 					Rec.Write(t++, "ab-1"), // 0
 					Rec.Write(t++, "ab-1"), // 1 <-- tb discard
-					Rec.Write(t++, "ab-1"), // 2 
+					Rec.Write(t++, "ab-1"), // 2
 					Rec.Write(t++, "ab-1"), // 3 <-- maxcount discard
 					Rec.Write(t++, "ab-1"), // 4 <-- keep
 					Rec.Write(t++, "$$ab-1", "$metadata", metadata: new StreamMetadata(
@@ -91,9 +92,9 @@ public class CombinationCriteriaTests : SqliteDbPerTest<CombinationCriteriaTests
 				.Chunk(
 					Rec.Write(t++, "ab-1", timestamp: Expired), // 0
 					Rec.Write(t++, "ab-1", timestamp: Expired), // 1 <-- maxage discard
-					Rec.Write(t++, "ab-1", timestamp: Active), // 2 
+					Rec.Write(t++, "ab-1", timestamp: Active), // 2
 					Rec.Write(t++, "ab-1", timestamp: Active), // 3 <-- tb discard
-					Rec.Write(t++, "ab-1", timestamp: Active), // 4 
+					Rec.Write(t++, "ab-1", timestamp: Active), // 4
 					Rec.Write(t++, "ab-1", timestamp: Active), // 5 <-- maxcount discard
 					Rec.Write(t++, "ab-1", timestamp: Active), // 6 <-- keep
 					Rec.Write(t++, "$$ab-1", "$metadata", metadata: new StreamMetadata(
@@ -117,7 +118,7 @@ public class CombinationCriteriaTests : SqliteDbPerTest<CombinationCriteriaTests
 				.Chunk(
 					Rec.Write(t++, "ab-1"), // 0
 					Rec.Write(t++, "ab-1"), // 1 <-- maxcount discard
-					Rec.Write(t++, "ab-1"), // 2 
+					Rec.Write(t++, "ab-1"), // 2
 					Rec.Write(t++, "ab-1"), // 3 <-- tb discard
 					Rec.Write(t++, "ab-1"), // 4 <-- keep
 					Rec.Write(t++, "$$ab-1", "$metadata", metadata: new StreamMetadata(
@@ -140,7 +141,7 @@ public class CombinationCriteriaTests : SqliteDbPerTest<CombinationCriteriaTests
 				.Chunk(
 					Rec.Write(t++, "ab-1", timestamp: Expired), // 0
 					Rec.Write(t++, "ab-1", timestamp: Expired), // 1 <-- maxage discard
-					Rec.Write(t++, "ab-1", timestamp: Active), // 2 
+					Rec.Write(t++, "ab-1", timestamp: Active), // 2
 					Rec.Write(t++, "ab-1", timestamp: Active), // 3 <-- tb discard
 					Rec.Write(t++, "ab-1", timestamp: Active), // 4 <-- keep
 					Rec.Write(t++, "$$ab-1", "$metadata", metadata: new StreamMetadata(
@@ -163,9 +164,9 @@ public class CombinationCriteriaTests : SqliteDbPerTest<CombinationCriteriaTests
 				.Chunk(
 					Rec.Write(t++, "ab-1", timestamp: Expired), // 0
 					Rec.Write(t++, "ab-1", timestamp: Expired), // 1 <-- maxage discard
-					Rec.Write(t++, "ab-1", timestamp: Active), // 2 
+					Rec.Write(t++, "ab-1", timestamp: Active), // 2
 					Rec.Write(t++, "ab-1", timestamp: Active), // 3 <-- maxcount discard
-					Rec.Write(t++, "ab-1", timestamp: Active), // 4 
+					Rec.Write(t++, "ab-1", timestamp: Active), // 4
 					Rec.Write(t++, "ab-1", timestamp: Active), // 5 <-- tb discard
 					Rec.Write(t++, "ab-1", timestamp: Active), // 6 <-- keep
 					Rec.Write(t++, "$$ab-1", "$metadata", metadata: new StreamMetadata(
@@ -189,7 +190,7 @@ public class CombinationCriteriaTests : SqliteDbPerTest<CombinationCriteriaTests
 				.Chunk(
 					Rec.Write(t++, "ab-1", timestamp: Expired), // 0
 					Rec.Write(t++, "ab-1", timestamp: Expired), // 1 <-- maxcount discard
-					Rec.Write(t++, "ab-1", timestamp: Expired), // 2 
+					Rec.Write(t++, "ab-1", timestamp: Expired), // 2
 					Rec.Write(t++, "ab-1", timestamp: Expired), // 3 <-- maxage discard
 					Rec.Write(t++, "ab-1", timestamp: Active), // 4 <-- keep
 					Rec.Write(t++, "$$ab-1", "$metadata", metadata: new StreamMetadata(
@@ -219,7 +220,7 @@ public class CombinationCriteriaTests : SqliteDbPerTest<CombinationCriteriaTests
 				.Chunk(
 					Rec.Write(t++, "ab-1", timestamp: Expired), // 0
 					Rec.Write(t++, "ab-1", timestamp: Expired), // 1 <-- tb discard
-					Rec.Write(t++, "ab-1", timestamp: Expired), // 2 
+					Rec.Write(t++, "ab-1", timestamp: Expired), // 2
 					Rec.Write(t++, "ab-1", timestamp: Expired), // 3 <-- maxage discard
 					Rec.Write(t++, "ab-1", timestamp: Active), // 4 <-- keep
 					Rec.Write(t++, "$$ab-1", "$metadata", metadata: new StreamMetadata(
@@ -249,9 +250,9 @@ public class CombinationCriteriaTests : SqliteDbPerTest<CombinationCriteriaTests
 				.Chunk(
 					Rec.Write(t++, "ab-1", timestamp: Expired), // 0
 					Rec.Write(t++, "ab-1", timestamp: Expired), // 1 <-- maxcount discard
-					Rec.Write(t++, "ab-1", timestamp: Expired), // 2 
+					Rec.Write(t++, "ab-1", timestamp: Expired), // 2
 					Rec.Write(t++, "ab-1", timestamp: Expired), // 3 <-- tb discard
-					Rec.Write(t++, "ab-1", timestamp: Expired), // 4 
+					Rec.Write(t++, "ab-1", timestamp: Expired), // 4
 					Rec.Write(t++, "ab-1", timestamp: Expired), // 5 <-- maxage discard
 					Rec.Write(t++, "ab-1", timestamp: Active), // 6 <-- keep
 					Rec.Write(t++, "$$ab-1", "$metadata", metadata: new StreamMetadata(

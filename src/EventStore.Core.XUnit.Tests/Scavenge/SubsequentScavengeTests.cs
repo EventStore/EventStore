@@ -12,6 +12,7 @@ using EventStore.Core.XUnit.Tests.Scavenge.Infrastructure;
 using EventStore.Core.XUnit.Tests.Scavenge.Sqlite;
 using Xunit;
 using static EventStore.Core.XUnit.Tests.Scavenge.Infrastructure.StreamMetadatas;
+#pragma warning disable CS0162 // Unreachable code detected
 
 namespace EventStore.Core.XUnit.Tests.Scavenge;
 

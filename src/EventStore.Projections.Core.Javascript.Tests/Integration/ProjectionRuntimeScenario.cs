@@ -44,7 +44,9 @@ public abstract class ProjectionRuntimeScenario: SubsystemScenario {
 		subsystem.Start();
 
 		return (() => {
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 			subsystem.Stop();
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 			return db.DisposeAsync();
 		}, subsystem.LeaderInputQueue);
 	}
