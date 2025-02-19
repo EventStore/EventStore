@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
+using EventStore.Core.Tests.Helpers.Logging;
 using NUnit.Framework;
+using Serilog;
 
 namespace EventStore.Core.Tests.ClientAPI;
 
@@ -39,7 +41,7 @@ public abstract class SpecificationWithMiniNode<TLogFormat, TStreamId> : Specifi
 
 	[OneTimeSetUp]
 	public override async Task TestFixtureSetUp() {
-		
+		Log.Logger = new LoggerConfiguration().WriteTo.Console().WriteTo.NUnitOutput().MinimumLevel.Debug().CreateLogger();
 		MiniNodeLogging.Setup();
 		
 		try {

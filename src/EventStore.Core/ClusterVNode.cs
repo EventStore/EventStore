@@ -81,7 +81,6 @@ using EventStore.Plugins.Authorization;
 using EventStore.Plugins.Subsystems;
 using EventStore.Plugins.Transforms;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -124,7 +123,7 @@ public abstract class ClusterVNode {
 	abstract public IPublisher MainQueue { get; }
 	abstract public ISubscriber MainBus { get; }
 	abstract public QueueStatsManager QueueStatsManager { get; }
-	abstract public IStartup Startup { get; }
+	abstract public IInternalStartup Startup { get; }
 	abstract public IAuthenticationProvider AuthenticationProvider { get; }
 	abstract public IHttpService HttpService { get; }
 	abstract public VNodeInfo NodeInfo { get; }
@@ -162,7 +161,7 @@ public class ClusterVNode<TStreamId> :
 
 	public override QueueStatsManager QueueStatsManager => _queueStatsManager;
 
-	public override IStartup Startup => _startup;
+	public override IInternalStartup Startup => _startup;
 
 	public override IAuthenticationProvider AuthenticationProvider {
 		get { return _authenticationProvider; }

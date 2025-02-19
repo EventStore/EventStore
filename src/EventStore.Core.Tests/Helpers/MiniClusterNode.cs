@@ -25,6 +25,7 @@ using EventStore.Core.Tests.Services.Transport.Tcp;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Data;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
@@ -63,7 +64,7 @@ public class MiniClusterNode<TLogFormat, TStreamId> {
 	public Task AdminUserCreated => _adminUserCreated.Task;
 
 	public VNodeState NodeState = VNodeState.Unknown;
-	private readonly IWebHost _host;
+	private readonly WebApplication _host;
 
 	private static bool EnableHttps() => !RuntimeInformation.IsOSX;
 
@@ -199,8 +200,9 @@ public class MiniClusterNode<TLogFormat, TStreamId> {
 			Guid.NewGuid(), debugIndex);
 		Node.HttpService.SetupController(new TestController(Node.MainQueue));
 
-		_host = new WebHostBuilder()
-			.UseKestrel(o => {
+		var builder = WebApplication.CreateBuilder();
+		builder.WebHost
+			.ConfigureKestrel(o => {
 				o.Listen(HttpEndPoint, options => {
 					if (RuntimeInformation.IsOSX) {
 						options.Protocols = HttpProtocols.Http2;
@@ -219,13 +221,15 @@ public class MiniClusterNode<TLogFormat, TStreamId> {
 						});
 					}
 				});
-			})
-			.UseStartup(Node.Startup)
-			.Build();
+			});
+		Node.Startup.ConfigureServices(builder.Services);
+		_host = builder.Build();
+		Node.Startup.Configure(_host);
 	}
 
 	public async Task Start() {
 		StartingTime.Start();
+		await _host.StartAsync();
 
 		Node.MainBus.Subscribe(
 			new AdHocHandler<SystemMessage.StateChangeMessage>(m => {
@@ -263,7 +267,6 @@ public class MiniClusterNode<TLogFormat, TStreamId> {
 			Node.MainBus.Unsubscribe(waitForAdminUser);
 		}
 
-		_host.Start();
 		await Node.StartAsync(waitUntilReady: false, CancellationToken.None);
 	}
 
@@ -282,7 +285,10 @@ public class MiniClusterNode<TLogFormat, TStreamId> {
 
 	public async Task Shutdown(bool keepDb = false) {
 		StoppingTime.Start();
-		_host?.Dispose();
+		if (_host != null) {
+			await _host.DisposeAsync();
+		}
+
 		await Node.StopAsync().WithTimeout(TimeSpan.FromSeconds(20));
 
 		// the same message 'BecomeShutdown' triggers the disposal of the ReadIndex

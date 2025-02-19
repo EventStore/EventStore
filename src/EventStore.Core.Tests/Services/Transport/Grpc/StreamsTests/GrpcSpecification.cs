@@ -5,7 +5,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,9 +14,6 @@ using EventStore.Core.Tests.Helpers;
 using Google.Protobuf;
 using Grpc.Core;
 using Grpc.Net.Client;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.TestHost;
-using Microsoft.Extensions.Hosting;
 using NUnit.Framework;
 using Convert = System.Convert;
 using Streams = EventStore.Client.Streams.Streams;
@@ -27,25 +23,15 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests;
 
 public abstract class GrpcSpecification<TLogFormat, TStreamId> {
-	protected readonly GrpcChannel Channel;
+	protected GrpcChannel Channel;
 	private readonly MiniNode<TLogFormat, TStreamId> _node;
-	protected MiniNode<TLogFormat, TStreamId> Node => _node;
-	internal Streams.StreamsClient StreamsClient { get; }
-	private readonly BatchAppender _batchAppender;
+	internal Streams.StreamsClient StreamsClient { get; set; }
+	private BatchAppender _batchAppender;
 
 	protected GrpcSpecification(IExpiryStrategy expiryStrategy = null) {
 		_node = new MiniNode<TLogFormat, TStreamId>(GetType().FullName,
 			inMemDb: true,
 			expiryStrategy: expiryStrategy);
-
-		Channel = GrpcChannel.ForAddress(new UriBuilder {
-			Scheme = Uri.UriSchemeHttps
-		}.Uri, new GrpcChannelOptions {
-			HttpClient = _node.HttpClient,
-			DisposeHttpClient = false,
-		});
-		StreamsClient = new Streams.StreamsClient(Channel);
-		_batchAppender = new BatchAppender(StreamsClient);
 	}
 
 	protected abstract Task Given();
@@ -56,6 +42,15 @@ public abstract class GrpcSpecification<TLogFormat, TStreamId> {
 	public async Task SetUp() {
 		await _node.Start();
 		await _node.AdminUserCreated;
+
+		Channel = GrpcChannel.ForAddress(
+			new UriBuilder { Scheme = Uri.UriSchemeHttps }.Uri,
+			new() {
+				HttpClient = _node.HttpClient,
+				DisposeHttpClient = false,
+			});
+		StreamsClient = new(Channel);
+		_batchAppender = new(StreamsClient);
 		_batchAppender.Start();
 		try {
 			await Given().WithTimeout(TimeSpan.FromSeconds(30));
