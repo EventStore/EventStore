@@ -18,7 +18,6 @@ using EventStore.Plugins;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
@@ -38,7 +37,7 @@ using ServerFeatures = EventStore.Core.Services.Transport.Grpc.ServerFeatures;
 #nullable enable
 namespace EventStore.Core;
 
-public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.SystemReady>,
+public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMessage.SystemReady>,
 	IHandle<SystemMessage.BecomeShuttingDown> {
 
 	private readonly IReadOnlyList<IPlugableComponent> _plugableComponents;
@@ -78,34 +77,18 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 		string clusterDns,
 		Func<IServiceCollection, IServiceCollection> configureNodeServices,
 		Action<IApplicationBuilder> configureNode) {
-
-		Ensure.Positive(maxAppendSize, nameof(maxAppendSize));
-
-		if (httpService == null) {
-			throw new ArgumentNullException(nameof(httpService));
-		}
-
-		ArgumentNullException.ThrowIfNull(configuration);
-
-		if (mainBus == null) {
-			throw new ArgumentNullException(nameof(mainBus));
-		}
-
-		if (monitoringQueue == null) {
-			throw new ArgumentNullException(nameof(monitoringQueue));
-		}
 		_plugableComponents = plugableComponents;
 		_mainQueue = mainQueue;
-		_monitoringQueue = monitoringQueue;
-		_mainBus = mainBus;
+		_monitoringQueue = monitoringQueue ?? throw new ArgumentNullException(nameof(monitoringQueue));
+		_mainBus = mainBus ?? throw new ArgumentNullException(nameof(mainBus));
 		_httpMessageHandler = httpMessageHandler;
 		_authenticationProvider = authenticationProvider;
 		_authorizationProvider = authorizationProvider ?? throw new ArgumentNullException(nameof(authorizationProvider));
-		_maxAppendSize = maxAppendSize;
+		_maxAppendSize = Ensure.Positive(maxAppendSize);
 		_writeTimeout = writeTimeout;
 		_expiryStrategy = expiryStrategy;
-		_httpService = httpService;
-		_configuration = configuration;
+		_httpService = Ensure.NotNull(httpService);
+		_configuration = Ensure.NotNull(configuration);
 		_trackers = trackers;
 		_clusterDns = clusterDns;
 		_configureNodeServices = configureNodeServices ?? throw new ArgumentNullException(nameof(configureNodeServices));
@@ -113,13 +96,13 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 		_statusCheck = new StatusCheck(this);
 	}
 
-	public void Configure(IApplicationBuilder app) {
+	public void Configure(WebApplication app) {
 		_configureNode(app);
 
 		var internalDispatcher = new InternalDispatcherEndpoint(_mainQueue, _httpMessageHandler);
 		_mainBus.Subscribe(internalDispatcher);
 
-		app = app.Map("/health", _statusCheck.Configure)
+		app.Map("/health", _statusCheck.Configure)
 			// AuthenticationMiddleware uses _httpAuthenticationProviders and assigns
 			// the resulting ClaimsPrinciple to HttpContext.User
 			.UseMiddleware<AuthenticationMiddleware>()
@@ -136,49 +119,41 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 		foreach (var component in _plugableComponents)
 			component.ConfigureApplication(app, _configuration);
 
-		app.UseEndpoints(ep => {
-				_authenticationProvider.ConfigureEndpoints(ep);
+		_authenticationProvider.ConfigureEndpoints(app);
 
-				ep.MapGrpcService<PersistentSubscriptions>();
-				ep.MapGrpcService<Users>();
-				ep.MapGrpcService<Streams<TStreamId>>();
-				ep.MapGrpcService<ClusterGossip>();
-				ep.MapGrpcService<Elections>();
-				ep.MapGrpcService<Operations>();
-				ep.MapGrpcService<ClientGossip>();
-				ep.MapGrpcService<Monitoring>();
-				ep.MapGrpcService<ServerFeatures>();
+		// Select an appropriate controller action and codec.
+		//    Success -> Add InternalContext (HttpEntityManager, urimatch, ...) to HttpContext
+		//    Fail -> Pipeline terminated with response.
+		app.UseMiddleware<KestrelToInternalBridgeMiddleware>();
 
-				// enable redaction service on unix sockets only
-				ep.MapGrpcService<Redaction>().AddEndpointFilter(async (c, next) => {
-					if (!c.HttpContext.IsUnixSocketConnection())
-						return Results.BadRequest("Redaction is only available via Unix Sockets");
-					return await next(c).ConfigureAwait(false);
-				});
+		// Looks up the InternalContext to perform the check.
+		// Terminal if auth check is not successful.
+		app.UseMiddleware<AuthorizationMiddleware>();
 
-				// Map the legacy controller endpoints with special middleware pipeline
-				ep.MapLegacyHttp(
-					ep.CreateApplicationBuilder()
-						// Select an appropriate controller action and codec.
-						//    Success -> Add InternalContext (HttpEntityManager, urimatch, ...) to HttpContext
-						//    Fail -> Pipeline terminated with response.
-						.UseMiddleware<KestrelToInternalBridgeMiddleware>()
+		// Open telemetry currently guarded by our custom authz for consistency with stats
+		app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
-						// Looks up the InternalContext to perform the check.
-						// Terminal if auth check is not successful.
-						.UseMiddleware<AuthorizationMiddleware>()
+		// Internal dispatcher looks up the InternalContext to call the appropriate controller
+		app.Use((ctx, next) => internalDispatcher.InvokeAsync(ctx, next));
 
-						// Open telemetry currently guarded by our custom authz for consistency with stats
-						.UseOpenTelemetryPrometheusScrapingEndpoint()
-
-						// Internal dispatcher looks up the InternalContext to call the appropriate controller
-						.Use(x => internalDispatcher.InvokeAsync)
-						.Build(),
-					_httpService);
-			});
+		app.MapGrpcService<PersistentSubscriptions>();
+		app.MapGrpcService<Users>();
+		app.MapGrpcService<Streams<TStreamId>>();
+		app.MapGrpcService<ClusterGossip>();
+		app.MapGrpcService<Elections>();
+		app.MapGrpcService<Operations>();
+		app.MapGrpcService<ClientGossip>();
+		app.MapGrpcService<Monitoring>();
+		app.MapGrpcService<ServerFeatures>();
+		// enable redaction service on unix sockets only
+		app.MapGrpcService<Redaction>().AddEndpointFilter(async (c, next) => {
+			if (!c.HttpContext.IsUnixSocketConnection())
+				return Results.BadRequest("Redaction is only available via Unix Sockets");
+			return await next(c).ConfigureAwait(false);
+		});
 	}
 
-	public IServiceProvider ConfigureServices(IServiceCollection services) {
+	public void ConfigureServices(IServiceCollection services) {
 		var metricsConfiguration = MetricsConfiguration.Get(_configuration);
 
 		services = services
@@ -271,8 +246,6 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 
 		foreach (var component in _plugableComponents)
 			component.ConfigureServices(services, _configuration);
-
-		return services.BuildServiceProvider();
 	}
 
 	public void Handle(SystemMessage.SystemReady _) => _ready = true;

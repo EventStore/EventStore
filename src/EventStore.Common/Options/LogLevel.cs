@@ -10,5 +10,10 @@ public enum LogLevel {
 	Information = 3,
 	Warning = 4,
 	Error = 5,
-	Fatal = 6
+	Fatal = 6,
+
+	// support for MS levels
+	Trace = Verbose,
+	Critical = Fatal,
+	None = Fatal,
 }

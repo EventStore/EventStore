@@ -193,12 +193,22 @@ public class EventStoreLoggerConfiguration {
 				() => TrySetLogLevel(namedLogLevelSection, levelSwitch));
 		}
 
+		// the log level must be a valid microsoft level, we have been keeping the log config in the section
+		// that the ms libraries will access.
 		static void TrySetLogLevel(IConfigurationSection logLevel, LoggingLevelSwitch levelSwitch) {
-			if (!Enum.TryParse<LogEventLevel>(logLevel.Value, out var level)) {
-				return;
-			}
+			if (!Enum.TryParse<Microsoft.Extensions.Logging.LogLevel>(logLevel.Value, out var level))
+				throw new UnknownLogLevelException(logLevel.Value, logLevel.Path);
 
-			levelSwitch.MinimumLevel = level;
+			levelSwitch.MinimumLevel = level switch {
+				Microsoft.Extensions.Logging.LogLevel.None => LogEventLevel.Fatal,
+				Microsoft.Extensions.Logging.LogLevel.Trace => LogEventLevel.Verbose,
+				Microsoft.Extensions.Logging.LogLevel.Debug => LogEventLevel.Debug,
+				Microsoft.Extensions.Logging.LogLevel.Information => LogEventLevel.Information,
+				Microsoft.Extensions.Logging.LogLevel.Warning => LogEventLevel.Warning,
+				Microsoft.Extensions.Logging.LogLevel.Error => LogEventLevel.Error,
+				Microsoft.Extensions.Logging.LogLevel.Critical => LogEventLevel.Fatal,
+				_ => throw new UnknownLogLevelException(logLevel.Value, logLevel.Path)
+			};
 		}
 	}
 
@@ -217,4 +227,9 @@ public class EventStoreLoggerConfiguration {
 
 	public static implicit operator LoggerConfiguration(EventStoreLoggerConfiguration configuration) =>
 		configuration._loggerConfiguration;
+}
+
+class UnknownLogLevelException(string logLevel, string path)
+	: InvalidConfigurationException($"Unknown log level: \"{logLevel}\" at \"{path}\". Known log levels: {string.Join(", ", KnownLogLevels)}") {
+	static string[] KnownLogLevels => Enum.GetNames(typeof(Microsoft.Extensions.Logging.LogLevel));
 }

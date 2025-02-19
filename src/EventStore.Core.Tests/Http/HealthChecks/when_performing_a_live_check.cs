@@ -18,8 +18,9 @@ public class when_performing_a_live_check<TLogFormat, TStreamId> : Specification
 	private MiniNode<TLogFormat, TStreamId> _node;
 	private bool _nodeStarted;
 	[SetUp]
-	public void SetUp() {
+	public async Task SetUp() {
 		_node = new MiniNode<TLogFormat, TStreamId>(PathName);
+		await _node.StartTestServer();
 	}
 
 	[TearDown]
