@@ -13,6 +13,9 @@ ARG NUGET_CREDS_EVENTSTORE="*** required ***"
 ARG NUGET_CREDS_KURRENTDB="*** required ***"
 ENV NuGetPackageSourceCredentials_EventStore=${NUGET_CREDS_EVENTSTORE}
 ENV NuGetPackageSourceCredentials_KurrentDB=${NUGET_CREDS_KURRENTDB}
+WORKDIR /build
+COPY ./docker ./scripts
+
 WORKDIR /build/ci
 COPY ./ci ./
 
@@ -25,9 +28,7 @@ COPY ./src .
 WORKDIR /build/.git
 COPY ./.git/ .
 
-WORKDIR /build/src
-RUN find /build/src -maxdepth 1 -type d -name "*.Tests" -print0 | xargs -I{} -0 -n1 sh -c \
-    'dotnet publish --runtime=${RUNTIME} --no-self-contained --configuration Release --output /build/published-tests/`basename $1` $1' - '{}'
+RUN /build/scripts/build.sh /build/src /build/published-tests
 
 # "test" image
 FROM build as test
@@ -36,13 +37,8 @@ WORKDIR /build
 #COPY --from=build ./build/ci ./ci
 #COPY --from=build ./build/src/EventStore.Core.Tests/Services/Transport/Tcp/test_certificates/ca/ca.crt /usr/local/share/ca-certificates/ca_eventstore_test.crt
 RUN mkdir ./test-results
-RUN printf '#!/usr/bin/env sh\n\
-update-ca-certificates\n\
-ASPNETCORE_TEST_CONTENTROOT_EVENTSTORE_AUTOSCAVENGE_TESTS=/build/published-tests dotnet test --blame --blame-hang-timeout 5min --settings /build/ci/ci.runsettings --logger:"GitHubActions;report-warnings=false" --logger:html --logger:trx --logger:"console;verbosity=normal" --results-directory /build/test-results /build/src/EventStore.sln' \
-    >> /build/test.sh && \
-    chmod +x /build/test.sh
 
-CMD ["/build/test.sh"]
+CMD ["/build/scripts/test.sh"]
 
 # "publish" image
 FROM build as publish
