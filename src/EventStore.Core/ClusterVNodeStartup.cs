@@ -113,6 +113,7 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 			// is driven by the HttpContext.User established above
 			.UseAuthentication()
 			.UseRouting()
+			.UseCors("default")
 			.UseAuthorization();
 
 		// allow all subsystems to register their legacy controllers before calling MapLegacyHttp

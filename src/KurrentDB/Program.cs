@@ -29,6 +29,7 @@ using KurrentDB;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Logging;
 using Serilog.Events;
+using HttpMethod = EventStore.Transport.Http.HttpMethod;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
 
 var optionsWithLegacyDefaults = LocationOptionWithLegacyDefault.SupportedLegacyLocations;
@@ -202,6 +203,10 @@ try {
 			var builder = WebApplication.CreateBuilder(args);
 			builder.Configuration.AddConfiguration(configuration);
 			builder.Logging.ClearProviders().AddSerilog();
+			builder.Services.AddCors(o => o.AddPolicy(
+				"default",
+				b => b.AllowAnyOrigin().WithMethods(HttpMethod.Options, HttpMethod.Get).AllowAnyHeader())
+			);
 			builder.Services.Configure<KestrelServerOptions>(configuration.GetSection("Kestrel"));
 			builder.Services.Configure<HostOptions>(x => {
 				x.ShutdownTimeout = ClusterVNode.ShutdownTimeout + TimeSpan.FromSeconds(1);
