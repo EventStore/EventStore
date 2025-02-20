@@ -1,6 +1,6 @@
 # "build" image
 ARG CONTAINER_RUNTIME=jammy
-FROM mcr.microsoft.com/dotnet/sdk:8.0-jammy AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0-${CONTAINER_RUNTIME} AS build
 ARG RUNTIME=linux-x64
 
 WORKDIR /build
@@ -30,18 +30,15 @@ RUN find /build/src -maxdepth 1 -type d -name "*.Tests" -print0 | xargs -I{} -0 
     'dotnet publish --runtime=${RUNTIME} --no-self-contained --configuration Release --output /build/published-tests/`basename $1` $1' - '{}'
 
 # "test" image
-FROM mcr.microsoft.com/dotnet/sdk:8.0-${CONTAINER_RUNTIME} as test
+FROM build as test
 WORKDIR /build
-COPY --from=build ./build/published-tests ./published-tests
-COPY --from=build ./build/ci ./ci
-COPY --from=build ./build/src/EventStore.Core.Tests/Services/Transport/Tcp/test_certificates/ca/ca.crt /usr/local/share/ca-certificates/ca_eventstore_test.crt
+#COPY --from=build ./build/published-tests ./published-tests
+#COPY --from=build ./build/ci ./ci
+#COPY --from=build ./build/src/EventStore.Core.Tests/Services/Transport/Tcp/test_certificates/ca/ca.crt /usr/local/share/ca-certificates/ca_eventstore_test.crt
 RUN mkdir ./test-results
 RUN printf '#!/usr/bin/env sh\n\
 update-ca-certificates\n\
-find /build/published-tests -maxdepth 1 -type d -name "*.Tests" -print0 | xargs -I{} -0 -n1 sh -c '"'"'proj=`basename $1` && ASPNETCORE_TEST_CONTENTROOT_EVENTSTORE_AUTOSCAVENGE_TESTS=/build/published-tests dotnet test --blame --blame-hang-timeout 5min --settings /build/ci/ci.runsettings --logger:"GitHubActions;report-warnings=false" --logger:html --logger:trx --logger:"console;verbosity=normal" --results-directory /build/test-results/$proj $1/$proj.dll'"'"' - '"'"'{}'"'"'\n\
-exit_code=$?\n\
-echo $(find /build/test-results -name "*.html" | xargs cat) > /build/test-results/test-results.html\n\
-exit $exit_code' \
+ASPNETCORE_TEST_CONTENTROOT_EVENTSTORE_AUTOSCAVENGE_TESTS=/build/published-tests dotnet test --blame --blame-hang-timeout 5min --settings /build/ci/ci.runsettings --logger:"GitHubActions;report-warnings=false" --logger:html --logger:trx --logger:"console;verbosity=normal" --results-directory /build/test-results /build/src/EventStore.sln' \
     >> /build/test.sh && \
     chmod +x /build/test.sh
 
