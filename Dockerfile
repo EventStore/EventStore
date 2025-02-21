@@ -1,5 +1,6 @@
 # "build" image
 ARG CONTAINER_RUNTIME=jammy
+# NOT A BUG: we can't build on alpine so we use jammy as a base image
 FROM mcr.microsoft.com/dotnet/sdk:8.0-jammy AS build
 ARG RUNTIME=linux-x64
 
