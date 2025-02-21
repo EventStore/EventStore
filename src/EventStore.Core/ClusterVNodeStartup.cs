@@ -17,6 +17,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Plugins;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
+using EventStore.Transport.Http;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -113,6 +114,7 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 			// is driven by the HttpContext.User established above
 			.UseAuthentication()
 			.UseRouting()
+			.UseCors("default")
 			.UseAuthorization();
 
 		// allow all subsystems to register their legacy controllers before calling MapLegacyHttp
@@ -241,6 +243,11 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 			.AddServiceOptions<Streams<TStreamId>>(options =>
 				options.MaxReceiveMessageSize = TFConsts.EffectiveMaxLogRecordSize)
 			.Services;
+
+		services.AddCors(o => o.AddPolicy(
+			"default",
+			b => b.AllowAnyOrigin().WithMethods(HttpMethod.Options, HttpMethod.Get).AllowAnyHeader())
+		);
 
 		services = _configureNodeServices(services);
 
