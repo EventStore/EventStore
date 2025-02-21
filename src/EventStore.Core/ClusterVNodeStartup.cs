@@ -17,6 +17,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Plugins;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
+using EventStore.Transport.Http;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -39,7 +40,6 @@ namespace EventStore.Core;
 
 public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMessage.SystemReady>,
 	IHandle<SystemMessage.BecomeShuttingDown> {
-
 	private readonly IReadOnlyList<IPlugableComponent> _plugableComponents;
 	private readonly IPublisher _mainQueue;
 	private readonly IPublisher _monitoringQueue;
@@ -157,13 +157,11 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 	public void ConfigureServices(IServiceCollection services) {
 		var metricsConfiguration = MetricsConfiguration.Get(_configuration);
 
-		services = services
-			.AddRouting()
-			.AddAuthentication(o => o
-				.AddScheme<EventStoreAuthenticationHandler>("es auth", displayName: null))
-				.Services
-			.AddAuthorization()
-			.AddSingleton(_authenticationProvider)
+		services.AddRouting();
+		services.AddAuthentication(o => o
+			.AddScheme<EventStoreAuthenticationHandler>("es auth", displayName: null));
+		services.AddAuthorization();
+		services.AddSingleton(_authenticationProvider)
 			.AddSingleton(_authorizationProvider)
 			.AddSingleton<ISubscriber>(_mainBus)
 			.AddSingleton<IPublisher>(_mainQueue)
@@ -184,10 +182,14 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 			.AddSingleton(new ClientGossip(_mainQueue, _authorizationProvider, _trackers.GossipTrackers.ProcessingRequestFromGrpcClient))
 			.AddSingleton(new Monitoring(_monitoringQueue))
 			.AddSingleton(new Redaction(_mainQueue, _authorizationProvider))
-			.AddSingleton<ServerFeatures>()
+			.AddSingleton<ServerFeatures>();
+		services.AddCors(o => o.AddPolicy(
+			"default",
+			b => b.AllowAnyOrigin().WithMethods(HttpMethod.Options, HttpMethod.Get).AllowAnyHeader())
+		);
 
-			// OpenTelemetry
-			.AddOpenTelemetry()
+		// OpenTelemetry
+		services.AddOpenTelemetry()
 			.WithMetrics(meterOptions => meterOptions
 				.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("kurrentdb"))
 				.AddMeter(metricsConfiguration.Meters)
@@ -201,22 +203,22 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 							]
 						};
 					else if (i.Name.StartsWith("kurrentdb-") &&
-						i.Name.EndsWith("-latency") &&
-						i.Unit == "seconds")
+					         i.Name.EndsWith("-latency") &&
+					         i.Unit == "seconds")
 						return new ExplicitBucketHistogramConfiguration {
 							Boundaries = [
 								0.001, //    1 ms
 								0.005, //    5 ms
-								0.01,  //   10 ms
-								0.05,  //   50 ms
-								0.1,   //  100 ms
-								0.5,   //  500 ms
-								1,     // 1000 ms
-								5,     // 5000 ms
+								0.01, //   10 ms
+								0.05, //   50 ms
+								0.1, //  100 ms
+								0.5, //  500 ms
+								1, // 1000 ms
+								5, // 5000 ms
 							]
 						};
 					else if (i.Name.StartsWith("kurrentdb-") &&
-						i.Unit == "seconds")
+					         i.Unit == "seconds")
 						return new ExplicitBucketHistogramConfiguration {
 							Boundaries = [
 								0.000_001, // 1 microsecond
@@ -231,19 +233,15 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 						};
 					return default;
 				})
-				.AddPrometheusExporter(options => options.ScrapeResponseCacheDurationMilliseconds = 1000))
-			.Services
+				.AddPrometheusExporter(options => options.ScrapeResponseCacheDurationMilliseconds = 1000));
 
-			// gRPC
-			.AddSingleton<RetryInterceptor>()
-			.AddGrpc(options => {
-				options.Interceptors.Add<RetryInterceptor>();
-			})
+		// gRPC
+		services.AddSingleton<RetryInterceptor>()
+			.AddGrpc(options => options.Interceptors.Add<RetryInterceptor>())
 			.AddServiceOptions<Streams<TStreamId>>(options =>
-				options.MaxReceiveMessageSize = TFConsts.EffectiveMaxLogRecordSize)
-			.Services;
+				options.MaxReceiveMessageSize = TFConsts.EffectiveMaxLogRecordSize);
 
-		services = _configureNodeServices(services);
+		 _configureNodeServices(services);
 
 		foreach (var component in _plugableComponents)
 			component.ConfigureServices(services, _configuration);
@@ -273,7 +271,7 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 		private MidFunc Live => (context, next) => {
 			if (_startup._ready) {
 				if (context.Request.Query.TryGetValue("liveCode", out var expected) &&
-					int.TryParse(expected, out var statusCode)) {
+				    int.TryParse(expected, out var statusCode)) {
 					context.Response.StatusCode = statusCode;
 				} else {
 					context.Response.StatusCode = _livecode;
@@ -281,6 +279,7 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 			} else {
 				context.Response.StatusCode = 503;
 			}
+
 			return Task.CompletedTask;
 		};
 
