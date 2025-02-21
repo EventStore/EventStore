@@ -1,6 +1,6 @@
 # "build" image
 ARG CONTAINER_RUNTIME=jammy
-FROM mcr.microsoft.com/dotnet/sdk:8.0-${CONTAINER_RUNTIME} AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0-jammy AS build
 ARG RUNTIME=linux-x64
 
 WORKDIR /build
@@ -31,11 +31,12 @@ COPY ./.git/ .
 RUN /build/scripts/build.sh /build/src /build/published-tests
 
 # "test" image
-FROM build as test
+FROM mcr.microsoft.com/dotnet/sdk:8.0-${CONTAINER_RUNTIME} as test
 WORKDIR /build
-#COPY --from=build ./build/published-tests ./published-tests
-#COPY --from=build ./build/ci ./ci
-#COPY --from=build ./build/src/EventStore.Core.Tests/Services/Transport/Tcp/test_certificates/ca/ca.crt /usr/local/share/ca-certificates/ca_eventstore_test.crt
+COPY --from=build ./build/published-tests ./published-tests
+COPY --from=build ./build/ci ./ci
+COPY --from=build ./build/scripts ./scripts
+COPY --from=build ./build/src/EventStore.Core.Tests/Services/Transport/Tcp/test_certificates/ca/ca.crt /usr/local/share/ca-certificates/ca_eventstore_test.crt
 RUN mkdir ./test-results
 
 CMD ["/build/scripts/test.sh"]
