@@ -17,6 +17,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Plugins;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
+using EventStore.Transport.Http;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -24,11 +25,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
-using MidFunc = System.Func<
-	Microsoft.AspNetCore.Http.HttpContext,
-	System.Func<System.Threading.Tasks.Task>,
-	System.Threading.Tasks.Task
->;
 using Operations = EventStore.Core.Services.Transport.Grpc.Operations;
 using ClusterGossip = EventStore.Core.Services.Transport.Grpc.Cluster.Gossip;
 using ClientGossip = EventStore.Core.Services.Transport.Grpc.Gossip;
@@ -39,7 +35,6 @@ namespace EventStore.Core;
 
 public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMessage.SystemReady>,
 	IHandle<SystemMessage.BecomeShuttingDown> {
-
 	private readonly IReadOnlyList<IPlugableComponent> _plugableComponents;
 	private readonly IPublisher _mainQueue;
 	private readonly IPublisher _monitoringQueue;
@@ -102,16 +97,17 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 		var internalDispatcher = new InternalDispatcherEndpoint(_mainQueue, _httpMessageHandler);
 		_mainBus.Subscribe(internalDispatcher);
 
-		app.Map("/health", _statusCheck.Configure)
-			// AuthenticationMiddleware uses _httpAuthenticationProviders and assigns
-			// the resulting ClaimsPrinciple to HttpContext.User
-			.UseMiddleware<AuthenticationMiddleware>()
+		_statusCheck.MapLiveness(app.MapGroup("/health"));
 
-			// UseAuthentication/UseAuthorization allow the rest of the pipeline to access auth
-			// in a conventional way (e.g. with AuthorizeAttribute). The server doesn't make use
-			// of this yet but plugins may. The registered authentication scheme (es auth)
-			// is driven by the HttpContext.User established above
-			.UseAuthentication()
+		// AuthenticationMiddleware uses _httpAuthenticationProviders and assigns
+		// the resulting ClaimsPrinciple to HttpContext.User
+		app.UseMiddleware<AuthenticationMiddleware>();
+
+		// UseAuthentication/UseAuthorization allow the rest of the pipeline to access auth
+		// in a conventional way (e.g. with AuthorizeAttribute). The server doesn't make use
+		// of this yet but plugins may. The registered authentication scheme (es auth)
+		// is driven by the HttpContext.User established above
+		app.UseAuthentication()
 			.UseRouting()
 			.UseAuthorization();
 
@@ -160,7 +156,7 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 			.AddRouting()
 			.AddAuthentication(o => o
 				.AddScheme<EventStoreAuthenticationHandler>("es auth", displayName: null))
-				.Services
+			.Services
 			.AddAuthorization()
 			.AddSingleton(_authenticationProvider)
 			.AddSingleton(_authorizationProvider)
@@ -200,22 +196,22 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 							]
 						};
 					else if (i.Name.StartsWith("kurrentdb-") &&
-						i.Name.EndsWith("-latency") &&
-						i.Unit == "seconds")
+					         i.Name.EndsWith("-latency") &&
+					         i.Unit == "seconds")
 						return new ExplicitBucketHistogramConfiguration {
 							Boundaries = [
 								0.001, //    1 ms
 								0.005, //    5 ms
-								0.01,  //   10 ms
-								0.05,  //   50 ms
-								0.1,   //  100 ms
-								0.5,   //  500 ms
-								1,     // 1000 ms
-								5,     // 5000 ms
+								0.01, //   10 ms
+								0.05, //   50 ms
+								0.1, //  100 ms
+								0.5, //  500 ms
+								1, // 1000 ms
+								5, // 5000 ms
 							]
 						};
 					else if (i.Name.StartsWith("kurrentdb-") &&
-						i.Unit == "seconds")
+					         i.Unit == "seconds")
 						return new ExplicitBucketHistogramConfiguration {
 							Boundaries = [
 								0.000_001, // 1 microsecond
@@ -264,36 +260,19 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 			_startup = startup;
 		}
 
-		public void Configure(IApplicationBuilder builder) =>
-			builder.Use(GetAndHeadOnly)
-				.UseRouter(router => router
-					.MapMiddlewareGet("live", inner => inner.Use(Live)));
+		public void MapLiveness(RouteGroupBuilder builder) {
+			builder.MapMethods("live", [HttpMethod.Get, HttpMethod.Head], Handler);
+			return;
 
-		private MidFunc Live => (context, next) => {
-			if (_startup._ready) {
-				if (context.Request.Query.TryGetValue("liveCode", out var expected) &&
-					int.TryParse(expected, out var statusCode)) {
-					context.Response.StatusCode = statusCode;
-				} else {
-					context.Response.StatusCode = _livecode;
-				}
-			} else {
-				context.Response.StatusCode = 503;
-			}
-			return Task.CompletedTask;
-		};
+			Task Handler(HttpContext context) {
+				context.Response.StatusCode = _startup._ready
+					? context.Request.Query.TryGetValue("liveCode", out var expected) && int.TryParse(expected, out var statusCode)
+						? statusCode
+						: _livecode
+					: 503;
 
-		private static MidFunc GetAndHeadOnly => (context, next) => {
-			switch (context.Request.Method) {
-				case "HEAD":
-					context.Request.Method = "GET";
-					return next();
-				case "GET":
-					return next();
-				default:
-					context.Response.StatusCode = 405;
-					return Task.CompletedTask;
+				return Task.CompletedTask;
 			}
-		};
+		}
 	}
 }
