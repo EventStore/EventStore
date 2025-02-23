@@ -93,6 +93,7 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 		IAuthorizationProviderFactory authorizationProviderFactory = null,
 		IExpiryStrategy expiryStrategy = null,
 		string transform = "identity",
+		IConfiguration configuration = null,
 		IReadOnlyList<IDbTransform> newTransforms = null) {
 
 		_httpClientTimeoutSec = httpClientTimeoutSec;
@@ -165,15 +166,20 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 			.WithExternalTcpOn(TcpEndPoint)
 			.WithNodeEndpointOn(HttpEndPoint);
 
-		var inMemConf = new ConfigurationBuilder()
-			.AddInMemoryCollection(new KeyValuePair<string, string>[] {
+		var configurationBuilder = new ConfigurationBuilder()
+			.AddInMemoryCollection([
 				new($"{KurrentConfigurationKeys.Prefix}:TcpPlugin:NodeTcpPort", extTcpPort.ToString()),
 				new($"{KurrentConfigurationKeys.Prefix}:TcpPlugin:EnableExternalTcp", "true"),
 				new($"{KurrentConfigurationKeys.Prefix}:TcpUnitTestPlugin:NodeTcpPort", extTcpPort.ToString()),
 				new($"{KurrentConfigurationKeys.Prefix}:TcpUnitTestPlugin:NodeHeartbeatInterval", "10000"),
 				new($"{KurrentConfigurationKeys.Prefix}:TcpUnitTestPlugin:NodeHeartbeatTimeout", "10000"),
 				new($"{KurrentConfigurationKeys.Prefix}:TcpUnitTestPlugin:Insecure", options.Application.Insecure.ToString()),
-			}).Build();
+			]);
+
+		if (configuration is not null)
+			configurationBuilder.AddConfiguration(configuration);
+
+		var inMemConf = configurationBuilder.Build();
 
 		if (advertisedExtHostAddress != null)
 			options = options.AdvertiseNodeAs(new DnsEndPoint(advertisedExtHostAddress, advertisedHttpPort));
