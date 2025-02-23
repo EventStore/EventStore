@@ -16,7 +16,7 @@ public class DurationTrackerTests : IDisposable {
 	public DurationTrackerTests() {
 		var meter = new Meter($"{typeof(DurationTrackerTests)}");
 		_listener = new TestMeterListener<double>(meter);
-		var durationMetric = new DurationMetric(meter, "the-histogram", _clock);
+		var durationMetric = new DurationMetric(meter, "the-histogram", legacyNames: false, _clock);
 		_sut = new DurationTracker(durationMetric, "the-duration");
 	}
 

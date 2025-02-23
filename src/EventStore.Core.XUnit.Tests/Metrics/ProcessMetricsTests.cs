@@ -30,7 +30,7 @@ public class ProcessMetricsTests : IDisposable {
 			config[value] = true;
 		}
 
-		_sut = new ProcessMetrics(meter, TimeSpan.FromSeconds(42), scrapingPeriodInSeconds: 15, config);
+		_sut = new ProcessMetrics(meter, TimeSpan.FromSeconds(42), scrapingPeriodInSeconds: 15, config, legacyNames: false);
 		_sut.CreateObservableMetrics(new() {
 			{ MetricsConfiguration.ProcessTracker.UpTime, "eventstore-proc-up-time" },
 			{ MetricsConfiguration.ProcessTracker.Cpu, "eventstore-proc-cpu" },

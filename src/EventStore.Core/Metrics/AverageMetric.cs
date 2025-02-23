@@ -14,9 +14,12 @@ public class AverageMetric {
 	private readonly Func<string, Tag> _genTag;
 	private readonly Dictionary<string, (List<Func<double>>, Tag[])> _subMetricGroups = new();
 
-	public AverageMetric(Meter meter, string name, string unit, Func<string, Tag> genTag) {
+	public AverageMetric(Meter meter, string name, string unit, Func<string, Tag> genTag, bool legacyNames) {
 		_genTag = genTag;
-		meter.CreateObservableCounter(name, Observe, unit);
+		if (legacyNames)
+			meter.CreateObservableCounter(name + "-" + unit, Observe);
+		else
+			meter.CreateObservableCounter(name, Observe, unit);
 	}
 
 	public void Register(string group, Func<double> subMetric) {

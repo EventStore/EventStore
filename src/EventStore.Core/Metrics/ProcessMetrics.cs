@@ -16,7 +16,7 @@ using static EventStore.Common.Configuration.MetricsConfiguration;
 
 namespace EventStore.Core.Metrics;
 
-public class ProcessMetrics (Meter meter, TimeSpan timeout, int scrapingPeriodInSeconds, Dictionary<ProcessTracker, bool> config) {
+public class ProcessMetrics (Meter meter, TimeSpan timeout, int scrapingPeriodInSeconds, Dictionary<ProcessTracker, bool> config, bool legacyNames) {
 	private readonly Func<DiskIoData> _getDiskIo      = Functions.Debounce(ProcessStats.GetDiskIo, timeout);
 	private readonly Func<Process>    _getCurrentProc = Functions.Debounce(Process.GetCurrentProcess, timeout);
 
@@ -30,10 +30,10 @@ public class ProcessMetrics (Meter meter, TimeSpan timeout, int scrapingPeriodIn
 				var process = _getCurrentProc();
 				var upTime = (DateTime.Now - process.StartTime).TotalSeconds;
 				return new Measurement<double>(upTime, new KeyValuePair<string, object?>("pid", process.Id));
-			}, "seconds");
+			}, legacyNames ? null : "seconds");
 
 		if (enabledNames.TryGetValue(ProcessTracker.GcPauseDuration, out var gcMaxPauseName)) {
-			var maxGcPauseDurationMetric = new DurationMaxMetric(meter, gcMaxPauseName);
+			var maxGcPauseDurationMetric = new DurationMaxMetric(meter, gcMaxPauseName, legacyNames);
 			var maxGcPauseDurationTracker = new DurationMaxTracker(maxGcPauseDurationMetric, null, scrapingPeriodInSeconds);
 			_ = new GcSuspensionMetric(maxGcPauseDurationTracker);
 		}
@@ -56,12 +56,15 @@ public class ProcessMetrics (Meter meter, TimeSpan timeout, int scrapingPeriodIn
 
 		void CreateObservableCounter<T>(ProcessTracker tracker, Func<T> observe, string? unit = null) where T : struct {
 			if (enabledNames.TryGetValue(tracker, out var name))
-				meter.CreateObservableCounter(name, observe, unit);
+				meter.CreateObservableCounter(name, observe, legacyNames ? null : unit);
 		}
 
 		void CreateObservableUpDownCounter<T>(ProcessTracker tracker, Func<T> observe, string? unit = null) where T : struct {
 			if (enabledNames.TryGetValue(tracker, out var name))
-				meter.CreateObservableUpDownCounter(name, observe, unit);
+				if (legacyNames)
+					meter.CreateObservableUpDownCounter(unit is null ? name : $"{name}-{unit}", observe);
+				else
+					meter.CreateObservableUpDownCounter(name, observe, unit);
 		}
 	}
 
@@ -73,7 +76,10 @@ public class ProcessMetrics (Meter meter, TimeSpan timeout, int scrapingPeriodIn
 		dims.Register(ProcessTracker.MemVirtualBytes, () => _getCurrentProc().VirtualMemorySize64);
 
 		if (dims.AnyRegistered())
-			meter.CreateObservableGauge(metricName, dims.GenObserve(), "bytes");
+			if (legacyNames)
+				meter.CreateObservableGauge($"{metricName}-bytes", dims.GenObserve());
+			else
+				meter.CreateObservableGauge(metricName, dims.GenObserve(), "bytes");
 	}
 
 	public void CreateGcGenerationSizeMetric(string metricName, Dictionary<ProcessTracker, string> dimNames) {
@@ -89,7 +95,10 @@ public class ProcessMetrics (Meter meter, TimeSpan timeout, int scrapingPeriodIn
 		dims.Register(ProcessTracker.LohSize, () => (long)getGcGenerationSize(3));
 
 		if (dims.AnyRegistered())
-			meter.CreateObservableUpDownCounter(metricName, dims.GenObserve(), "bytes");
+			if (legacyNames)
+				meter.CreateObservableUpDownCounter($"{metricName}-bytes", dims.GenObserve());
+			else
+				meter.CreateObservableUpDownCounter(metricName, dims.GenObserve(), "bytes");
 	}
 
 	public void CreateGcCollectionCountMetric(string metricName, Dictionary<ProcessTracker, string> dimNames) {
@@ -110,7 +119,7 @@ public class ProcessMetrics (Meter meter, TimeSpan timeout, int scrapingPeriodIn
 		dims.Register(ProcessTracker.DiskWrittenBytes, () => (long)_getDiskIo().WrittenBytes);
 
 		if (dims.AnyRegistered())
-			meter.CreateObservableCounter(metricName, dims.GenObserve(), "bytes");
+			meter.CreateObservableCounter(metricName, dims.GenObserve(), legacyNames ? null : "bytes");
 	}
 
 	public void CreateDiskOpsMetric(string name, Dictionary<ProcessTracker, string> dimNames) {
@@ -120,6 +129,6 @@ public class ProcessMetrics (Meter meter, TimeSpan timeout, int scrapingPeriodIn
 		dims.Register(ProcessTracker.DiskWrittenOps, () => (long)_getDiskIo().WriteOps);
 
 		if (dims.AnyRegistered())
-			meter.CreateObservableCounter(name, dims.GenObserve(), "operations");
+			meter.CreateObservableCounter(name, dims.GenObserve(), legacyNames ? null : "operations");
 	}
 }

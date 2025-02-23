@@ -41,7 +41,7 @@ public class ElectionsCounterTrackerTests : IDisposable {
 		var listener = new TestMeterListener<long>(meter);
 		_disposables.RegisterForDispose(meter);
 
-		var metric = new CounterMetric(meter, "test-metric", unit: "");
+		var metric = new CounterMetric(meter, "test-metric", unit: "", legacyNames: false);
 		var sut = new ElectionsCounterTracker(new CounterSubMetric(metric, []));
 
 		return (sut, listener);

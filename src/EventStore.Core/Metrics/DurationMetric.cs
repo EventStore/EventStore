@@ -11,9 +11,13 @@ public class DurationMetric {
 	private readonly Histogram<double> _histogram;
 	private readonly IClock _clock;
 
-	public DurationMetric(Meter meter, string name, IClock clock = null) {
+	public DurationMetric(Meter meter, string name, bool legacyNames, IClock clock = null) {
 		_clock = clock ?? Clock.Instance;
-		_histogram = meter.CreateHistogram<double>(name, "seconds");
+		if (legacyNames) {
+			_histogram = meter.CreateHistogram<double>(name + "-seconds");
+		} else {
+			_histogram = meter.CreateHistogram<double>(name, "seconds");
+		}
 	}
 
 	public Duration Start(string durationName) =>

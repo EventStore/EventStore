@@ -12,9 +12,9 @@ public class CacheResourcesMetrics {
 	private readonly ObservableUpDownMetric<long> _bytesMetric;
 	private readonly ObservableUpDownMetric<long> _entriesMetric;
 
-	public CacheResourcesMetrics(Meter meter, string name) {
-		_bytesMetric = new ObservableUpDownMetric<long>(meter, $"{name}-bytes", "bytes");
-		_entriesMetric = new ObservableUpDownMetric<long>(meter, $"{name}-entries", "entries");
+	public CacheResourcesMetrics(Meter meter, string name, bool legacyNames) {
+		_bytesMetric = new ObservableUpDownMetric<long>(meter, $"{name}-bytes", legacyNames ? null : "bytes");
+		_entriesMetric = new ObservableUpDownMetric<long>(meter, $"{name}-entries", legacyNames ? null : "entries");
 	}
 
 	public void Register(string cache, ResizerUnit unit, Func<CacheStats> getStats) {

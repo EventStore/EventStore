@@ -12,7 +12,7 @@ public class AverageMetricTests {
 	public void calculates_average() {
 		using var meter = new Meter($"{typeof(QueueProcessingTrackerTests)}");
 		using var listener = new TestMeterListener<double>(meter);
-		var sut = new AverageMetric(meter, "the-metric", "seconds", label => new("queue", label));
+		var sut = new AverageMetric(meter, "the-metric", "seconds", label => new("queue", label), legacyNames: false);
 		sut.Register("readers", () => 1);
 		sut.Register("readers", () => 2);
 		sut.Register("writer", () => 3);

@@ -34,6 +34,7 @@ using Operations = EventStore.Core.Services.Transport.Grpc.Operations;
 using ClusterGossip = EventStore.Core.Services.Transport.Grpc.Cluster.Gossip;
 using ClientGossip = EventStore.Core.Services.Transport.Grpc.Gossip;
 using ServerFeatures = EventStore.Core.Services.Transport.Grpc.ServerFeatures;
+using Serilog;
 
 #nullable enable
 namespace EventStore.Core;
@@ -190,10 +191,10 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 			// OpenTelemetry
 			.AddOpenTelemetry()
 			.WithMetrics(meterOptions => meterOptions
-				.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("kurrentdb"))
+				.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(metricsConfiguration.ServiceName))
 				.AddMeter(metricsConfiguration.Meters)
 				.AddView(i => {
-					if (i.Name == MetricsBootstrapper.LogicalChunkReadDistributionName)
+					if (i.Name == MetricsBootstrapper.LogicalChunkReadDistributionName(metricsConfiguration.ServiceName))
 						// 20 buckets, 0, 1, 2, 4, 8, ...
 						return new ExplicitBucketHistogramConfiguration {
 							Boundaries = [
@@ -201,9 +202,10 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 								.. Enumerable.Range(0, count: 19).Select(x => 1 << x)
 							]
 						};
-					else if (i.Name.StartsWith("kurrentdb-") &&
-						i.Name.EndsWith("-latency") &&
-						i.Unit == "seconds")
+					else if (i.Name.StartsWith(metricsConfiguration.ServiceName + "-") &&
+						(i.Name.EndsWith("-latency-seconds") ||
+						 i.Name.EndsWith("-latency") && i.Unit == "seconds"))
+
 						return new ExplicitBucketHistogramConfiguration {
 							Boundaries = [
 								0.001, //    1 ms
@@ -216,8 +218,9 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 								5,     // 5000 ms
 							]
 						};
-					else if (i.Name.StartsWith("kurrentdb-") &&
-						i.Unit == "seconds")
+					else if (i.Name.StartsWith(metricsConfiguration.ServiceName + "-") &&
+						(i.Name.EndsWith("-seconds") ||
+						 i.Unit == "seconds"))
 						return new ExplicitBucketHistogramConfiguration {
 							Boundaries = [
 								0.000_001, // 1 microsecond
@@ -232,7 +235,15 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 						};
 					return default;
 				})
-				.AddPrometheusExporter(options => options.ScrapeResponseCacheDurationMilliseconds = 1000))
+				.AddPrometheusExporter(options => {
+					if (metricsConfiguration.LegacyCoreNaming && metricsConfiguration.LegacyProjectionsNaming) {
+						options.DisableTotalNameSuffixForCounters = true;
+					} else if (metricsConfiguration.LegacyCoreNaming || metricsConfiguration.LegacyProjectionsNaming) {
+						Log.Error("Inconsistent Meter names: {names}. Please use EventStore or KurrentDB for all.",
+							string.Join(", ", metricsConfiguration.Meters));
+					}
+					options.ScrapeResponseCacheDurationMilliseconds = 1000;
+				}))
 			.Services
 
 			// gRPC

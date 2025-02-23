@@ -9,10 +9,14 @@ namespace EventStore.Core.Metrics;
 public class DurationMaxMetric {
 	private readonly List<DurationMaxTracker> _trackers = new();
 
-	public DurationMaxMetric(Meter meter, string name) {
+	public DurationMaxMetric(Meter meter, string name, bool legacyNames) {
 		// gauge rather than updowncounter because the dimensions wont make sense to sum,
 		// because they are maxes and not necessarily from the same moment
-		meter.CreateObservableGauge(name, Observe, "seconds");
+		if (legacyNames) {
+			meter.CreateObservableGauge(name + "-seconds", Observe);
+		} else {
+			meter.CreateObservableGauge(name, Observe, "seconds");
+		}
 	}
 
 	public void Add(DurationMaxTracker tracker) {
