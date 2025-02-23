@@ -7,6 +7,7 @@ using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Threading.Tasks;
 using DotNext;
+using EventStore.Common.Configuration;
 using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Bus;
@@ -167,7 +168,7 @@ public sealed class ProjectionsSubsystem : ISubsystem,
 		_coreWorkers = ProjectionCoreWorkersNode.CreateCoreWorkers(standardComponents, projectionsStandardComponents);
 		_queueMap = _coreWorkers.ToDictionary(v => v.Key, v => v.Value.CoreInputQueue.As<IPublisher>());
 
-		ConfigureProjectionMetrics(standardComponents.ProjectionStats);
+		ConfigureProjectionMetrics(standardComponents.MetricsConfiguration);
 
 		ProjectionManagerNode.CreateManagerService(standardComponents, projectionsStandardComponents, _queueMap,
 			_projectionsQueryExpiry, _projectionTracker);
@@ -177,8 +178,8 @@ public sealed class ProjectionsSubsystem : ISubsystem,
 		 builder.UseEndpoints(endpoints => endpoints.MapGrpcService<ProjectionManagement>());
 	}
 
-	private void ConfigureProjectionMetrics(bool isEnabled) {
-		if (!isEnabled)
+	private void ConfigureProjectionMetrics(MetricsConfiguration conf) {
+		if (!conf.ProjectionStats)
 			return;
 
 		var projectionMeter = new Meter("KurrentDB.Projections.Core", version: "1.0.0");
