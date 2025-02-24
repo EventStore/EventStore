@@ -2,6 +2,17 @@
   "solution": {
     "path": "EventStore.sln",
     "projects": [
+      "..\\submodules\\Surge\\src\\Connectors\\src\\Kurrent.Connectors.Elasticsearch\\Kurrent.Connectors.Elasticsearch.csproj",
+      "..\\submodules\\Surge\\src\\Connectors\\src\\Kurrent.Connectors.Http\\Kurrent.Connectors.Http.csproj",
+      "..\\submodules\\Surge\\src\\Connectors\\src\\Kurrent.Connectors.Kafka\\Kurrent.Connectors.Kafka.csproj",
+      "..\\submodules\\Surge\\src\\Connectors\\src\\Kurrent.Connectors.KurrentDB\\Kurrent.Connectors.KurrentDB.csproj",
+      "..\\submodules\\Surge\\src\\Connectors\\src\\Kurrent.Connectors.MongoDB\\Kurrent.Connectors.MongoDB.csproj",
+      "..\\submodules\\Surge\\src\\Connectors\\src\\Kurrent.Connectors.RabbitMQ\\Kurrent.Connectors.RabbitMQ.csproj",
+      "..\\submodules\\Surge\\src\\DataProtection\\src\\Kurrent.Surge.DataProtection\\Kurrent.Surge.DataProtection.csproj",
+      "..\\submodules\\Surge\\src\\Framework\\src\\Kurrent.Surge.Core\\Kurrent.Surge.Core.csproj",
+      "..\\submodules\\Surge\\src\\Framework\\src\\Kurrent.Surge\\Kurrent.Surge.csproj",
+      "..\\submodules\\Surge\\src\\Toolkit\\src\\Kurrent.Toolkit.Serialization\\Kurrent.Toolkit.Serialization.csproj",
+      "..\\submodules\\Surge\\src\\Toolkit\\src\\Kurrent.Toolkit\\Kurrent.Toolkit.csproj",
       "EventStore.Auth.Ldaps\\EventStore.Auth.Ldaps.csproj",
       "EventStore.Auth.LegacyAuthorizationWithStreamAuthorizationDisabled\\EventStore.Auth.LegacyAuthorizationWithStreamAuthorizationDisabled.csproj",
       "EventStore.Auth.OAuth\\EventStore.Auth.OAuth.csproj",

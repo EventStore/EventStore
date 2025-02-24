@@ -1,15 +1,16 @@
 using EventStore.Connect.Connectors;
-using EventStore.Connect.Leases;
+using Kurrent.Surge.Connectors;
+using Kurrent.Surge.Leases;
 using EventStore.Connect.Schema;
 using EventStore.Connectors.System;
 using EventStore.Core.Bus;
-using EventStore.Toolkit;
+using Kurrent.Toolkit;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using static EventStore.Connectors.ConnectorsFeatureConventions;
 
-using ConnectContracts = EventStore.Streaming.Contracts;
+using ConnectContracts = Kurrent.Surge.Protocol;
 using ControlContracts = EventStore.Connectors.Control.Contracts;
 
 namespace EventStore.Connectors.Control;

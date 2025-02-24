@@ -5,21 +5,22 @@ using EventStore.Connect.Processors;
 using EventStore.Connectors;
 using EventStore.Connectors.Connect.Components.Connectors;
 using EventStore.Connectors.System;
-using EventStore.Streaming.Connectors.Sinks;
+using Kurrent.Surge.Connectors.Sinks;
 using EventStore.Core.Bus;
-using EventStore.Streaming;
-using EventStore.Streaming.Consumers;
-using EventStore.Streaming.Consumers.Configuration;
-using EventStore.Streaming.Persistence.State;
-using EventStore.Streaming.Processors;
-using EventStore.Streaming.Processors.Configuration;
-using EventStore.Streaming.Schema;
-using EventStore.Streaming.Transformers;
-using EventStore.Toolkit;
+using Kurrent.Surge;
+using Kurrent.Surge.Connectors;
+using Kurrent.Surge.Consumers;
+using Kurrent.Surge.Consumers.Configuration;
+using Kurrent.Surge.Persistence.State;
+using Kurrent.Surge.Processors;
+using Kurrent.Surge.Processors.Configuration;
+using Kurrent.Surge.Schema;
+using Kurrent.Surge.Transformers;
+using Kurrent.Toolkit;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using AutoLockOptions = EventStore.Streaming.Processors.Configuration.AutoLockOptions;
+using AutoLockOptions = Kurrent.Surge.Processors.Configuration.AutoLockOptions;
 
 namespace EventStore.Connect.Connectors;
 
@@ -108,7 +109,7 @@ public class SystemConnectorsFactory(
             StreamTemplate   = Options.CheckpointsStreamTemplate
         };
 
-        var loggingOptions = new EventStore.Streaming.Configuration.LoggingOptions {
+        var loggingOptions = new Kurrent.Surge.Configuration.LoggingOptions {
             Enabled       = sinkOptions.Logging.Enabled,
             LogName       = sinkOptions.InstanceTypeName,
             LoggerFactory = loggerFactory

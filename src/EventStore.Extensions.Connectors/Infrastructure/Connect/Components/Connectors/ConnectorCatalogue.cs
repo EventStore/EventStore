@@ -1,11 +1,11 @@
 using System.Collections.Frozen;
-using EventStore.Connectors.Elasticsearch;
-using EventStore.Connectors.EventStoreDB;
-using EventStore.Connectors.Http;
-using EventStore.Connectors.Kafka;
-using EventStore.Connectors.MongoDB;
-using EventStore.Connectors.RabbitMQ;
-using EventStore.Connectors.Serilog;
+using Kurrent.Connectors.Elasticsearch;
+using Kurrent.Connectors.KurrentDB;
+using Kurrent.Connectors.Http;
+using Kurrent.Connectors.Kafka;
+using Kurrent.Connectors.MongoDB;
+using Kurrent.Connectors.RabbitMQ;
+using Kurrent.Connectors.Serilog;
 using Humanizer;
 
 using static EventStore.Connectors.Connect.Components.Connectors.ConnectorCatalogueItem;
@@ -26,7 +26,7 @@ public class ConnectorCatalogue {
             [typeof(SerilogSink)]  = For<SerilogSink, SerilogSinkValidator>([$"{EntitlementPrefix}_SERILOG_SINK"], false),
             [typeof(KafkaSink)]    = For<KafkaSink, KafkaSinkValidator>([$"{EntitlementPrefix}_KAFKA_SINK"], true),
             [typeof(RabbitMqSink)] = For<RabbitMqSink, RabbitMqSinkValidator>([$"{EntitlementPrefix}_RABBITMQ_SINK"], true),
-            [typeof(EventStoreDbSink)] = For<EventStoreDbSink, EventStoreDbSinkValidator>([$"{EntitlementPrefix}_ESDB_SINK", $"{EntitlementPrefix}_ESDB_SOURCE"], true),
+            [typeof(KurrentDbSink)] = For<KurrentDbSink, KurrentDbSinkValidator>([$"{EntitlementPrefix}_ESDB_SINK", $"{EntitlementPrefix}_ESDB_SOURCE"], true),
             [typeof(ElasticsearchSink)] = For<ElasticsearchSink, ElasticsearchSinkValidator>([$"{EntitlementPrefix}_ELASTICSEARCH_SINK", $"{EntitlementPrefix}_ELASTICSEARCH_SOURCE"], true),
             [typeof(MongoDbSink)] = For<MongoDbSink, MongoDbSinkValidator>([$"{EntitlementPrefix}_MONGODB_SINK"], true),
         }.ToFrozenDictionary();

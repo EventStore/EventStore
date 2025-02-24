@@ -2,18 +2,18 @@
 
 using System.Diagnostics.CodeAnalysis;
 using EventStore.Connect.Consumers;
-using EventStore.Connect.Leases;
+using Kurrent.Surge.Leases;
 using EventStore.Connect.Producers;
 using EventStore.Connect.Readers;
 using EventStore.Core.Bus;
-using EventStore.Streaming;
-using EventStore.Streaming.Configuration;
-using EventStore.Streaming.Consumers;
-using EventStore.Streaming.Consumers.Configuration;
-using EventStore.Streaming.Processors;
-using EventStore.Streaming.Processors.Configuration;
-using EventStore.Streaming.Processors.Locks;
-using EventStore.Toolkit;
+using Kurrent.Surge;
+using Kurrent.Surge.Configuration;
+using Kurrent.Surge.Consumers;
+using Kurrent.Surge.Consumers.Configuration;
+using Kurrent.Surge.Processors;
+using Kurrent.Surge.Processors.Configuration;
+using Kurrent.Surge.Processors.Locks;
+using Kurrent.Toolkit;
 using Microsoft.Extensions.Logging;
 using NodaTime.Extensions;
 
@@ -21,7 +21,7 @@ namespace EventStore.Connect.Processors.Configuration;
 
 [PublicAPI]
 public record SystemProcessorBuilder : ProcessorBuilder<SystemProcessorBuilder, SystemProcessorOptions> {
-	public SystemProcessorBuilder Filter(ConsumeFilter filter) =>
+	public new SystemProcessorBuilder Filter(ConsumeFilter filter) =>
         new() {
             Options = Options with {
                 Filter = filter
@@ -31,45 +31,45 @@ public record SystemProcessorBuilder : ProcessorBuilder<SystemProcessorBuilder, 
     public SystemProcessorBuilder Stream(StreamId stream) =>
         Filter(ConsumeFilter.FromStreamId(stream));
 
-    public SystemProcessorBuilder StartPosition(RecordPosition? startPosition) =>
+    public new SystemProcessorBuilder StartPosition(RecordPosition? startPosition) =>
         new() {
             Options = Options with {
                 StartPosition = startPosition
             }
         };
 
-    public SystemProcessorBuilder InitialPosition(SubscriptionInitialPosition initialPosition) =>
+    public new SystemProcessorBuilder InitialPosition(SubscriptionInitialPosition initialPosition) =>
         new() {
             Options = Options with {
                 InitialPosition = initialPosition
             }
         };
 
-    public SystemProcessorBuilder AutoCommit(AutoCommitOptions autoCommitOptions) =>
+    public new SystemProcessorBuilder AutoCommit(AutoCommitOptions autoCommitOptions) =>
         new() {
             Options = Options with {
                 AutoCommit = autoCommitOptions
             }
         };
 
-    public SystemProcessorBuilder AutoCommit(Func<AutoCommitOptions, AutoCommitOptions> configureAutoCommit) =>
+    public new SystemProcessorBuilder AutoCommit(Func<AutoCommitOptions, AutoCommitOptions> configureAutoCommit) =>
         new() {
             Options = Options with {
                 AutoCommit = configureAutoCommit(Options.AutoCommit)
             }
         };
 
-    public SystemProcessorBuilder DisableAutoCommit() =>
+    public new SystemProcessorBuilder DisableAutoCommit() =>
         AutoCommit(x => x with { Enabled = false });
 
-    public SystemProcessorBuilder SkipDecoding(bool skipDecoding = true) =>
+    public new SystemProcessorBuilder SkipDecoding(bool skipDecoding = true) =>
         new() {
             Options = Options with {
                 SkipDecoding = skipDecoding
             }
         };
 
-    public SystemProcessorBuilder DisableAutoLock() =>
+    public new SystemProcessorBuilder DisableAutoLock() =>
         AutoLock(x => x with { Enabled = false });
 
     public SystemProcessorBuilder Publisher(IPublisher publisher) {
