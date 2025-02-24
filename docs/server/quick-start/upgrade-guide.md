@@ -91,11 +91,13 @@ If you are running KurrentDB as a service, you will need to grant the `kurrent` 
 ::: info
 The old EventStore metric names can still be used by changing the two meter names in `metricsconfig.json` to have `EventStore` prefixes:
 
-```
-	"Meters": [
-		"EventStore.Core",
-		"EventStore.Projections.Core"
-	],
+```diff
+  "Meters": [
+-    "KurrentDB.Core",
+-    "KurrentDB.Projections.Core"
++    "EventStore.Core",
++    "EventStore.Projections.Core"
+  ],
 ```
 
 However, this functionality will eventually be removed in a future release.
