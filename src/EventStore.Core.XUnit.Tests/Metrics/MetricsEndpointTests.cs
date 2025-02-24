@@ -49,12 +49,11 @@ public class MetricsEndpointTests : DirectoryPerTest<MetricsEndpointTests> {
 		var result = await sut.HttpClient.GetAsync("/metrics");
 		Assert.Equal(HttpStatusCode.OK, result.StatusCode);
 
-		var contentType = result.Content.Headers.ContentType.ToString();
 		Assert.Equal(
 			legacy
 				? "text/plain; charset=utf-8; version=0.0.4"
 				: "application/openmetrics-text; version=1.0.0; charset=utf-8",
-			contentType);
+			$"{result.Content.Headers.ContentType}");
 
 		var content = await result.Content.ReadAsStringAsync();
 		return content;
