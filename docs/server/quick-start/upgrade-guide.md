@@ -88,6 +88,28 @@ If you are running KurrentDB as a service, you will need to grant the `kurrent` 
 
 #### Metrics name changes
 
+::: info
+The old EventStore metric names can still be used by changing the two meter names in `metricsconfig.json` to have `EventStore` prefixes:
+
+```
+	"Meters": [
+		"EventStore.Core",
+		"EventStore.Projections.Core"
+	],
+```
+
+However, this functionality will eventually be removed in a future release.
+
+If you are using the Open Telemetry Collector, you may also need to set `add_metric_suffixes` to `false` in its configuration file:
+
+```
+exporters:
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    add_metric_suffixes: false
+```
+:::
+
 All of the `eventstore` prefixes have been changed to `kurrentdb`
 
 | Old name        | New name      |
