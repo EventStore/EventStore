@@ -28,6 +28,9 @@
 		<ProjectReference Include="..\EventStore.SourceGenerators\EventStore.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 	</ItemGroup>
 	<ItemGroup>
+		<None Update="Metrics\Conf\test-metrics-config.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 		<None Update="xunit.runner.json">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
@@ -43,9 +46,6 @@
 		</None>
 		<None Update="Configuration\test.kurrentdb.json">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Include="Metrics\Conf\metricsconfig.json">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
 </Project>
