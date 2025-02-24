@@ -1,0 +1,38 @@
+{
+  "solution": {
+    "path": "EventStore.sln",
+    "projects": [
+      "EventStore.Plugins.Connectors\\EventStore.Plugins.Connectors.csproj",
+      "EventStore.Extensions.Connectors\\EventStore.Extensions.Connectors.csproj",
+      "EventStore.Extensions.Connectors.Contracts\\EventStore.Extensions.Connectors.Contracts.csproj",
+      "EventStore.BufferManagement\\EventStore.BufferManagement.csproj",
+      "EventStore.ClusterNode.Web\\EventStore.ClusterNode.Web.csproj",
+      "KurrentDB\\KurrentDB.csproj",
+      "EventStore.Common\\EventStore.Common.csproj",
+      "EventStore.Core\\EventStore.Core.csproj",
+      "EventStore.Licensing\\EventStore.Licensing.csproj",
+      "EventStore.LogCommon\\EventStore.LogCommon.csproj",
+      "EventStore.LogV3\\EventStore.LogV3.csproj",
+      "EventStore.Native\\EventStore.Native.csproj",
+      "EventStore.NETCore.Compatibility\\EventStore.NETCore.Compatibility.csproj",
+      "EventStore.PluginHosting\\EventStore.PluginHosting.csproj",
+      "EventStore.Projections.Core\\EventStore.Projections.Core.csproj",
+      "EventStore.SourceGenerators\\EventStore.SourceGenerators.csproj",
+      "EventStore.SystemRuntime\\EventStore.SystemRuntime.csproj",
+      "EventStore.Transport.Http\\EventStore.Transport.Http.csproj",
+      "EventStore.Transport.Tcp\\EventStore.Transport.Tcp.csproj",
+      "EventStore.Auth.Ldaps\\EventStore.Auth.Ldaps.csproj",
+      "EventStore.Auth.LegacyAuthorizationWithStreamAuthorizationDisabled\\EventStore.Auth.LegacyAuthorizationWithStreamAuthorizationDisabled.csproj",
+      "EventStore.Auth.OAuth\\EventStore.Auth.OAuth.csproj",
+      "EventStore.Auth.StreamPolicyPlugin\\EventStore.Auth.StreamPolicyPlugin.csproj",
+      "EventStore.Auth.UserCertificates\\EventStore.Auth.UserCertificates.csproj",
+      "EventStore.AutoScavenge\\EventStore.AutoScavenge.csproj",
+      "EventStore.Diagnostics.LogsEndpointPlugin\\EventStore.Diagnostics.LogsEndpointPlugin.csproj",
+      "EventStore.OtlpExporterPlugin\\EventStore.OtlpExporterPlugin.csproj",
+      "EventStore.POC.ConnectedSubsystemsPlugin\\EventStore.POC.ConnectedSubsystemsPlugin.csproj",
+      "EventStore.POC.IO.Core\\EventStore.POC.IO.Core.csproj",
+      "EventStore.Security.EncryptionAtRest\\EventStore.Security.EncryptionAtRest.csproj",
+      "EventStore.TcpPlugin\\EventStore.TcpPlugin.csproj"
+    ]
+  }
+}
