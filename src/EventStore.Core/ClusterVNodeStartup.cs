@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Threading.Tasks;
 using EventStore.Common.Configuration;
@@ -41,7 +42,6 @@ namespace EventStore.Core;
 
 public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMessage.SystemReady>,
 	IHandle<SystemMessage.BecomeShuttingDown> {
-
 	private readonly IReadOnlyList<IPlugableComponent> _plugableComponents;
 	private readonly IPublisher _mainQueue;
 	private readonly IPublisher _monitoringQueue;
@@ -176,19 +176,26 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 	}
 
 	public void ConfigureServices(IServiceCollection services) {
-		services = services
+		// Web-related registrations
+		services
 			.AddRouting()
-			.AddAuthentication(o => o
-				.AddScheme<EventStoreAuthenticationHandler>("es auth", displayName: null))
-				.Services
-			.AddAuthorization()
-			.AddSingleton(_authenticationProvider)
-			.AddSingleton(_authorizationProvider)
-			.AddSingleton<ISubscriber>(_mainBus)
-			.AddSingleton<IPublisher>(_mainQueue)
+			.AddAuthentication(o => o.AddScheme<EventStoreAuthenticationHandler>("es auth", displayName: null));
+		services.AddAuthorization();
+		services
 			.AddSingleton<AuthenticationMiddleware>()
 			.AddSingleton<AuthorizationMiddleware>()
 			.AddSingleton(new KestrelToInternalBridgeMiddleware(_httpService.UriRouter, _httpService.LogHttpRequests, _httpService.AdvertiseAsHost, _httpService.AdvertiseAsPort))
+			.AddSingleton(_authenticationProvider)
+			.AddSingleton(_authorizationProvider);
+		services.AddCors(o => o.AddPolicy(
+			"default",
+			b => b.AllowAnyOrigin().WithMethods(HttpMethod.Options, HttpMethod.Get).AllowAnyHeader())
+		);
+
+		// Other dependencies
+		services
+			.AddSingleton<ISubscriber>(_mainBus)
+			.AddSingleton<IPublisher>(_mainQueue)
 			.AddSingleton(new Streams<TStreamId>(_mainQueue, _maxAppendSize,
 				_writeTimeout, _expiryStrategy,
 				_trackers.GrpcTrackers,
@@ -203,84 +210,67 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 			.AddSingleton(new ClientGossip(_mainQueue, _authorizationProvider, _trackers.GossipTrackers.ProcessingRequestFromGrpcClient))
 			.AddSingleton(new Monitoring(_monitoringQueue))
 			.AddSingleton(new Redaction(_mainQueue, _authorizationProvider))
-			.AddSingleton<ServerFeatures>()
+			.AddSingleton<ServerFeatures>();
 
-			// OpenTelemetry
-			.AddOpenTelemetry()
+		// OpenTelemetry
+		services.AddOpenTelemetry()
 			.WithMetrics(meterOptions => meterOptions
 				.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(_metricsConfiguration.ServiceName))
 				.AddMeter(_metricsConfiguration.Meters)
-				.AddView(i => {
-					if (i.Name == MetricsBootstrapper.LogicalChunkReadDistributionName(_metricsConfiguration.ServiceName))
-						// 20 buckets, 0, 1, 2, 4, 8, ...
-						return new ExplicitBucketHistogramConfiguration {
-							Boundaries = [
-								0,
-								.. Enumerable.Range(0, count: 19).Select(x => 1 << x)
-							]
-						};
-					else if (i.Name.StartsWith(_metricsConfiguration.ServiceName + "-") &&
-						(i.Name.EndsWith("-latency-seconds") ||
-						 i.Name.EndsWith("-latency") && i.Unit == "seconds"))
-
-						return new ExplicitBucketHistogramConfiguration {
-							Boundaries = [
-								0.001, //    1 ms
-								0.005, //    5 ms
-								0.01,  //   10 ms
-								0.05,  //   50 ms
-								0.1,   //  100 ms
-								0.5,   //  500 ms
-								1,     // 1000 ms
-								5,     // 5000 ms
-							]
-						};
-					else if (i.Name.StartsWith(_metricsConfiguration.ServiceName + "-") &&
-						(i.Name.EndsWith("-seconds") ||
-						 i.Unit == "seconds"))
-						return new ExplicitBucketHistogramConfiguration {
-							Boundaries = [
-								0.000_001, // 1 microsecond
-								0.000_01,
-								0.000_1,
-								0.001, // 1 millisecond
-								0.01,
-								0.1,
-								1, // 1 second
-								10,
-							]
-						};
-					return default;
-				})
+				.AddView(ViewConfig)
 				.AddPrometheusExporter(options => {
-					if (_metricsConfiguration.LegacyCoreNaming && _metricsConfiguration.LegacyProjectionsNaming) {
+					if (_metricsConfiguration is { LegacyCoreNaming: true, LegacyProjectionsNaming: true }) {
 						options.DisableTotalNameSuffixForCounters = true;
 					} else if (_metricsConfiguration.LegacyCoreNaming || _metricsConfiguration.LegacyProjectionsNaming) {
 						Log.Error("Inconsistent Meter names: {names}. Please use EventStore or KurrentDB for all.",
 							string.Join(", ", _metricsConfiguration.Meters));
 					}
+
 					options.ScrapeResponseCacheDurationMilliseconds = 1000;
-				}))
-			.Services
+				}));
 
-			// gRPC
+		// gRPC
+		services
 			.AddSingleton<RetryInterceptor>()
-			.AddGrpc(options => {
-				options.Interceptors.Add<RetryInterceptor>();
-			})
-			.AddServiceOptions<Streams<TStreamId>>(options =>
-				options.MaxReceiveMessageSize = TFConsts.EffectiveMaxLogRecordSize)
-			.Services;
+			.AddGrpc(options => options.Interceptors.Add<RetryInterceptor>())
+			.AddServiceOptions<Streams<TStreamId>>(options => options.MaxReceiveMessageSize = TFConsts.EffectiveMaxLogRecordSize);
 
-		services.AddCors(o => o.AddPolicy(
-			"default",
-			b => b.AllowAnyOrigin().WithMethods(HttpMethod.Options, HttpMethod.Get).AllowAnyHeader())
-		);
+		// Ask the node itself to add DI registrations
+		_configureNodeServices(services);
 
-		services = _configureNodeServices(services);
-
+		// Let pluggable components to register their services
 		foreach (var component in _plugableComponents)
 			component.ConfigureServices(services, _configuration);
+		return;
+
+		MetricStreamConfiguration? ViewConfig(Instrument i) {
+			if (i.Name == MetricsBootstrapper.LogicalChunkReadDistributionName(_metricsConfiguration.ServiceName))
+				// 20 buckets, 0, 1, 2, 4, 8, ...
+				return new ExplicitBucketHistogramConfiguration { Boundaries = [0, .. Enumerable.Range(0, count: 19).Select(x => 1 << x)] };
+			if (i.Name.StartsWith(_metricsConfiguration.ServiceName + "-") && (i.Name.EndsWith("-latency-seconds") || i.Name.EndsWith("-latency") && i.Unit == "seconds"))
+				return new ExplicitBucketHistogramConfiguration {
+					Boundaries = [
+						0.001, //    1 ms
+						0.005, //    5 ms
+						0.01, //   10 ms
+						0.05, //   50 ms
+						0.1, //  100 ms
+						0.5, //  500 ms
+						1, // 1000 ms
+						5, // 5000 ms
+					]
+				};
+			if (i.Name.StartsWith(_metricsConfiguration.ServiceName + "-") && (i.Name.EndsWith("-seconds") || i.Unit == "seconds"))
+				return new ExplicitBucketHistogramConfiguration {
+					Boundaries = [
+						0.000_001, // 1 microsecond
+						0.000_01, 0.000_1, 0.001, // 1 millisecond
+						0.01, 0.1, 1, // 1 second
+						10,
+					]
+				};
+			return default;
+		}
 	}
 
 	public void Handle(SystemMessage.SystemReady _) => _ready = true;
@@ -292,11 +282,7 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 		private readonly int _livecode = 204;
 
 		public StatusCheck(ClusterVNodeStartup<TStreamId> startup) {
-			if (startup == null) {
-				throw new ArgumentNullException(nameof(startup));
-			}
-
-			_startup = startup;
+			_startup = startup ?? throw new ArgumentNullException(nameof(startup));
 		}
 
 		public void Configure(IApplicationBuilder builder) =>
@@ -307,7 +293,7 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 		private MidFunc Live => (context, next) => {
 			if (_startup._ready) {
 				if (context.Request.Query.TryGetValue("liveCode", out var expected) &&
-					int.TryParse(expected, out var statusCode)) {
+				    int.TryParse(expected, out var statusCode)) {
 					context.Response.StatusCode = statusCode;
 				} else {
 					context.Response.StatusCode = _livecode;
@@ -315,6 +301,7 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 			} else {
 				context.Response.StatusCode = 503;
 			}
+
 			return Task.CompletedTask;
 		};
 
