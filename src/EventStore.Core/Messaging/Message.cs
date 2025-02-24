@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading;
+using Newtonsoft.Json;
 
 namespace EventStore.Core.Messaging;
 
@@ -23,5 +24,6 @@ public class DerivedMessageAttribute : Attribute {
 
 [BaseMessage]
 public abstract partial class Message(CancellationToken token = default) {
+	[JsonIgnore]
 	public CancellationToken CancellationToken => token;
 }
