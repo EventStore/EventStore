@@ -81,15 +81,15 @@ public static class MetricsBootstrapper {
 			return;
 
 		var coreMeter = new Meter(conf.CoreMeterName, version: "1.0.0");
-		var statusMetric = new StatusMetric(coreMeter, $"{serviceName}-statuses");
+		var statusMetric = new StatusMetric(coreMeter, $"{serviceName}-statuses", useLegacyNames);
 		var grpcMethodMetric = new DurationMetric(coreMeter, $"{serviceName}-grpc-method-duration", useLegacyNames);
 		var gossipLatencyMetric = new DurationMetric(coreMeter, $"{serviceName}-gossip-latency", useLegacyNames);
 		var gossipProcessingMetric = new DurationMetric(coreMeter, $"{serviceName}-gossip-processing-duration", useLegacyNames);
 		var queueQueueingDurationMaxMetric = new DurationMaxMetric(coreMeter, $"{serviceName}-queue-queueing-duration-max", useLegacyNames);
 		var queueProcessingDurationMetric = new DurationMetric(coreMeter, $"{serviceName}-queue-processing-duration", useLegacyNames);
 		var queueBusyMetric = new AverageMetric(coreMeter, $"{serviceName}-queue-busy", "seconds", label => new("queue", label), useLegacyNames);
-		var byteMetric = new CounterMetric(coreMeter, $"{serviceName}-io-bytes", unit: "bytes", useLegacyNames);
-		var eventMetric = new CounterMetric(coreMeter, $"{serviceName}-io-events", unit: "events", useLegacyNames);
+		var byteMetric = new CounterMetric(coreMeter, $"{serviceName}-io-bytes", unit: useLegacyNames ? null : "bytes", legacyNames: false);
+		var eventMetric = new CounterMetric(coreMeter, $"{serviceName}-io-events", unit: useLegacyNames ? null : "events", legacyNames: false);
 		var recordReadDurationMetric = new DurationMetric(coreMeter, $"{serviceName}-io-record-read-duration", useLegacyNames);
 		var electionsCounterMetric = new CounterMetric(coreMeter, $"{serviceName}-elections-count", unit: "", useLegacyNames);
 

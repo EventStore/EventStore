@@ -23,6 +23,7 @@ public class NodeStatusTrackerTests : IDisposable {
 		_metric = new StatusMetric(
 			meter,
 			"eventstore-statuses",
+			legacyNames: false,
 			_clock);
 		_sut = new NodeStatusTracker(_metric);
 	}

@@ -13,9 +13,12 @@ public class StatusMetric {
 	private readonly List<StatusSubMetric> _subMetrics = new();
 	private readonly IClock _clock;
 
-	public StatusMetric(Meter meter, string name, IClock clock = null) {
+	public StatusMetric(Meter meter, string name, bool legacyNames, IClock clock = null) {
 		_clock = clock ?? Clock.Instance;
-		meter.CreateObservableGauge(name, Observe);
+		if (legacyNames)
+			meter.CreateObservableCounter(name, Observe);
+		else
+			meter.CreateObservableGauge(name, Observe);
 	}
 
 	public void Add(StatusSubMetric subMetric) {
