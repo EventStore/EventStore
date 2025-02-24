@@ -43,40 +43,51 @@ public class MetricsEndpointTests : DirectoryPerTest<MetricsEndpointTests> {
 			.Build();
 		await using var sut = new MiniNode<LogFormat.V2, string>(Fixture.Directory, configuration: configuration);
 		await sut.Start();
+		sut.HttpClient.DefaultRequestHeaders.Add(
+			"Accept",
+			"application/openmetrics-text;version=1.0.0,application/openmetrics-text;version=0.0.1;q=0.75,text/plain;version=0.0.4;q=0.5,*/*;q=0.1");
 		var result = await sut.HttpClient.GetAsync("/metrics");
 		Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+
+		var contentType = result.Content.Headers.ContentType.ToString();
+		Assert.Equal(
+			legacy
+				? "text/plain; charset=utf-8; version=0.0.4"
+				: "application/openmetrics-text; version=1.0.0; charset=utf-8",
+			contentType);
+
 		var content = await result.Content.ReadAsStringAsync();
 		return content;
 	}
 
 	static IEnumerable<string> KurrentMetrics => [
-		"# TYPE kurrentdb_cache_hits_misses_total counter",
+		"# TYPE kurrentdb_cache_hits_misses counter",
 		"# TYPE kurrentdb_cache_resources_entries gauge",
 		"# TYPE kurrentdb_checkpoints gauge",
 		"# TYPE kurrentdb_current_incoming_grpc_calls gauge",
-		"# TYPE kurrentdb_disk_io_bytes_total counter",
-		"# TYPE kurrentdb_disk_io_operations_total counter",
-		"# TYPE kurrentdb_elections_count_total counter",
-		"# TYPE kurrentdb_gc_allocated_bytes_total counter",
-		"# TYPE kurrentdb_gc_collection_count_total counter",
+		"# TYPE kurrentdb_disk_io_bytes counter",
+		"# TYPE kurrentdb_disk_io_operations counter",
+		"# TYPE kurrentdb_elections_count counter",
+		"# TYPE kurrentdb_gc_allocated_bytes counter",
+		"# TYPE kurrentdb_gc_collection_count counter",
 		"# TYPE kurrentdb_gc_generation_size_bytes gauge",
 		"# TYPE kurrentdb_gc_heap_fragmentation gauge",
 		"# TYPE kurrentdb_gc_heap_size_bytes gauge",
 		"# TYPE kurrentdb_gc_pause_duration_max_seconds gauge",
 		"# TYPE kurrentdb_gc_time_in_gc gauge",
-		"# TYPE kurrentdb_incoming_grpc_calls_total counter",
-		"# TYPE kurrentdb_io_bytes_total counter",
-		"# TYPE kurrentdb_io_events_total counter",
+		"# TYPE kurrentdb_incoming_grpc_calls counter",
+		"# TYPE kurrentdb_io_bytes counter",
+		"# TYPE kurrentdb_io_events counter",
 		"# TYPE kurrentdb_io_record_read_duration_seconds histogram",
 		"# TYPE kurrentdb_logical_chunk_read_distribution histogram",
-		"# TYPE kurrentdb_proc_contention_count_total counter",
+		"# TYPE kurrentdb_proc_contention_count counter",
 		"# TYPE kurrentdb_proc_cpu gauge",
-		"# TYPE kurrentdb_proc_exception_count_total counter",
+		"# TYPE kurrentdb_proc_exception_count counter",
 		"# TYPE kurrentdb_proc_mem_bytes gauge",
 		"# TYPE kurrentdb_proc_thread_count gauge",
 		"# TYPE kurrentdb_proc_thread_pool_pending_work_item_count gauge",
-		"# TYPE kurrentdb_proc_up_time_seconds_total counter",
-		"# TYPE kurrentdb_queue_busy_seconds_total counter",
+		"# TYPE kurrentdb_proc_up_time_seconds counter",
+		"# TYPE kurrentdb_queue_busy_seconds counter",
 		"# TYPE kurrentdb_queue_processing_duration_seconds histogram",
 		"# TYPE kurrentdb_queue_queueing_duration_max_seconds gauge",
 		"# TYPE kurrentdb_statuses gauge",
@@ -87,18 +98,18 @@ public class MetricsEndpointTests : DirectoryPerTest<MetricsEndpointTests> {
 		"# TYPE kurrentdb_writer_flush_size_max gauge",
 
 		"# UNIT kurrentdb_cache_resources_entries entries",
-		"# UNIT kurrentdb_disk_io_bytes_total bytes",
-		"# UNIT kurrentdb_disk_io_operations_total operations",
-		"# UNIT kurrentdb_gc_allocated_bytes_total bytes",
+		"# UNIT kurrentdb_disk_io_bytes bytes",
+		"# UNIT kurrentdb_disk_io_operations operations",
+		"# UNIT kurrentdb_gc_allocated_bytes bytes",
 		"# UNIT kurrentdb_gc_generation_size_bytes bytes",
 		"# UNIT kurrentdb_gc_heap_size_bytes bytes",
 		"# UNIT kurrentdb_gc_pause_duration_max_seconds seconds",
-		"# UNIT kurrentdb_io_bytes_total bytes",
-		"# UNIT kurrentdb_io_events_total events",
+		"# UNIT kurrentdb_io_bytes bytes",
+		"# UNIT kurrentdb_io_events events",
 		"# UNIT kurrentdb_io_record_read_duration_seconds seconds",
 		"# UNIT kurrentdb_proc_mem_bytes bytes",
-		"# UNIT kurrentdb_proc_up_time_seconds_total seconds",
-		"# UNIT kurrentdb_queue_busy_seconds_total seconds",
+		"# UNIT kurrentdb_proc_up_time_seconds seconds",
+		"# UNIT kurrentdb_queue_busy_seconds seconds",
 		"# UNIT kurrentdb_queue_processing_duration_seconds seconds",
 		"# UNIT kurrentdb_queue_queueing_duration_max_seconds seconds",
 		"# UNIT kurrentdb_sys_disk_bytes bytes",
