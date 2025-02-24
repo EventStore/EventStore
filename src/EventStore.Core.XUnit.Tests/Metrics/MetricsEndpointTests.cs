@@ -13,7 +13,7 @@ using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.Metrics;
 
-public class EndpointTests {
+public class MetricsEndpointTests {
 	[Fact]
 	public async Task can_produce_kurrent_metrics() {
 		var content = await Query(legacy: false);
@@ -31,7 +31,7 @@ public class EndpointTests {
 	static async Task<string> Query(bool legacy) {
 		var configuration = new ConfigurationBuilder()
 			.AddSection($"{KurrentConfigurationKeys.Prefix}:Metrics", x => x
-				.AddJsonFile("./Metrics/Conf/metricsconfig.json")
+				.AddJsonFile("./Metrics/Conf/test-metrics-config.json")
 				.AddInMemoryCollection([
 					new("Meters:0", legacy
 						? "EventStore.Core"
