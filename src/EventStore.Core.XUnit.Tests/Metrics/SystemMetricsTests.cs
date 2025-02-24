@@ -31,7 +31,7 @@ public class SystemMetricsTests : IDisposable {
 		foreach (var value in Enum.GetValues<MetricsConfiguration.SystemTracker>()) {
 			config[value] = true;
 		}
-		_sut = new SystemMetrics(_meter, TimeSpan.FromSeconds(42), config);
+		_sut = new SystemMetrics(_meter, TimeSpan.FromSeconds(42), config, legacyNames: false);
 		_sut.CreateLoadAverageMetric("eventstore-sys-load-avg", new() {
 			{ MetricsConfiguration.SystemTracker.LoadAverage1m, "1m" },
 			{ MetricsConfiguration.SystemTracker.LoadAverage5m, "5m" },

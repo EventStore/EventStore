@@ -23,6 +23,7 @@ public class IndexStatusTrackerTests : IDisposable {
 		_metric = new StatusMetric(
 			meter,
 			"eventstore-statuses",
+			legacyNames: false,
 			_clock);
 		_sut = new IndexStatusTracker(_metric);
 	}

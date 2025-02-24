@@ -13,7 +13,7 @@ using static EventStore.Common.Configuration.MetricsConfiguration;
 
 namespace EventStore.Core.Metrics;
 
-public class SystemMetrics(Meter meter, TimeSpan timeout, Dictionary<SystemTracker, bool> config) {
+public class SystemMetrics(Meter meter, TimeSpan timeout, Dictionary<SystemTracker, bool> config, bool legacyNames) {
 	public void CreateLoadAverageMetric(string metricName, Dictionary<SystemTracker, string> dimNames) {
 		if (RuntimeInformation.IsWindows)
 			return;
@@ -43,7 +43,10 @@ public class SystemMetrics(Meter meter, TimeSpan timeout, Dictionary<SystemTrack
 		dims.Register(SystemTracker.TotalMem, RuntimeStats.GetTotalMemory);
 
 		if (dims.AnyRegistered())
-			meter.CreateObservableGauge(metricName, dims.GenObserve(), "bytes");
+			if (legacyNames)
+				meter.CreateObservableGauge($"{metricName}-bytes", dims.GenObserve());
+			else
+				meter.CreateObservableGauge(metricName, dims.GenObserve(), "bytes");
 	}
 
 	public void CreateDiskMetric(string metricName, string dbPath, Dictionary<SystemTracker, string> dimNames) {
@@ -55,7 +58,10 @@ public class SystemMetrics(Meter meter, TimeSpan timeout, Dictionary<SystemTrack
 		dims.Register(SystemTracker.DriveTotalBytes, GenMeasure(info => info.TotalBytes));
 
 		if (dims.AnyRegistered())
-			meter.CreateObservableGauge(metricName, dims.GenObserve(), "bytes");
+			if (legacyNames)
+				meter.CreateObservableGauge($"{metricName}-bytes", dims.GenObserve());
+			else
+				meter.CreateObservableGauge(metricName, dims.GenObserve(), "bytes");
 		
 		return;
 

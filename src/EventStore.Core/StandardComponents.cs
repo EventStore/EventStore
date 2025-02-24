@@ -32,7 +32,7 @@ public class StandardComponents {
 		IPublisher networkSendService,
 		QueueStatsManager queueStatsManager,
 		QueueTrackers trackers,
-		bool projectionStats) {
+		MetricsConfiguration metricsConfiguration) {
 		_dbConfig = dbConfig;
 		_mainQueue = mainQueue;
 		_mainBus = mainBus;
@@ -43,7 +43,7 @@ public class StandardComponents {
 		_networkSendService = networkSendService;
 		_queueStatsManager = queueStatsManager;
 		QueueTrackers = trackers;
-		ProjectionStats = projectionStats;
+		MetricsConfiguration = metricsConfiguration;
 	}
 
 	public TFChunkDbConfig DbConfig {
@@ -82,7 +82,7 @@ public class StandardComponents {
 		get { return _queueStatsManager; }
 	}
 
-	public bool ProjectionStats { get; }
+	public MetricsConfiguration MetricsConfiguration { get; }
 
 	public QueueTrackers QueueTrackers { get; private set; }
 }

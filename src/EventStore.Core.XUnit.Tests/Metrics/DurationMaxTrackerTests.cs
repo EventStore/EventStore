@@ -17,7 +17,7 @@ public class DurationMaxTrackerTests : IDisposable {
 	public DurationMaxTrackerTests() {
 		var meter = new Meter($"{typeof(DurationMaxTrackerTests)}");
 		_listener = new TestMeterListener<double>(meter);
-		var metric = new DurationMaxMetric(meter, "the-metric");
+		var metric = new DurationMaxMetric(meter, "the-metric", legacyNames: false);
 		_sut = new DurationMaxTracker(
 			metric: metric,
 			name: "the-tracker",
@@ -184,7 +184,7 @@ public class DurationMaxTrackerTests : IDisposable {
 		using var meter = new Meter($"{typeof(DurationMaxTrackerTests)}");
 		using var listener = new TestMeterListener<double>(meter);
 		var sut = new DurationMaxTracker(
-			metric: new DurationMaxMetric(meter, "the-metric"),
+			metric: new DurationMaxMetric(meter, "the-metric", legacyNames: false),
 			name: null,
 			expectedScrapeIntervalSeconds: 15);
 

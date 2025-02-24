@@ -23,6 +23,7 @@ public class ScavengeStatusTrackerTests : IDisposable {
 		_metric = new StatusMetric(
 			meter,
 			"eventstore-statuses",
+			legacyNames: false,
 			_clock);
 		_sut = new ScavengeStatusTracker(_metric);
 	}

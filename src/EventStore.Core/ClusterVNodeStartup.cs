@@ -34,6 +34,7 @@ using Operations = EventStore.Core.Services.Transport.Grpc.Operations;
 using ClusterGossip = EventStore.Core.Services.Transport.Grpc.Cluster.Gossip;
 using ClientGossip = EventStore.Core.Services.Transport.Grpc.Gossip;
 using ServerFeatures = EventStore.Core.Services.Transport.Grpc.ServerFeatures;
+using Serilog;
 
 #nullable enable
 namespace EventStore.Core;
@@ -51,6 +52,7 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 	private readonly IExpiryStrategy _expiryStrategy;
 	private readonly KestrelHttpService _httpService;
 	private readonly IConfiguration _configuration;
+	private readonly MetricsConfiguration _metricsConfiguration;
 	private readonly Trackers _trackers;
 	private readonly StatusCheck _statusCheck;
 	private readonly Func<IServiceCollection, IServiceCollection> _configureNodeServices;
@@ -90,6 +92,7 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 		_expiryStrategy = expiryStrategy;
 		_httpService = Ensure.NotNull(httpService);
 		_configuration = Ensure.NotNull(configuration);
+		_metricsConfiguration = MetricsConfiguration.Get(_configuration);
 		_trackers = trackers;
 		_clusterDns = clusterDns;
 		_configureNodeServices = configureNodeServices ?? throw new ArgumentNullException(nameof(configureNodeServices));
@@ -99,6 +102,10 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 
 	public void Configure(WebApplication app) {
 		_configureNode(app);
+
+		var forcePlainTextMetrics =
+			_metricsConfiguration.LegacyCoreNaming &&
+			_metricsConfiguration.LegacyProjectionsNaming;
 
 		var internalDispatcher = new InternalDispatcherEndpoint(_mainQueue, _httpMessageHandler);
 		_mainBus.Subscribe(internalDispatcher);
@@ -133,7 +140,20 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 		app.UseMiddleware<AuthorizationMiddleware>();
 
 		// Open telemetry currently guarded by our custom authz for consistency with stats
-		app.UseOpenTelemetryPrometheusScrapingEndpoint();
+		app.UseOpenTelemetryPrometheusScrapingEndpoint(x => {
+			if (x.Request.Path != "/metrics")
+				return false;
+
+			// Prometheus scrapes preferring application/openmetrics-text, but the prometheus exporter
+			// these days adds `_total` suffix to counters when outputting openmetrics format (as
+			// required by the spec). DisableTotalNameSuffixForCounters only affects plain text output.
+			// So if we are exporting legacy metrics, where we do not want the _total suffix for
+			// backwards compatibility, then force the exporter to respond with plain text metrics as it
+			// did in 23.10 and 24.10.
+			if (forcePlainTextMetrics)
+				x.Request.Headers.Remove("Accept");
+			return true;
+		});
 
 		// Internal dispatcher looks up the InternalContext to call the appropriate controller
 		app.Use((ctx, next) => internalDispatcher.InvokeAsync(ctx, next));
@@ -156,8 +176,6 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 	}
 
 	public void ConfigureServices(IServiceCollection services) {
-		var metricsConfiguration = MetricsConfiguration.Get(_configuration);
-
 		services = services
 			.AddRouting()
 			.AddAuthentication(o => o
@@ -190,10 +208,10 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 			// OpenTelemetry
 			.AddOpenTelemetry()
 			.WithMetrics(meterOptions => meterOptions
-				.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("kurrentdb"))
-				.AddMeter(metricsConfiguration.Meters)
+				.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(_metricsConfiguration.ServiceName))
+				.AddMeter(_metricsConfiguration.Meters)
 				.AddView(i => {
-					if (i.Name == MetricsBootstrapper.LogicalChunkReadDistributionName)
+					if (i.Name == MetricsBootstrapper.LogicalChunkReadDistributionName(_metricsConfiguration.ServiceName))
 						// 20 buckets, 0, 1, 2, 4, 8, ...
 						return new ExplicitBucketHistogramConfiguration {
 							Boundaries = [
@@ -201,9 +219,10 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 								.. Enumerable.Range(0, count: 19).Select(x => 1 << x)
 							]
 						};
-					else if (i.Name.StartsWith("kurrentdb-") &&
-						i.Name.EndsWith("-latency") &&
-						i.Unit == "seconds")
+					else if (i.Name.StartsWith(_metricsConfiguration.ServiceName + "-") &&
+						(i.Name.EndsWith("-latency-seconds") ||
+						 i.Name.EndsWith("-latency") && i.Unit == "seconds"))
+
 						return new ExplicitBucketHistogramConfiguration {
 							Boundaries = [
 								0.001, //    1 ms
@@ -216,8 +235,9 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 								5,     // 5000 ms
 							]
 						};
-					else if (i.Name.StartsWith("kurrentdb-") &&
-						i.Unit == "seconds")
+					else if (i.Name.StartsWith(_metricsConfiguration.ServiceName + "-") &&
+						(i.Name.EndsWith("-seconds") ||
+						 i.Unit == "seconds"))
 						return new ExplicitBucketHistogramConfiguration {
 							Boundaries = [
 								0.000_001, // 1 microsecond
@@ -232,7 +252,15 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 						};
 					return default;
 				})
-				.AddPrometheusExporter(options => options.ScrapeResponseCacheDurationMilliseconds = 1000))
+				.AddPrometheusExporter(options => {
+					if (_metricsConfiguration.LegacyCoreNaming && _metricsConfiguration.LegacyProjectionsNaming) {
+						options.DisableTotalNameSuffixForCounters = true;
+					} else if (_metricsConfiguration.LegacyCoreNaming || _metricsConfiguration.LegacyProjectionsNaming) {
+						Log.Error("Inconsistent Meter names: {names}. Please use EventStore or KurrentDB for all.",
+							string.Join(", ", _metricsConfiguration.Meters));
+					}
+					options.ScrapeResponseCacheDurationMilliseconds = 1000;
+				}))
 			.Services
 
 			// gRPC

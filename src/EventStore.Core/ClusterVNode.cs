@@ -1579,7 +1579,7 @@ public class ClusterVNode<TStreamId> :
 		_subsystems = options.Subsystems;
 
 		var standardComponents = new StandardComponents(Db.Config, _mainQueue, _mainBus, _timerService, _timeProvider,
-			httpSendService, new IHttpService[] { _httpService }, _workersHandler, _queueStatsManager, trackers.QueueTrackers, metricsConfiguration.ProjectionStats);
+			httpSendService, new IHttpService[] { _httpService }, _workersHandler, _queueStatsManager, trackers.QueueTrackers, metricsConfiguration);
 
 		IServiceCollection ConfigureNodeServices(IServiceCollection services) {
 			services
