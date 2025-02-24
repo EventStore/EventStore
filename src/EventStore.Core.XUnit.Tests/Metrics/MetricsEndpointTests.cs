@@ -13,7 +13,7 @@ using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.Metrics;
 
-public class MetricsEndpointTests {
+public class MetricsEndpointTests : DirectoryPerTest<MetricsEndpointTests> {
 	[Fact]
 	public async Task can_produce_kurrent_metrics() {
 		var content = await Query(legacy: false);
@@ -28,7 +28,7 @@ public class MetricsEndpointTests {
 			Assert.Contains(expected, content);
 	}
 
-	static async Task<string> Query(bool legacy) {
+	async Task<string> Query(bool legacy) {
 		var configuration = new ConfigurationBuilder()
 			.AddSection($"{KurrentConfigurationKeys.Prefix}:Metrics", x => x
 				.AddJsonFile("./Metrics/Conf/test-metrics-config.json")
@@ -41,7 +41,7 @@ public class MetricsEndpointTests {
 						: "KurrentDB.Projections.Core"),
 				]))
 			.Build();
-		await using var sut = new MiniNode<LogFormat.V2, string>("", configuration: configuration);
+		await using var sut = new MiniNode<LogFormat.V2, string>(Fixture.Directory, configuration: configuration);
 		await sut.Start();
 		var result = await sut.HttpClient.GetAsync("/metrics");
 		Assert.Equal(HttpStatusCode.OK, result.StatusCode);
