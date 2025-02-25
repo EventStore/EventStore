@@ -4,7 +4,7 @@
 		<OutputType>library</OutputType>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<NoWarn>$(NoWarn);CS1591;CS1998;CS8618;CS8524;CS8655;RCS1194</NoWarn>
+		<NoWarn>$(NoWarn);CS1591;CS1998;CS8618;CS8524;CS8655;RCS1194;NU1604;NU1602</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -12,30 +12,19 @@
 		<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" ExcludeAssets="all" Private="false" />
 		<ProjectReference Include="..\EventStore.SystemRuntime\EventStore.SystemRuntime.csproj" ExcludeAssets="all" Private="false"/>
 		<ProjectReference Include="..\EventStore.Extensions.Connectors.Contracts\EventStore.Extensions.Connectors.Contracts.csproj" />
-
-		<!-- Easier & faster way to debug -->
-		<ProjectReference Include="..\..\submodules\Surge\src\Framework\src\Kurrent.Surge.Core\Kurrent.Surge.Core.csproj" />
-		<ProjectReference Include="..\..\submodules\Surge\src\DataProtection\src\Kurrent.Surge.DataProtection\Kurrent.Surge.DataProtection.csproj" />
-		<ProjectReference Include="..\..\submodules\Surge\src\Toolkit\src\Kurrent.Toolkit\Kurrent.Toolkit.csproj" />
-		<ProjectReference Include="..\..\submodules\Surge\src\Connectors\src\Kurrent.Connectors.Elasticsearch\Kurrent.Connectors.Elasticsearch.csproj" />
-		<ProjectReference Include="..\..\submodules\Surge\src\Connectors\src\Kurrent.Connectors.Http\Kurrent.Connectors.Http.csproj" />
-		<ProjectReference Include="..\..\submodules\Surge\src\Connectors\src\Kurrent.Connectors.Kafka\Kurrent.Connectors.Kafka.csproj" />
-		<ProjectReference Include="..\..\submodules\Surge\src\Connectors\src\Kurrent.Connectors.KurrentDB\Kurrent.Connectors.KurrentDB.csproj" />
-		<ProjectReference Include="..\..\submodules\Surge\src\Connectors\src\Kurrent.Connectors.MongoDB\Kurrent.Connectors.MongoDB.csproj" />
-		<ProjectReference Include="..\..\submodules\Surge\src\Connectors\src\Kurrent.Connectors.RabbitMQ\Kurrent.Connectors.RabbitMQ.csproj" />
 	</ItemGroup>
 
 	<!-- Required packages -->
 	<ItemGroup>
-<!--		<PackageReference Include="Kurrent.Surge.Core" Version="1.0.0-alpha.350" />-->
-<!--		<PackageReference Include="Kurrent.Surge.DataProtection" Version="1.0.0-alpha.350" />-->
-<!--		<PackageReference Include="Kurrent.Toolkit" Version="1.0.0-alpha.350" />-->
-<!--		<PackageReference Include="Kurrent.Connectors.Elasticsearch" Version="1.0.0-alpha.350" />-->
-<!--		<PackageReference Include="Kurrent.Connectors.Http" Version="1.0.0-alpha.350" />-->
-<!--		<PackageReference Include="Kurrent.Connectors.Kafka" Version="1.0.0-alpha.350" />-->
-<!--		<PackageReference Include="Kurrent.Connectors.KurrentDB" Version="1.0.0-alpha.350" />-->
-<!--		<PackageReference Include="Kurrent.Connectors.MongoDB" Version="1.0.0-alpha.350" />-->
-<!--		<PackageReference Include="Kurrent.Connectors.RabbitMQ" Version="1.0.0-alpha.350" />-->
+		<PackageReference Include="Kurrent.Surge.Core" Version="1.0.0-alpha.351" />
+		<PackageReference Include="Kurrent.Surge.DataProtection" Version="1.0.0-alpha.351" />
+		<PackageReference Include="Kurrent.Toolkit" Version="1.0.0-alpha.351" />
+		<PackageReference Include="Kurrent.Connectors.Elasticsearch" Version="1.0.0-alpha.351" />
+		<PackageReference Include="Kurrent.Connectors.Http" Version="1.0.0-alpha.351" />
+		<PackageReference Include="Kurrent.Connectors.Kafka" Version="1.0.0-alpha.351" />
+		<PackageReference Include="Kurrent.Connectors.KurrentDB" Version="1.0.0-alpha.351" />
+		<PackageReference Include="Kurrent.Connectors.MongoDB" Version="1.0.0-alpha.351" />
+		<PackageReference Include="Kurrent.Connectors.RabbitMQ" Version="1.0.0-alpha.351" />
 		<PackageReference Include="Eventuous.Application" Version="0.15.0" />
 		<PackageReference Include="Eventuous.Extensions.AspNetCore" Version="0.15.0" />
 		<PackageReference Include="Eventuous.Extensions.DependencyInjection" Version="0.15.0" />
@@ -82,7 +71,7 @@
 		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" PrivateAssets="all"/>
 		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" PrivateAssets="all"/>
 	</ItemGroup>
-	
+
 	<ItemGroup>
 		<InternalsVisibleTo Include="EventStore.Plugins.Connectors" />
 		<InternalsVisibleTo Include="EventStore.Extensions.Connectors.Tests" />

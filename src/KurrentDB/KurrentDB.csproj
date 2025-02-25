@@ -4,6 +4,7 @@
 		<OutputType>Exe</OutputType>
 		<ApplicationIcon>app2.ico</ApplicationIcon>
 		<GenerateSupportedRuntime>false</GenerateSupportedRuntime>
+		<NoWarn>$(NoWarn);NU1602</NoWarn>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="SharpDotYaml.Extensions.Configuration" Version="0.3.1" />
