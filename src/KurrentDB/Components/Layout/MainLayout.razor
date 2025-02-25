@@ -13,7 +13,7 @@
 		<img alt="Kurrent logo" src="@(Preferences.DarkMode ? "logo_white.svg" : "logo_plum.svg")" height="32"/>
 		<MudText Typo="Typo.h5" Class="ml-3">KurrentDB @VersionInfo.Version</MudText>
 		<MudSpacer/>
-		<MudIconButton Icon="@(DarkLightModeButtonIcon)" Color="Color.Inherit" OnClick="@DarkModeToggle"/>
+		@* <MudIconButton Icon="@(DarkLightModeButtonIcon)" Color="Color.Inherit" OnClick="@DarkModeToggle"/> *@
 	</MudAppBar>
 	<MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2" Width="200px">
 		<NavMenu/>
