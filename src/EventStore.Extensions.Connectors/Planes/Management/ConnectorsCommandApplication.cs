@@ -14,7 +14,13 @@ namespace EventStore.Connectors.Management;
 
 [PublicAPI]
 public class ConnectorsCommandApplication : EntityApplication<ConnectorEntity> {
-    public ConnectorsCommandApplication(ValidateConnectorSettings validateSettings, ConnectorsLicenseService licenseService, TimeProvider time, IEventStore store) :
+    public ConnectorsCommandApplication(
+        ValidateConnectorSettings validateSettings,
+        ProtectConnectorSettings protectSettings,
+        ConnectorsLicenseService licenseService,
+        TimeProvider time,
+        IEventStore store
+    ) :
         base(cmd => cmd.ConnectorId, ConnectorsFeatureConventions.Streams.ManagementStreamTemplate, store) {
         OnAny<CreateConnector>((connector, cmd) => {
             connector.EnsureIsNew();
@@ -22,6 +28,7 @@ public class ConnectorsCommandApplication : EntityApplication<ConnectorEntity> {
             var settings = ConnectorSettings
                 .From(cmd.Settings)
                 .EnsureValid(cmd.ConnectorId, validateSettings)
+                .Protect(cmd.ConnectorId, protectSettings)
                 .AsDictionary();
 
             CheckAccess(settings, licenseService);
@@ -58,6 +65,7 @@ public class ConnectorsCommandApplication : EntityApplication<ConnectorEntity> {
             var settings = ConnectorSettings
                 .From(cmd.Settings)
                 .EnsureValid(cmd.ConnectorId, validateSettings)
+                .Protect(cmd.ConnectorId, protectSettings)
                 .AsDictionary();
 
             return [

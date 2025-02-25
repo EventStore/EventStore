@@ -4,6 +4,7 @@
 using EventStore.Connect.Processors;
 using EventStore.Connectors;
 using EventStore.Connectors.Connect.Components.Connectors;
+using EventStore.Connectors.Infrastructure.Connect.Components.Connectors;
 using EventStore.Connectors.System;
 using Kurrent.Surge.Connectors.Sinks;
 using EventStore.Core.Bus;
@@ -25,24 +26,22 @@ using AutoLockOptions = Kurrent.Surge.Processors.Configuration.AutoLockOptions;
 namespace EventStore.Connect.Connectors;
 
 public record SystemConnectorsFactoryOptions {
-    public StreamTemplate  CheckpointsStreamTemplate { get; init; } = ConnectorsFeatureConventions.Streams.CheckpointsStreamTemplate;
-    public StreamTemplate  LifecycleStreamTemplate   { get; init; } = ConnectorsFeatureConventions.Streams.LifecycleStreamTemplate;
-    public AutoLockOptions AutoLock                  { get; init; } = new();
+    public StreamTemplate                        CheckpointsStreamTemplate { get; init; } = ConnectorsFeatureConventions.Streams.CheckpointsStreamTemplate;
+    public StreamTemplate                        LifecycleStreamTemplate   { get; init; } = ConnectorsFeatureConventions.Streams.LifecycleStreamTemplate;
+    public AutoLockOptions                       AutoLock                  { get; init; } = new();
+    public Func<IConfiguration, IConfiguration>? ProcessConfiguration      { get; init; }
 }
 
-public class SystemConnectorsFactory(
-    SystemConnectorsFactoryOptions options,
-    IConnectorValidator validation,
-    IServiceProvider services
-) : IConnectorFactory {
-    SystemConnectorsFactoryOptions Options    { get; } = options;
-    IConnectorValidator            Validation { get; } = validation;
-    IServiceProvider               Services   { get; } = services;
+public class SystemConnectorsFactory(SystemConnectorsFactoryOptions options, IServiceProvider services) : ISystemConnectorFactory {
+    SystemConnectorsFactoryOptions Options  { get; } = options;
+    IServiceProvider               Services { get; } = services;
 
     public IConnector CreateConnector(ConnectorId connectorId, IConfiguration configuration) {
         var sinkOptions = configuration.GetRequiredOptions<SinkOptions>();
 
-        Validation.EnsureValid(configuration);
+        var updated = Options.ProcessConfiguration?.Invoke(configuration);
+
+        configuration = updated ?? configuration;
 
         var sink = CreateSink(sinkOptions.InstanceTypeName);
 
