@@ -40,17 +40,8 @@ partial class Streams<TStreamId> {
 			requestStream, responseStream,
 			context.GetHttpContext().User, _maxAppendSize, _writeTimeout,
 			GetRequiresLeader(context.RequestHeaders));
-		try {
-			await worker.Work(context.CancellationToken);
-		} catch (IOException) {
-			// ignored
-		} catch (TaskCanceledException) {
-			//ignored
-		} catch (InvalidOperationException) {
-			//ignored
-		} catch (OperationCanceledException) {
-			//ignored
-		}
+
+		await worker.Work(context.CancellationToken);
 	}
 
 	private class BatchAppendWorker {
