@@ -1,5 +1,7 @@
 // ReSharper disable CheckNamespace
 
+#pragma warning disable CS0108, CS0114
+
 using System.Diagnostics.CodeAnalysis;
 using EventStore.Connect.Consumers;
 using Kurrent.Surge.Leases;
@@ -21,7 +23,7 @@ namespace EventStore.Connect.Processors.Configuration;
 
 [PublicAPI]
 public record SystemProcessorBuilder : ProcessorBuilder<SystemProcessorBuilder, SystemProcessorOptions> {
-	public new SystemProcessorBuilder Filter(ConsumeFilter filter) =>
+	public SystemProcessorBuilder Filter(ConsumeFilter filter) =>
         new() {
             Options = Options with {
                 Filter = filter
@@ -31,45 +33,45 @@ public record SystemProcessorBuilder : ProcessorBuilder<SystemProcessorBuilder, 
     public SystemProcessorBuilder Stream(StreamId stream) =>
         Filter(ConsumeFilter.FromStreamId(stream));
 
-    public new SystemProcessorBuilder StartPosition(RecordPosition? startPosition) =>
+    public SystemProcessorBuilder StartPosition(RecordPosition? startPosition) =>
         new() {
             Options = Options with {
                 StartPosition = startPosition
             }
         };
 
-    public new SystemProcessorBuilder InitialPosition(SubscriptionInitialPosition initialPosition) =>
+    public SystemProcessorBuilder InitialPosition(SubscriptionInitialPosition initialPosition) =>
         new() {
             Options = Options with {
                 InitialPosition = initialPosition
             }
         };
 
-    public new SystemProcessorBuilder AutoCommit(AutoCommitOptions autoCommitOptions) =>
+    public SystemProcessorBuilder AutoCommit(AutoCommitOptions autoCommitOptions) =>
         new() {
             Options = Options with {
                 AutoCommit = autoCommitOptions
             }
         };
 
-    public new SystemProcessorBuilder AutoCommit(Func<AutoCommitOptions, AutoCommitOptions> configureAutoCommit) =>
+    public SystemProcessorBuilder AutoCommit(Func<AutoCommitOptions, AutoCommitOptions> configureAutoCommit) =>
         new() {
             Options = Options with {
                 AutoCommit = configureAutoCommit(Options.AutoCommit)
             }
         };
 
-    public new SystemProcessorBuilder DisableAutoCommit() =>
+    public SystemProcessorBuilder DisableAutoCommit() =>
         AutoCommit(x => x with { Enabled = false });
 
-    public new SystemProcessorBuilder SkipDecoding(bool skipDecoding = true) =>
+    public SystemProcessorBuilder SkipDecoding(bool skipDecoding = true) =>
         new() {
             Options = Options with {
                 SkipDecoding = skipDecoding
             }
         };
 
-    public new SystemProcessorBuilder DisableAutoLock() =>
+    public SystemProcessorBuilder DisableAutoLock() =>
         AutoLock(x => x with { Enabled = false });
 
     public SystemProcessorBuilder Publisher(IPublisher publisher) {
