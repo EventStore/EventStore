@@ -1,55 +1,54 @@
 @page "/ui/logs"
-@rendermode InteractiveServer
 @attribute [Authorize]
+@using System.ComponentModel
 @using KurrentDB.Tools
 @using Microsoft.AspNetCore.Authorization
+@using Serilog
 @using Serilog.Events
 @inject LogObserver LogObserver
 @implements IDisposable
 
 <PageTitle>KurrentDB: Logs</PageTitle>
 
-<MudSimpleTable Dense="true" Style="overflow-x: auto;">
-	<thead>
-	<tr>
-		<th>Timestamp</th>
-		<th>Level</th>
-		<th>Message</th>
-	</tr>
-	</thead>
-	<tbody>
-	@lock (_items) {
-		foreach (var item in _items) {
-			<tr style="@CellStyle(item)">
-				<td>@item.Timestamp.ToString("HH:mm:ss")</td>
-				<td>@item.Level</td>
-				<td>@item.MessageTemplate.Render(item.Properties)</td>
-			</tr>
-		}
-	}
-	</tbody>
-</MudSimpleTable>
-@lock (_items) {
-	if (_items.Count == 0) {
-		<MudText>Waiting for log events...</MudText>
-	}
+<MudDataGrid @ref="_dataGrid" Items="@LogObserver.Items" Dense="@true" Filterable="true">
+	<Columns>
+		<PropertyColumn Property="x => x.Timestamp" Title="Timestamp" Format="HH:mm:ss" Filterable="@false"/>
+		<PropertyColumn Property="x => x.Level" Title="Level" CellStyleFunc="_cellStyleFunc"/>
+		<PropertyColumn Property="x => x.MessageTemplate.Render(x.Properties, null)" Title="Message"
+		                CellStyleFunc="_cellStyleFunc"/>
+	</Columns>
+</MudDataGrid>
+@if (LogObserver.Items.Count == 0) {
+	<MudText>Waiting for log events...</MudText>
 }
 
 @code {
-	protected override Task OnInitializedAsync() {
-		LogObserver.LogEntryAdded += HandleUpdate;
-		return base.OnInitializedAsync();
+	MudDataGrid<LogEvent> _dataGrid;
+	bool _defaultSortingApplied;
+
+	protected override async Task OnInitializedAsync() {
+		LogObserver.PropertyChanged += HandleUpdate;
+		await base.OnInitializedAsync();
 	}
 
-	void HandleUpdate(LogEvent entry) {
-		Task.Run(() => InvokeAsync(() => Update(entry)));
+	protected override async Task OnAfterRenderAsync(bool firstRender) {
+		await base.OnAfterRenderAsync(firstRender);
+		if (!_defaultSortingApplied && _dataGrid != null) {
+			await _dataGrid.SetSortAsync(nameof(LogEvent.Timestamp), SortDirection.Descending, x => x.Timestamp);
+			_defaultSortingApplied = true;
+			StateHasChanged();
+		}
 	}
 
-	string CellStyle(LogEvent x) {
+	void HandleUpdate(object sender, PropertyChangedEventArgs e) {
+		Task.Run(() => InvokeAsync(Update));
+	}
+
+	Func<LogEvent, string> _cellStyleFunc => x => {
 		var color = x.Level switch {
-			LogEventLevel.Verbose => "",
-			LogEventLevel.Debug => "",
-			LogEventLevel.Information => "--mud-palette-dark-text",
+			LogEventLevel.Verbose => "--mud-palette-text-disabled",
+			LogEventLevel.Debug => "--mud-palette-text-secondary",
+			LogEventLevel.Information => "--mud-palette-text-primary",
 			LogEventLevel.Warning => "--mud-palette-warning",
 			LogEventLevel.Error => "--mud-palette-error",
 			LogEventLevel.Fatal => "--mud-palette-error",
@@ -57,22 +56,13 @@
 		};
 		var style = color != "" ? $"color: var({color});" : "";
 		return style;
-	}
+	};
 
 	public void Dispose() {
-		LogObserver.LogEntryAdded -= HandleUpdate;
+		LogObserver.PropertyChanged -= HandleUpdate;
 	}
 
-	void Update(LogEvent entry) {
-		lock (_items) {
-			_items.Insert(0, entry);
-			if (_items.Count > 200) {
-				_items.RemoveAt(_items.Count - 1);
-			}
-		}
-
+	void Update() {
 		StateHasChanged();
 	}
-
-	readonly List<LogEvent> _items = [];
 }

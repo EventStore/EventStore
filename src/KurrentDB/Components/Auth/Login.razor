@@ -1,80 +1,66 @@
 @page "/ui/login"
 @using System.ComponentModel.DataAnnotations
 @using EventStore.Plugins.Authentication
-@using Microsoft.AspNetCore.Authentication
-@using Microsoft.AspNetCore.Authentication.Cookies
+@using KurrentDB.Services
 @using Microsoft.AspNetCore.Http
-@inject NavigationManager NavigationManager
-@inject IAuthenticationProvider AuthProvider
 
 <EditForm Model="Input" OnValidSubmit="LoginUser" FormName="LoginUser">
 	<DataAnnotationsValidator/>
-	<div class="mud-grid mud-grid-spacing-xs-6 justify-start">
-		<div class="mud-grid-item mud-grid-item-xs-12 mud-grid-item-sm-7">
-			<div class="mud-paper mud-elevation-1 mud-card" style="">
-				<div class="mud-card-content">
-					<div class="mud-input-control mud-input-required mud-input-text-with-label mud-input-input-control">
-						<div class="mud-input-control-input-container">
-							<div
-								class="mud-input mud-input-text mud-input-text-with-label mud-input-underline mud-typography-subtitle1">
-								<InputText @bind-Value="Input.Username" placeholder="Username"
-								           class="mud-input-slot mud-input-root mud-input-root-text"
-								           id="mudinputa05kyx85"/>
-								<div class="mud-input-slot mud-input-root mud-input-root-text" style="display:none"
-								     tabindex="-1"></div>
-							</div>
-						</div>
-					</div>
-					<div class="mud-input-control mud-input-required mud-input-text-with-label mud-input-input-control">
-						<div class="mud-input-control-input-container">
-							<div
-								class="mud-input mud-input-text mud-input-text-with-label mud-input-underline mud-typography-subtitle1">
-								<InputText @bind-Value="Input.Password" placeholder="Password" type="password"
-								           class="mud-input-slot mud-input-root mud-input-root-text"
-								           id="mudinputgery56no"/>
-								<div class="mud-input-slot mud-input-root mud-input-root-text" style="display:none"
-								     tabindex="-1"></div>
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="mud-card-actions">
-					<button type="submit"
-					        class="mud-button-root mud-button mud-button-filled mud-button-filled-primary mud-button-filled-size-medium mud-ripple ml-auto"
-					        __internal_stoppropagation_onclick=""><span class="mud-button-label">Log in
-					</span></button>
-				</div>
-				<div class="mud-card-actions">
-					<MudText>
-					<ValidationSummary/>
-					</MudText>
-					@if (_wrongCredentials) {
-						<MudText>Unknown user or wrong password</MudText>
-					}
-				</div>
-			</div>
-		</div>
-	</div>
+	<MudGrid>
+		<MudItem xs="6">
+			<MudCard>
+				<MudCardContent>
+					<MudTextField Label="Username" HelperText="Enter your username" AutoFocus="true"
+					              @bind-Value="Input.Username" For="@(() => Input.Username)"/>
+					<MudTextField Label="Password" HelperText="Enter your password" Class="mt-3"
+					              @bind-Value="Input.Password" For="@(() => Input.Password)"
+					              InputType="InputType.Password"/>
+				</MudCardContent>
+				<MudCardActions>
+					<MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary"
+					           Class="ml-auto">Log in
+					</MudButton>
+					<ValidationSummary></ValidationSummary>
+				</MudCardActions>
+			</MudCard>
+		</MudItem>
+		<MudFlexBreak />
+		<MudItem xs="6">
+		</MudItem>
+	</MudGrid>
 </EditForm>
 
 @code {
-	[CascadingParameter] HttpContext HttpContext { get; set; } = default!;
+	[Inject] NavigationManager NavigationManager { get; set; }
+	[Inject] IAuthenticationProvider AuthProvider { get; set; }
+	[Inject] AuthService AuthService { get; set; }
+	[Inject] ISnackbar Snackbar { get; set; }
 	[SupplyParameterFromForm] LoginInputModel Input { get; set; } = new();
 	[SupplyParameterFromQuery] string ReturnUrl { get; set; }
-	bool _wrongCredentials;
+
+	protected override async Task OnAfterRenderAsync(bool firstRender) {
+		if (firstRender && !AuthService.IsLoggedIn) {
+			var restoredFromState = await AuthService.GetStateFromTokenAsync();
+			if (restoredFromState) {
+				if (!string.IsNullOrEmpty(ReturnUrl)) {
+					NavigationManager.NavigateTo(ReturnUrl);
+				}
+			}
+		}
+	}
 
 	public async Task LoginUser() {
-		var request = new HttpAuthenticationRequest(HttpContext, Input.Username, Input.Password);
+		var request = new HttpAuthenticationRequest(new DefaultHttpContext(), Input.Username, Input.Password);
 		AuthProvider.Authenticate(request);
 		var (status, principal) = await request.AuthenticateAsync();
 
 		if (status != HttpAuthenticationRequestStatus.Authenticated) {
-			_wrongCredentials = true;
+			Snackbar.Add("Invalid username or password", Severity.Error);
 			return;
 		}
 
-		await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
-		NavigationManager.NavigateTo(ReturnUrl);
+		await AuthService.Login(principal);
+		NavigationManager.NavigateTo(ReturnUrl ?? "/");
 	}
 
 	private sealed class LoginInputModel {

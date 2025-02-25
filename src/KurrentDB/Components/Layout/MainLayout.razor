@@ -1,4 +1,5 @@
-﻿@using EventStore.Common.Utils
+﻿@using System.Security.Claims
+@using EventStore.Common.Utils
 @using KurrentDB.Services
 @inherits LayoutComponentBase
 @inject Preferences Preferences
@@ -9,11 +10,15 @@
 <MudSnackbarProvider/>
 <MudLayout>
 	<MudAppBar Elevation="1">
-		<MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@(_ => DrawerToggle())" />
+		<MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
+		               OnClick="@(_ => DrawerToggle())"/>
 		<img alt="Kurrent logo" src="@(Preferences.DarkMode ? "logo_white.svg" : "logo_plum.svg")" height="32"/>
 		<MudText Typo="Typo.h5" Class="ml-3">KurrentDB @VersionInfo.Version</MudText>
 		<MudSpacer/>
-		@* <MudIconButton Icon="@(DarkLightModeButtonIcon)" Color="Color.Inherit" OnClick="@DarkModeToggle"/> *@
+		@if (_showLogout) {
+			<MudIconButton Icon="@(Icons.Material.Filled.Logout)" Color="Color.Inherit" OnClick="@Logout"/>
+		}
+		<MudIconButton Icon="@(DarkLightModeButtonIcon)" Color="Color.Inherit" OnClick="@DarkModeToggle"/>
 	</MudAppBar>
 	<MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2" Width="200px">
 		<NavMenu/>
@@ -30,14 +35,35 @@
 </div>
 
 @code {
-	private bool _drawerOpen = true;
-	private MudTheme _theme;
+	bool _drawerOpen = true;
+	bool _showLogout;
+	MudTheme _theme;
+
+	[Inject] private AuthService AuthService { get; set; }
+	[Inject] private NavigationManager NavigationManager { get; set; }
 
 	protected override async Task OnAfterRenderAsync(bool firstRender) {
 		if (!firstRender) return;
 
 		Preferences.SetTheme(await _mudThemeProvider.GetSystemPreference());
 		StateHasChanged();
+		AuthService.UserChanged += HandleUserChange;
+
+		if (AuthService.IsLoggedIn) return;
+
+		var url = NavigationManager.ToAbsoluteUri(NavigationManager.Uri).ToString();
+		if (url.Contains("/login")) {
+			return;
+		}
+
+		var restoredFromState = await AuthService.GetStateFromTokenAsync();
+		if (restoredFromState) {
+			NavigationManager.Refresh();
+		}
+	}
+
+	void HandleUserChange(ClaimsPrincipal principal) {
+		_showLogout = principal.Identity?.IsAuthenticated ?? false;
 	}
 
 	protected override void OnInitialized() {
@@ -119,6 +145,9 @@
 		false => Icons.Material.Outlined.DarkMode,
 	};
 
+	void Logout() {
+		NavigationManager.NavigateTo("/ui/logout", true);
+	}
 }
 
 

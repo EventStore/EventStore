@@ -1,9 +1,13 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
+@using KurrentDB.Components.Layout
 
 <Router AppAssembly="typeof(Program).Assembly">
-    <Found Context="routeData">
-	    <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
-	    </AuthorizeRouteView>
-        <FocusOnNavigate RouteData="routeData" Selector="h1"/>
-    </Found>
+	<Found Context="routeData">
+		<AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+			<NotAuthorized>
+				<CheckAuthorization/>
+			</NotAuthorized>
+		</AuthorizeRouteView>
+		<FocusOnNavigate RouteData="routeData" Selector="h1"/>
+	</Found>
 </Router>

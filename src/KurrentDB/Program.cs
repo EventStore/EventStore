@@ -10,6 +10,7 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using Blazored.LocalStorage;
 using EventStore.Common.DevCertificates;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
@@ -24,6 +25,7 @@ using KurrentDB.Components;
 using KurrentDB.Services;
 using KurrentDB.Tools;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
@@ -244,6 +246,10 @@ try {
 			builder.Services.AddScoped<LogObserver>();
 			builder.Services.AddSingleton(monitoringService);
 			builder.Services.AddSingleton(metricsObserver);
+			builder.Services.AddBlazoredLocalStorage();
+			builder.Services.AddSingleton<JwtTokenService>();
+			builder.Services.AddScoped<AuthService>();
+			builder.Services.AddScoped<AuthenticationStateProvider, AuthStateProvider>();
 
 			var app = builder.Build();
 			hostedService.Node.Startup.Configure(app);
