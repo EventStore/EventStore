@@ -16,7 +16,6 @@ using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Certificates;
 using EventStore.Core;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -26,9 +25,16 @@ using EventStore.Common.DevCertificates;
 using EventStore.Core.Configuration;
 using EventStore.Core.Configuration.Sources;
 using KurrentDB;
+using KurrentDB.Components;
+using KurrentDB.Services;
+using KurrentDB.Tools;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Logging;
+using MudBlazor;
+using MudBlazor.Services;
 using Serilog.Events;
+using HttpMethod = EventStore.Transport.Http.HttpMethod;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
 
 var optionsWithLegacyDefaults = LocationOptionWithLegacyDefault.SupportedLegacyLocations;
@@ -198,6 +204,8 @@ try {
 	return await exitCodeSource.Task;
 
 	async Task Run(ClusterVNodeHostedService hostedService) {
+		var monitoringService = new MonitoringService();
+		var metricsObserver = new MetricsObserver();
 		try {
 			var builder = WebApplication.CreateBuilder(args);
 			builder.Configuration.AddConfiguration(configuration);
@@ -228,8 +236,19 @@ try {
 			// Allows the subsystems to resolve dependencies out of the DI in Configure() before being started.
 			// Later it may be possible to use constructor injection instead if it fits with the bootstrapping strategy.
 			builder.Services.AddSingleton<IHostedService>(hostedService);
+			builder.Services.AddSingleton<Preferences>();
+			builder.Services.AddRazorComponents().AddInteractiveServerComponents();
+			builder.Services.AddCascadingAuthenticationState();
+			builder.Services.AddMudServices();
+			builder.Services.AddMudMarkdownServices();
+			builder.Services.AddSingleton(options);
+			builder.Services.AddScoped<LogObserver>();
+			builder.Services.AddSingleton(monitoringService);
+			builder.Services.AddSingleton(metricsObserver);
+
 			var app = builder.Build();
 			hostedService.Node.Startup.Configure(app);
+			app.MapRazorComponents<App>().DisableAntiforgery().AddInteractiveServerRenderMode();
 			await app.RunAsync(token);
 
 			exitCodeSource.TrySetResult(0);

@@ -10,6 +10,7 @@ using EventStore.Common.Configuration;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Metrics;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Grpc;
 using EventStore.Core.Services.Transport.Grpc.Cluster;
@@ -18,6 +19,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Plugins;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using EventStore.Transport.Http;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -110,25 +112,27 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 		var internalDispatcher = new InternalDispatcherEndpoint(_mainQueue, _httpMessageHandler);
 		_mainBus.Subscribe(internalDispatcher);
 
-		app.Map("/health", _statusCheck.Configure)
-			// AuthenticationMiddleware uses _httpAuthenticationProviders and assigns
-			// the resulting ClaimsPrinciple to HttpContext.User
-			.UseMiddleware<AuthenticationMiddleware>()
+		app.Map("/health", _statusCheck.Configure);
+		// AuthenticationMiddleware uses _httpAuthenticationProviders and assigns
+		// the resulting ClaimsPrinciple to HttpContext.User
+		app.UseMiddleware<AuthenticationMiddleware>();
 
-			// UseAuthentication/UseAuthorization allow the rest of the pipeline to access auth
-			// in a conventional way (e.g. with AuthorizeAttribute). The server doesn't make use
-			// of this yet but plugins may. The registered authentication scheme (es auth)
-			// is driven by the HttpContext.User established above
-			.UseAuthentication()
-			.UseRouting()
-			.UseCors("default")
-			.UseAuthorization();
+		// UseAuthentication/UseAuthorization allow the rest of the pipeline to access auth
+		// in a conventional way (e.g. with AuthorizeAttribute). The server doesn't make use
+		// of this yet but plugins may. The registered authentication scheme (es auth)
+		// is driven by the HttpContext.User established above
+		app.UseAuthentication();
+		app.UseRouting();
+		app.UseCors("default");
+		app.UseAuthorization();
+		app.UseAntiforgery();
 
 		// allow all subsystems to register their legacy controllers before calling MapLegacyHttp
 		foreach (var component in _plugableComponents)
 			component.ConfigureApplication(app, _configuration);
 
 		_authenticationProvider.ConfigureEndpoints(app);
+		app.UseStaticFiles();
 
 		// Select an appropriate controller action and codec.
 		//    Success -> Add InternalContext (HttpEntityManager, urimatch, ...) to HttpContext
@@ -177,10 +181,13 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 
 	public void ConfigureServices(IServiceCollection services) {
 		// Web-related registrations
-		services
-			.AddRouting()
-			.AddAuthentication(o => o.AddScheme<EventStoreAuthenticationHandler>("es auth", displayName: null));
+		services.AddRouting();
+		services.AddAuthentication(o => {
+			o.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+			o.AddScheme<EventStoreAuthenticationHandler>("es auth", displayName: null);
+		}).AddCookie(x => x.LoginPath = "/ui/login");
 		services.AddAuthorization();
+		services.AddAntiforgery(s => s.Cookie.Expiration = TimeSpan.Zero);
 		services
 			.AddSingleton<AuthenticationMiddleware>()
 			.AddSingleton<AuthorizationMiddleware>()
@@ -218,6 +225,7 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 				.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(_metricsConfiguration.ServiceName))
 				.AddMeter(_metricsConfiguration.Meters)
 				.AddView(ViewConfig)
+				.AddInternalExporter()
 				.AddPrometheusExporter(options => {
 					if (_metricsConfiguration is { LegacyCoreNaming: true, LegacyProjectionsNaming: true }) {
 						options.DisableTotalNameSuffixForCounters = true;

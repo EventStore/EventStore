@@ -47,6 +47,12 @@ public class AuthenticationMiddleware : IMiddleware {
 			case HttpAuthenticationRequestStatus.Authenticated:
 				context.User = principal;
 				await next(context);
+				if (context.Response.StatusCode == 302 && principal.Identity?.IsAuthenticated == false) {
+					if (!context.Request.Path.StartsWithSegments("/ui") && !context.Request.Path.StartsWithSegments("/web")) {
+						context.Response.StatusCode = 401;
+					}
+				}
+
 				break;
 			case HttpAuthenticationRequestStatus.Error:
 				context.Response.StatusCode = HttpStatusCode.InternalServerError;

@@ -29,7 +29,7 @@ public class ClusterWebUiController : CommunicationController {
 
 	protected override void SubscribeCore(IHttpService service) {
 		_clusterNodeWeb.RegisterControllerActions(service);
-		RegisterRedirectAction(service, "", "/web/index.html");
+		RegisterRedirectAction(service, "", "/ui/cluster");
 		RegisterRedirectAction(service, "/web", "/web/index.html");
 
 		service.RegisterAction(

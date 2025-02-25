@@ -1,0 +1,78 @@
+@page "/ui/logs"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@using KurrentDB.Tools
+@using Microsoft.AspNetCore.Authorization
+@using Serilog.Events
+@inject LogObserver LogObserver
+@implements IDisposable
+
+<PageTitle>KurrentDB: Logs</PageTitle>
+
+<MudSimpleTable Dense="true" Style="overflow-x: auto;">
+	<thead>
+	<tr>
+		<th>Timestamp</th>
+		<th>Level</th>
+		<th>Message</th>
+	</tr>
+	</thead>
+	<tbody>
+	@lock (_items) {
+		foreach (var item in _items) {
+			<tr style="@CellStyle(item)">
+				<td>@item.Timestamp.ToString("HH:mm:ss")</td>
+				<td>@item.Level</td>
+				<td>@item.MessageTemplate.Render(item.Properties)</td>
+			</tr>
+		}
+	}
+	</tbody>
+</MudSimpleTable>
+@lock (_items) {
+	if (_items.Count == 0) {
+		<MudText>Waiting for log events...</MudText>
+	}
+}
+
+@code {
+	protected override Task OnInitializedAsync() {
+		LogObserver.LogEntryAdded += HandleUpdate;
+		return base.OnInitializedAsync();
+	}
+
+	void HandleUpdate(LogEvent entry) {
+		Task.Run(() => InvokeAsync(() => Update(entry)));
+	}
+
+	string CellStyle(LogEvent x) {
+		var color = x.Level switch {
+			LogEventLevel.Verbose => "",
+			LogEventLevel.Debug => "",
+			LogEventLevel.Information => "--mud-palette-dark-text",
+			LogEventLevel.Warning => "--mud-palette-warning",
+			LogEventLevel.Error => "--mud-palette-error",
+			LogEventLevel.Fatal => "--mud-palette-error",
+			_ => throw new ArgumentOutOfRangeException()
+		};
+		var style = color != "" ? $"color: var({color});" : "";
+		return style;
+	}
+
+	public void Dispose() {
+		LogObserver.LogEntryAdded -= HandleUpdate;
+	}
+
+	void Update(LogEvent entry) {
+		lock (_items) {
+			_items.Insert(0, entry);
+			if (_items.Count > 200) {
+				_items.RemoveAt(_items.Count - 1);
+			}
+		}
+
+		StateHasChanged();
+	}
+
+	readonly List<LogEvent> _items = [];
+}
