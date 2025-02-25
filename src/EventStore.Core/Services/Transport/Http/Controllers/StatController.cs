@@ -24,17 +24,19 @@ public class StatController : CommunicationController {
 	}
 
 	protected override void SubscribeCore(IHttpService service) {
-		Ensure.NotNull(service, "service");
+		Ensure.NotNull(service);
 
-		service.RegisterAction(new ControllerAction("/stats", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Statistics.Read)),
+		service.RegisterAction(
+			new("/stats", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Statistics.Read)),
 			OnGetFreshStats);
 		service.RegisterAction(
-			new ControllerAction("/stats/replication", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Statistics.Replication)),
+			new("/stats/replication", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Statistics.Replication)),
 			OnGetReplicationStats);
-		service.RegisterAction(new ControllerAction("/stats/tcp", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Statistics.Tcp)),
+		service.RegisterAction(
+			new("/stats/tcp", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Statistics.Tcp)),
 			OnGetTcpConnectionStats);
 		service.RegisterAction(
-			new ControllerAction("/stats/{*statPath}", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Statistics.Custom)),
+			new("/stats/{*statPath}", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Statistics.Custom)),
 			OnGetFreshStats);
 	}
 

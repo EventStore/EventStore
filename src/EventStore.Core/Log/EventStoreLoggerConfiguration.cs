@@ -167,6 +167,8 @@ public class EventStoreLoggerConfiguration {
 						logFileRetentionCount, logFileInterval, logFileSize)
 					.WriteTo.Logger(Error);
 			}
+
+			configuration.WriteTo.Sink(ObservableSerilogSink.Instance);
 		}
 
 		void Error(LoggerConfiguration configuration) {

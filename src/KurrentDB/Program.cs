@@ -5,29 +5,36 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Net.Security;
+using System.Runtime;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using Blazored.LocalStorage;
+using EventStore.Common.DevCertificates;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
-using EventStore.Core.Services.Transport.Http;
-using EventStore.Core.Certificates;
 using EventStore.Core;
+using EventStore.Core.Certificates;
+using EventStore.Core.Configuration;
+using EventStore.Core.Configuration.Sources;
+using EventStore.Core.Services.Transport.Http;
+using KurrentDB;
+using KurrentDB.Components;
+using KurrentDB.Services;
+using KurrentDB.Tools;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Serilog;
-using System.Runtime;
-using EventStore.Common.DevCertificates;
-using EventStore.Core.Configuration;
-using EventStore.Core.Configuration.Sources;
-using KurrentDB;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Logging;
+using MudBlazor;
+using MudBlazor.Services;
+using Serilog;
 using Serilog.Events;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
 
@@ -198,6 +205,8 @@ try {
 	return await exitCodeSource.Task;
 
 	async Task Run(ClusterVNodeHostedService hostedService) {
+		var monitoringService = new MonitoringService();
+		var metricsObserver = new MetricsObserver();
 		try {
 			var builder = WebApplication.CreateBuilder(args);
 			builder.Configuration.AddConfiguration(configuration);
@@ -228,8 +237,23 @@ try {
 			// Allows the subsystems to resolve dependencies out of the DI in Configure() before being started.
 			// Later it may be possible to use constructor injection instead if it fits with the bootstrapping strategy.
 			builder.Services.AddSingleton<IHostedService>(hostedService);
+			builder.Services.AddSingleton<Preferences>();
+			builder.Services.AddRazorComponents().AddInteractiveServerComponents();
+			builder.Services.AddCascadingAuthenticationState();
+			builder.Services.AddMudServices();
+			builder.Services.AddMudMarkdownServices();
+			builder.Services.AddSingleton(options);
+			builder.Services.AddScoped<LogObserver>();
+			builder.Services.AddSingleton(monitoringService);
+			builder.Services.AddSingleton(metricsObserver);
+			builder.Services.AddBlazoredLocalStorage();
+			builder.Services.AddSingleton<JwtTokenService>();
+			builder.Services.AddScoped<AuthService>();
+			builder.Services.AddScoped<AuthenticationStateProvider, AuthStateProvider>();
+
 			var app = builder.Build();
 			hostedService.Node.Startup.Configure(app);
+			app.MapRazorComponents<App>().DisableAntiforgery().AddInteractiveServerRenderMode();
 			await app.RunAsync(token);
 
 			exitCodeSource.TrySetResult(0);
