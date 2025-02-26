@@ -194,9 +194,129 @@ Authorization:
 
 Refer to [stream policy authorization](../security/user-authorization.md#stream-policy-authorization) for more details about enabling and configuring this feature.
 
-### Connectors
+### Connectors  
 
-<!--TODO: Connectors changes?-->
+#### 1. Commercial License Requirement
+
+The [Kafka](../features/connectors/sinks/kafka.md), [MongoDB](../features/connectors/sinks/mongo.md) and [RabbitMQ](../features/connectors/sinks/rabbitmq.md) sink connectors now require a **commercial license**. Ensure that you configure a valid license key before using these connectors. If you are using these sink connectors, ensure that you configure a [license key](../quick-start/installation.md#license-keys).
+
+#### 2. New Optional Filter Type in Subscription Filters
+
+A new `filterType` configuration has been added to subscription filters, allowing for more precise filtering. Previously, the filter type was inferred, but now you must specify one of the following:  
+
+- `StreamId`  
+- `Regex`  
+- `Prefix`  
+- `JsonPath`  
+
+For example, the following configuration specifies a regex filter:
+
+```json
+{
+  "subscription:filter:scope": "record",
+  "subscription:filter:filterType": "regex",
+  "subscription:filter:expression": "^eventType.*"
+}
+```  
+
+If `filterType` is not specified, the default behavior remains unchanged. For more details, refer to the [Filters](../features/connectors/features.md#filters).  
+
+#### 3. Transformation Function Name
+
+The transformation function must now be named **`transform`**.
+
+Before this change, users could specify a custom function name in their configuration:  
+
+```json
+{
+  "FunctionName": "customFunctionName"
+}
+```
+
+This allowed defining the function as:  
+
+```js
+function customFunctionName(transformEvent) {
+  // your transformation logic
+}
+```
+
+Now, the function must always be named `transform`:  
+
+```js
+function transform(record) {
+  // your transformation logic
+}
+```
+
+#### 4. Direct Record Modification in Transformations
+
+Transformation functions no longer need to return a modified record explicitly. Instead, they can directly modify the record in place.
+
+For example, the following transformation function previously returned a modified record:
+
+```js
+function transform(record) {
+    let { Value } = record;
+
+    return {
+        ...record,
+        Value: {
+            ...Value,
+            SchemaInfo: {
+                ...Value.SchemaInfo,
+                Subject: 'Vehicle'
+            },
+            Vehicle: {
+                ...Value.Vehicle,
+                MakeModel: `${Value.Vehicle.Make} ${Value.Vehicle.Model}`
+            }
+        }
+    }
+}
+```
+
+With the latest changes, the function can now directly modify the record:
+
+```js
+function transform(record) {
+  let { make, model } = record.value.vehicle;
+  record.schemaInfo.subject = 'Vehicle';
+  record.value.vehicle.makemodel = `${make} ${model}`;
+}
+```
+
+For more details, refer to the [Transformations](../features/connectors/features.md#transformations).  
+
+#### 5. Removed Transformation `ExecutionTimeoutMs` Option
+
+The `ExecutionTimeoutMs` option has been removed from transformation configurations and will be ignored if present.
+
+#### 6. Aliases for `instanceTypeName`
+
+You can now use aliases when defining an `instanceTypeName`.  
+
+Previously you had to specify the full connector type:
+
+```json
+{
+  "instanceTypeName": "EventStore.Connectors.Http.HttpSink"
+}
+```
+
+You can now use a pascal case or kebab alias instead:
+
+```json
+{
+  "instanceTypeName": "HttpSink"
+}
+```
+
+```json
+{
+  "instanceTypeName": "http-sink"
+}
+```
 
 ### Encryption-at-rest
 
