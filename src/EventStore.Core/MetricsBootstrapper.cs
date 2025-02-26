@@ -1,5 +1,5 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
 using System.Collections.Generic;
@@ -62,7 +62,7 @@ public class GossipTrackers {
 }
 
 public static class MetricsBootstrapper {
-	public const string LogicalChunkReadDistributionName = "kurrentdb-logical-chunk-read-distribution";
+	public static string LogicalChunkReadDistributionName(string serviceName) => $"{serviceName}-logical-chunk-read-distribution";
 
 	public static void Bootstrap(
 		Conf conf,
@@ -74,36 +74,39 @@ public static class MetricsBootstrapper {
 		MessageLabelConfigurator.ConfigureMessageLabels(
 			conf.MessageTypes, InMemoryBus.KnownMessageTypes);
 
+		var useLegacyNames = conf.LegacyCoreNaming;
+		var serviceName = conf.ServiceName;
+
 		if (conf.ExpectedScrapeIntervalSeconds <= 0)
 			return;
 
-		var coreMeter = new Meter("KurrentDB.Core", version: "1.0.0");
-		var statusMetric = new StatusMetric(coreMeter, "kurrentdb-statuses");
-		var grpcMethodMetric = new DurationMetric(coreMeter, "kurrentdb-grpc-method-duration");
-		var gossipLatencyMetric = new DurationMetric(coreMeter, "kurrentdb-gossip-latency");
-		var gossipProcessingMetric = new DurationMetric(coreMeter, "kurrentdb-gossip-processing-duration");
-		var queueQueueingDurationMaxMetric = new DurationMaxMetric(coreMeter, "kurrentdb-queue-queueing-duration-max");
-		var queueProcessingDurationMetric = new DurationMetric(coreMeter, "kurrentdb-queue-processing-duration");
-		var queueBusyMetric = new AverageMetric(coreMeter, "kurrentdb-queue-busy", "seconds", label => new("queue", label));
-		var byteMetric = new CounterMetric(coreMeter, "kurrentdb-io-bytes", unit: "bytes");
-		var eventMetric = new CounterMetric(coreMeter, "kurrentdb-io-events", unit: "events");
-		var recordReadDurationMetric = new DurationMetric(coreMeter, "kurrentdb-io-record-read-duration");
-		var electionsCounterMetric = new CounterMetric(coreMeter, "kurrentdb-elections-count", unit: "");
+		var coreMeter = new Meter(conf.CoreMeterName, version: "1.0.0");
+		var statusMetric = new StatusMetric(coreMeter, $"{serviceName}-statuses", useLegacyNames);
+		var grpcMethodMetric = new DurationMetric(coreMeter, $"{serviceName}-grpc-method-duration", useLegacyNames);
+		var gossipLatencyMetric = new DurationMetric(coreMeter, $"{serviceName}-gossip-latency", useLegacyNames);
+		var gossipProcessingMetric = new DurationMetric(coreMeter, $"{serviceName}-gossip-processing-duration", useLegacyNames);
+		var queueQueueingDurationMaxMetric = new DurationMaxMetric(coreMeter, $"{serviceName}-queue-queueing-duration-max", useLegacyNames);
+		var queueProcessingDurationMetric = new DurationMetric(coreMeter, $"{serviceName}-queue-processing-duration", useLegacyNames);
+		var queueBusyMetric = new AverageMetric(coreMeter, $"{serviceName}-queue-busy", "seconds", label => new("queue", label), useLegacyNames);
+		var byteMetric = new CounterMetric(coreMeter, $"{serviceName}-io-bytes", unit: useLegacyNames ? null : "bytes", legacyNames: false);
+		var eventMetric = new CounterMetric(coreMeter, $"{serviceName}-io-events", unit: useLegacyNames ? null : "events", legacyNames: false);
+		var recordReadDurationMetric = new DurationMetric(coreMeter, $"{serviceName}-io-record-read-duration", useLegacyNames);
+		var electionsCounterMetric = new CounterMetric(coreMeter, $"{serviceName}-elections-count", unit: "", useLegacyNames);
 
 		// incoming grpc calls
 		var enabledCalls = conf.IncomingGrpcCalls.Where(kvp => kvp.Value).Select(kvp => kvp.Key).ToArray();
 		if (enabledCalls.Length > 0) {
 			_ = new IncomingGrpcCallsMetric(
 				coreMeter,
-				"kurrentdb-current-incoming-grpc-calls",
-				"kurrentdb-incoming-grpc-calls",
+				$"{serviceName}-current-incoming-grpc-calls",
+				$"{serviceName}-incoming-grpc-calls",
 				enabledCalls);
 		}
 
 		// cache hits/misses
 		var enabledCacheHitsMisses = conf.CacheHitsMisses.Where(kvp => kvp.Value).Select(kvp => kvp.Key).ToArray();
 		if (enabledCacheHitsMisses.Length > 0) {
-			var metric = new CacheHitsMissesMetric(coreMeter, enabledCacheHitsMisses, "kurrentdb-cache-hits-misses", new() {
+			var metric = new CacheHitsMissesMetric(coreMeter, enabledCacheHitsMisses, $"{serviceName}-cache-hits-misses", new() {
 				{ Conf.Cache.StreamInfo, "stream-info" },
 				{ Conf.Cache.Chunk, "chunk" },
 			});
@@ -112,7 +115,7 @@ public static class MetricsBootstrapper {
 
 		// dynamic cache resources
 		if (conf.CacheResources) {
-			var metrics = new CacheResourcesMetrics(coreMeter, "kurrentdb-cache-resources");
+			var metrics = new CacheResourcesMetrics(coreMeter, $"{serviceName}-cache-resources", useLegacyNames);
 			trackers.CacheResourcesTracker = new CacheResourcesTracker(metrics);
 		}
 
@@ -127,7 +130,7 @@ public static class MetricsBootstrapper {
 			trackers.TransactionFileTracker = new TFChunkTracker(
 				readDistribution: new LogicalChunkReadDistributionMetric(
 					meter: coreMeter,
-					name: LogicalChunkReadDistributionName,
+					name: LogicalChunkReadDistributionName(serviceName),
 					writer: dbConfig.WriterCheckpoint,
 					chunkSize: dbConfig.ChunkSize),
 				readDurationMetric: recordReadDurationMetric,
@@ -168,24 +171,24 @@ public static class MetricsBootstrapper {
 			var tracker = new PersistentSubscriptionTracker();
 			trackers.PersistentSubscriptionTracker = tracker;
 
-			coreMeter.CreateObservableUpDownCounter("kurrentdb-persistent-sub-connections", tracker.ObserveConnectionsCount);
-			coreMeter.CreateObservableUpDownCounter("kurrentdb-persistent-sub-parked-messages", tracker.ObserveParkedMessages);
-			coreMeter.CreateObservableUpDownCounter("kurrentdb-persistent-sub-in-flight-messages", tracker.ObserveInFlightMessages);
-			coreMeter.CreateObservableUpDownCounter("kurrentdb-persistent-sub-oldest-parked-message-seconds", tracker.ObserveOldestParkedMessage);
+			coreMeter.CreateObservableUpDownCounter($"{serviceName}-persistent-sub-connections", tracker.ObserveConnectionsCount);
+			coreMeter.CreateObservableUpDownCounter($"{serviceName}-persistent-sub-parked-messages", tracker.ObserveParkedMessages);
+			coreMeter.CreateObservableUpDownCounter($"{serviceName}-persistent-sub-in-flight-messages", tracker.ObserveInFlightMessages);
+			coreMeter.CreateObservableUpDownCounter($"{serviceName}-persistent-sub-oldest-parked-message-seconds", tracker.ObserveOldestParkedMessage);
 
 			// these only go up, but are not strictly counters; should not have `_total` appended
-			coreMeter.CreateObservableUpDownCounter("kurrentdb-persistent-sub-last-known-event-number", tracker.ObserveLastKnownEvent);
-			coreMeter.CreateObservableUpDownCounter("kurrentdb-persistent-sub-last-known-event-commit-position", tracker.ObserveLastKnownEventCommitPosition);
-			coreMeter.CreateObservableUpDownCounter("kurrentdb-persistent-sub-checkpointed-event-number", tracker.ObserveLastCheckpointedEvent);
-			coreMeter.CreateObservableUpDownCounter("kurrentdb-persistent-sub-checkpointed-event-commit-position", tracker.ObserveLastCheckpointedEventCommitPosition);
+			coreMeter.CreateObservableUpDownCounter($"{serviceName}-persistent-sub-last-known-event-number", tracker.ObserveLastKnownEvent);
+			coreMeter.CreateObservableUpDownCounter($"{serviceName}-persistent-sub-last-known-event-commit-position", tracker.ObserveLastKnownEventCommitPosition);
+			coreMeter.CreateObservableUpDownCounter($"{serviceName}-persistent-sub-checkpointed-event-number", tracker.ObserveLastCheckpointedEvent);
+			coreMeter.CreateObservableUpDownCounter($"{serviceName}-persistent-sub-checkpointed-event-commit-position", tracker.ObserveLastCheckpointedEventCommitPosition);
 
-			coreMeter.CreateObservableCounter("kurrentdb-persistent-sub-items-processed", tracker.ObserveItemsProcessed);
+			coreMeter.CreateObservableCounter($"{serviceName}-persistent-sub-items-processed", tracker.ObserveItemsProcessed);
 		}
 
 		// checkpoints
 		_ = new CheckpointMetric(
 			coreMeter,
-			"kurrentdb-checkpoints",
+			$"{serviceName}-checkpoints",
 			conf.Checkpoints.Where(x => x.Value).Select(x => x.Key switch {
 				Conf.Checkpoint.Chaser => dbConfig.ChaserCheckpoint,
 				Conf.Checkpoint.Epoch => dbConfig.EpochCheckpoint,
@@ -215,7 +218,7 @@ public static class MetricsBootstrapper {
 				trackers.ScavengeStatusTracker = new ScavengeStatusTracker(statusMetric);
 		}
 
-		// grpc historgrams
+		// grpc histograms
 		foreach (var method in Enum.GetValues<Conf.GrpcMethod>()) {
 			if (conf.GrpcMethods.TryGetValue(method, out var label) && !string.IsNullOrWhiteSpace(label))
 				trackers.GrpcTrackers[method] = new DurationTracker(grpcMethodMetric, label);
@@ -224,7 +227,7 @@ public static class MetricsBootstrapper {
 		// storage writer
 		if (conf.Writer.Count > 0) {
 			if (conf.Writer.TryGetValue(Conf.WriterTracker.FlushSize, out var flushSizeEnabled) && flushSizeEnabled) {
-				var maxMetric = new MaxMetric<long>(coreMeter, "kurrentdb-writer-flush-size-max");
+				var maxMetric = new MaxMetric<long>(coreMeter, $"{serviceName}-writer-flush-size-max");
 				trackers.WriterFlushSizeTracker = new MaxTracker<long>(
 					metric: maxMetric,
 					name: null,
@@ -232,7 +235,7 @@ public static class MetricsBootstrapper {
 			}
 
 			if (conf.Writer.TryGetValue(Conf.WriterTracker.FlushDuration, out var flushDurationEnabled) && flushDurationEnabled) {
-				var maxDurationmetric = new DurationMaxMetric(coreMeter, "kurrentdb-writer-flush-duration-max");
+				var maxDurationmetric = new DurationMaxMetric(coreMeter, $"{serviceName}-writer-flush-duration-max", useLegacyNames);
 				trackers.WriterFlushDurationTracker = new DurationMaxTracker(
 					maxDurationmetric,
 					name: null,
@@ -261,72 +264,74 @@ public static class MetricsBootstrapper {
 
 		// kestrel
 		if (conf.Kestrel.TryGetValue(Conf.KestrelTracker.ConnectionCount, out var kestrelConnections) && kestrelConnections) {
-			_ = new ConnectionMetric(coreMeter, "kurrentdb-kestrel-connections");
+			_ = new ConnectionMetric(coreMeter, $"{serviceName}-kestrel-connections");
 		}
 
 		var timeout = TimeSpan.FromSeconds(1);
 
 		// system
-		var systemMetrics = new SystemMetrics(coreMeter, timeout, conf.System);
-		systemMetrics.CreateLoadAverageMetric("kurrentdb-sys-load-avg", new() {
+		var systemMetrics = new SystemMetrics(coreMeter, timeout, conf.System, useLegacyNames);
+		systemMetrics.CreateLoadAverageMetric($"{serviceName}-sys-load-avg", new() {
 			{ Conf.SystemTracker.LoadAverage1m, "1m" },
 			{ Conf.SystemTracker.LoadAverage5m, "5m" },
 			{ Conf.SystemTracker.LoadAverage15m, "15m" },
 		});
 
-		systemMetrics.CreateCpuMetric("kurrentdb-sys-cpu");
+		systemMetrics.CreateCpuMetric($"{serviceName}-sys-cpu");
 
-		systemMetrics.CreateMemoryMetric("kurrentdb-sys-mem", new() {
+		systemMetrics.CreateMemoryMetric($"{serviceName}-sys-mem", new() {
 			{ Conf.SystemTracker.FreeMem, "free" },
 			{ Conf.SystemTracker.TotalMem, "total" },
 		});
 
-		systemMetrics.CreateDiskMetric("kurrentdb-sys-disk", dbConfig.Path, new() {
+		systemMetrics.CreateDiskMetric($"{serviceName}-sys-disk", dbConfig.Path, new() {
 			{ Conf.SystemTracker.DriveTotalBytes, "total" },
 			{ Conf.SystemTracker.DriveUsedBytes, "used" },
 		});
 
 		// process
-		var processMetrics = new ProcessMetrics(coreMeter, timeout, conf.ExpectedScrapeIntervalSeconds, conf.Process);
+		var processMetrics = new ProcessMetrics(coreMeter, timeout, conf.ExpectedScrapeIntervalSeconds, conf.Process, useLegacyNames);
 		processMetrics.CreateObservableMetrics(new() {
-			{ Conf.ProcessTracker.UpTime, "kurrentdb-proc-up-time" },
-			{ Conf.ProcessTracker.Cpu, "kurrentdb-proc-cpu" },
-			{ Conf.ProcessTracker.ThreadCount, "kurrentdb-proc-thread-count" },
-			{ Conf.ProcessTracker.ThreadPoolPendingWorkItemCount, "kurrentdb-proc-thread-pool-pending-work-item-count" },
-			{ Conf.ProcessTracker.LockContentionCount, "kurrentdb-proc-contention-count" },
-			{ Conf.ProcessTracker.ExceptionCount, "kurrentdb-proc-exception-count" },
-			{ Conf.ProcessTracker.TimeInGc, "kurrentdb-gc-time-in-gc" },
-			{ Conf.ProcessTracker.HeapSize, "kurrentdb-gc-heap-size" },
-			{ Conf.ProcessTracker.HeapFragmentation, "kurrentdb-gc-heap-fragmentation" },
-			{ Conf.ProcessTracker.TotalAllocatedBytes, "kurrentdb-gc-allocated" },
-			{ Conf.ProcessTracker.GcPauseDuration, "kurrentdb-gc-pause-duration-max" },
+			{ Conf.ProcessTracker.UpTime, $"{serviceName}-proc-up-time" },
+			{ Conf.ProcessTracker.Cpu, $"{serviceName}-proc-cpu" },
+			{ Conf.ProcessTracker.ThreadCount, $"{serviceName}-proc-thread-count" },
+			{ Conf.ProcessTracker.ThreadPoolPendingWorkItemCount, $"{serviceName}-proc-thread-pool-pending-work-item-count" },
+			{ Conf.ProcessTracker.LockContentionCount, $"{serviceName}-proc-contention-count" },
+			{ Conf.ProcessTracker.ExceptionCount, $"{serviceName}-proc-exception-count" },
+			{ Conf.ProcessTracker.TimeInGc, $"{serviceName}-gc-time-in-gc" },
+			{ Conf.ProcessTracker.HeapSize, $"{serviceName}-gc-heap-size" },
+			{ Conf.ProcessTracker.HeapFragmentation, $"{serviceName}-gc-heap-fragmentation" },
+			{ Conf.ProcessTracker.TotalAllocatedBytes, useLegacyNames
+				? $"{serviceName}-gc-total-allocated"
+				: $"{serviceName}-gc-allocated" },
+			{ Conf.ProcessTracker.GcPauseDuration, $"{serviceName}-gc-pause-duration-max" },
 		});
 
-		processMetrics.CreateMemoryMetric("kurrentdb-proc-mem", new() {
+		processMetrics.CreateMemoryMetric($"{serviceName}-proc-mem", new() {
 			{ Conf.ProcessTracker.MemWorkingSet, "working-set" },
 			{ Conf.ProcessTracker.MemPagedBytes, "paged-bytes" },
 			{ Conf.ProcessTracker.MemVirtualBytes, "virtual-bytes" },
 		});
 
-		processMetrics.CreateGcGenerationSizeMetric("kurrentdb-gc-generation-size", new() {
+		processMetrics.CreateGcGenerationSizeMetric($"{serviceName}-gc-generation-size", new() {
 			{ Conf.ProcessTracker.Gen0Size, "gen0" },
 			{ Conf.ProcessTracker.Gen1Size, "gen1" },
 			{ Conf.ProcessTracker.Gen2Size, "gen2" },
 			{ Conf.ProcessTracker.LohSize, "loh" },
 		});
 
-		processMetrics.CreateGcCollectionCountMetric("kurrentdb-gc-collection-count", new() {
+		processMetrics.CreateGcCollectionCountMetric($"{serviceName}-gc-collection-count", new() {
 			{ Conf.ProcessTracker.Gen0CollectionCount, "gen0" },
 			{ Conf.ProcessTracker.Gen1CollectionCount, "gen1" },
 			{ Conf.ProcessTracker.Gen2CollectionCount, "gen2" },
 		});
 
-		processMetrics.CreateDiskBytesMetric("kurrentdb-disk-io-bytes", new() {
+		processMetrics.CreateDiskBytesMetric($"{serviceName}-disk-io-bytes", new() {
 			{ Conf.ProcessTracker.DiskReadBytes, "read" },
 			{ Conf.ProcessTracker.DiskWrittenBytes, "written" },
 		});
 
-		processMetrics.CreateDiskOpsMetric("kurrentdb-disk-io-operations", new() {
+		processMetrics.CreateDiskOpsMetric($"{serviceName}-disk-io-operations", new() {
 			{ Conf.ProcessTracker.DiskReadOps, "read" },
 			{ Conf.ProcessTracker.DiskWrittenOps, "written" },
 		});

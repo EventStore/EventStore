@@ -1,5 +1,5 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
 using System.Threading;
@@ -31,7 +31,7 @@ public abstract class ProjectionRuntimeScenario: SubsystemScenario {
 		var qs = new QueueStatsManager();
 		var timeProvider = new RealTimeProvider();
 		var ts = new TimerService(new TimerBasedScheduler(new RealTimer(), timeProvider));
-		var sc = new StandardComponents(db.Config, mainQueue, mainBus, ts, timeProvider, null, new IHttpService[] { }, mainBus, qs, new(), true);
+		var sc = new StandardComponents(db.Config, mainQueue, mainBus, ts, timeProvider, null, new IHttpService[] { }, mainBus, qs, new(), new());
 
 		var subsystem = new ProjectionsSubsystem(options);
 
@@ -44,7 +44,9 @@ public abstract class ProjectionRuntimeScenario: SubsystemScenario {
 		subsystem.Start();
 
 		return (() => {
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 			subsystem.Stop();
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 			return db.DisposeAsync();
 		}, subsystem.LeaderInputQueue);
 	}

@@ -4,17 +4,17 @@ order: 1
 
 # Admin UI
 
-The KurrentDB Admin UI is available at _SERVER_IP:2113_ and helps you interact with and manage a cluster in a visual way. This guide explains the tabs of the interface and what they do.
+The KurrentDB Admin UI is available at _SERVER_IP:2113_ and helps you interact with and visually manage a cluster. This guide explains the interface's tabs and their functions.
 
 ::: tip
-The embedded KurrentDB web interface is reaching its end of life. We are working on a replacement, and you can try using the Early Preview of [Kurrent Navigator](https://learn.eventstore.com/event-store-navigator-preview) app instead. It doesn't have full feature parity with the embedded web UI, but it already has usability improvements compared to it.
+The embedded KurrentDB web interface is reaching its end of life. We are working on a replacement, and you can try using the Early Preview of [Kurrent Navigator](https://www.kurrent.io/eventstoredb-app-preview) app instead. It doesn't have full feature parity with the embedded web UI, but it already has usability improvements compared to it.
 :::
 
 ## Dashboard
 
 ![Web admin interface dashboard](images/wai-dashboard.png)
 
-The _Dashboard_ tab shows an overview of active queues with associated statistics in the top half. The _+_ icon indicates a queue group, click it to reveal the queues that are part of the group.
+The _Dashboard_ tab shows an overview of active queues with associated statistics in the top half. The _+_ icon indicates a queue group; click it to reveal the queues in that group.
 
 The second half of the tab shows active connections to KurrentDB and information about them.
 
@@ -53,7 +53,7 @@ The buttons on the left above the events when you are viewing an event stream ar
 
 ![Web admin interface projections tab](images/wai-projections.png)
 
-The _Projections_ tab shows system and user created projections defined in KurrentDB, the buttons above the list do the following:
+The _Projections_ tab shows system and user-created projections defined in KurrentDB. The buttons above the list do the following:
 
 - _Disable All_: Disable all running projections.
 - _Enable All_: Enable all stopped projections.
@@ -64,20 +64,20 @@ Clicking an individual projection shows further details.
 
 ![Web admin interface projection details](./images/wai-projection-details.jpg)
 
-On the left is the projection definition. On the right are the stats, results, and state of the projection. The buttons above the details do the following:
+On the left is the projection definition. On the right are the stats, results, and projection state. The buttons above the details do the following:
 
 - _Start_: Start a stopped projection.
 - _Stop_: Stop a running projection.
 - _Edit_: Edit the projection definition.
 - _Config_: [Set configuration options](projections/custom.md#configuring-projections) for a projection.
-- _Debug_: Opens [the debugging interface](projections/custom.md#debugging) to debug what effect a projection is having on events.
+- _Debug_: Opens [the debugging interface](projections/custom.md#debugging) to debug what effect a projection has on events.
 - _Delete_: Delete a projection.
 - _Reset_: Reset a projection.
 - _Back_: Returns you to the parent screen.
 
 ## Query
 
-The _Query_ tab has a code editor field where you can create transient and short-lived projections for quick analysis of your event streams.
+The _Query_ tab has a code editor field where you can create transient and short-lived projections to analyze your event streams quickly.
 
 ![Web admin interface query details](images/wai-query-details.png)
 
@@ -104,7 +104,7 @@ The _Admin_ tab shows subsystems enabled (currently only [projections](projectio
 
 ![Web admin interface projections tab](images/wai-users.png)
 
-The _Users_ tab shows [the users defined in KurrentDB](../security/user-authentication.md), clicking an individual user shows a JSON representation of that user's details.
+The _Users_ tab shows [the users defined in KurrentDB](../security/user-authentication.md). Clicking an individual user displays a JSON representation of that user's details.
 
 ## Log out
 

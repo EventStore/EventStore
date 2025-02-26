@@ -1,5 +1,5 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
 using System.Collections.Generic;
@@ -24,6 +24,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Certificates;
 using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Messages;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using ILogger = Serilog.ILogger;
@@ -39,6 +40,7 @@ using Microsoft.Extensions.DependencyInjection;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
 using EventStore.Core.Tests.Index.Hashers;
 using System.Threading;
+using Serilog;
 
 namespace EventStore.Core.Tests.Helpers;
 
@@ -61,12 +63,14 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 	public readonly ClusterVNode Node;
 	public readonly TFChunkDb Db;
 	public readonly string DbPath;
-	public readonly HttpClient HttpClient;
-	public readonly HttpMessageHandler HttpMessageHandler;
+	public HttpClient HttpClient;
+	public HttpMessageHandler HttpMessageHandler;
 
-	private readonly TestServer _kestrelTestServer;
+	private readonly WebApplication _webHost;
 	private readonly TaskCompletionSource<bool> _started;
 	private readonly TaskCompletionSource<bool> _adminUserCreated;
+	private readonly int _httpClientTimeoutSec;
+	private bool _testServerStarted;
 	public Task Started => _started.Task;
 	public Task AdminUserCreated => _adminUserCreated.Task;
 
@@ -89,8 +93,10 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 		IAuthorizationProviderFactory authorizationProviderFactory = null,
 		IExpiryStrategy expiryStrategy = null,
 		string transform = "identity",
+		IConfiguration configuration = null,
 		IReadOnlyList<IDbTransform> newTransforms = null) {
 
+		_httpClientTimeoutSec = httpClientTimeoutSec;
 		RunningTime.Start();
 		RunCount += 1;
 
@@ -160,15 +166,20 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 			.WithExternalTcpOn(TcpEndPoint)
 			.WithNodeEndpointOn(HttpEndPoint);
 
-		var inMemConf = new ConfigurationBuilder()
-			.AddInMemoryCollection(new KeyValuePair<string, string>[] {
+		var configurationBuilder = new ConfigurationBuilder()
+			.AddInMemoryCollection([
 				new($"{KurrentConfigurationKeys.Prefix}:TcpPlugin:NodeTcpPort", extTcpPort.ToString()),
 				new($"{KurrentConfigurationKeys.Prefix}:TcpPlugin:EnableExternalTcp", "true"),
 				new($"{KurrentConfigurationKeys.Prefix}:TcpUnitTestPlugin:NodeTcpPort", extTcpPort.ToString()),
 				new($"{KurrentConfigurationKeys.Prefix}:TcpUnitTestPlugin:NodeHeartbeatInterval", "10000"),
 				new($"{KurrentConfigurationKeys.Prefix}:TcpUnitTestPlugin:NodeHeartbeatTimeout", "10000"),
 				new($"{KurrentConfigurationKeys.Prefix}:TcpUnitTestPlugin:Insecure", options.Application.Insecure.ToString()),
-			}).Build();
+			]);
+
+		if (configuration is not null)
+			configurationBuilder.AddConfiguration(configuration);
+
+		var inMemConf = configurationBuilder.Build();
 
 		if (advertisedExtHostAddress != null)
 			options = options.AdvertiseNodeAs(new DnsEndPoint(advertisedExtHostAddress, advertisedHttpPort));
@@ -220,8 +231,9 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 		Db = Node.Db;
 
 		Node.HttpService.SetupController(new TestController(Node.MainQueue));
-		_kestrelTestServer = new TestServer(new WebHostBuilder()
-			.UseKestrel(o => {
+		var builder = WebApplication.CreateBuilder();
+		builder.WebHost
+			.ConfigureKestrel(o => {
 				o.Listen(HttpEndPoint, options => {
 					if (RuntimeInformation.IsOSX) {
 						options.Protocols = HttpProtocols.Http2;
@@ -241,16 +253,26 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 					}
 				});
 			})
-			.UseStartup(Node.Startup));
+			.UseTestServer();
+		builder.Services.AddSerilog();
+		Node.Startup.ConfigureServices(builder.Services);
+		_webHost = builder.Build();
+		Node.Startup.Configure(_webHost);
 		_started = new TaskCompletionSource<bool>();
 		_adminUserCreated = new TaskCompletionSource<bool>();
-		HttpMessageHandler = _kestrelTestServer.CreateHandler();
+	}
+
+	public async Task StartTestServer() {
+		await _webHost.StartAsync();
+		var testServer = _webHost.GetTestServer();
+		HttpMessageHandler = testServer.CreateHandler();
 		HttpClient = new HttpClient(HttpMessageHandler) {
-			Timeout = TimeSpan.FromSeconds(httpClientTimeoutSec),
+			Timeout = TimeSpan.FromSeconds(_httpClientTimeoutSec),
 			BaseAddress = new UriBuilder {
 				Scheme = Uri.UriSchemeHttps
 			}.Uri
 		};
+		_testServerStarted = true;
 	}
 
 	private static void ConfigureMiniNodeServices(
@@ -272,6 +294,10 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 	}
 
 	public async Task Start() {
+		if (!_testServerStarted) {
+			await StartTestServer();
+		}
+
 		StartingTime.Start();
 		Node.MainBus.Subscribe(
 			new AdHocHandler<SystemMessage.BecomeLeader>(m => {
@@ -308,10 +334,11 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 
 		StoppingTime.Start();
 
-		_kestrelTestServer.Dispose();
+		// _kestrelTestServer.Dispose();
 		HttpMessageHandler.Dispose();
 		HttpClient.Dispose();
 		await Node.StopAsync(TimeSpan.FromSeconds(20));
+		await _webHost.DisposeAsync();
 
 		if (!keepDb)
 			TryDeleteDirectory(DbPath);

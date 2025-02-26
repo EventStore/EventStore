@@ -1,14 +1,15 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
 using System.Threading;
+using System.Threading.Tasks;
+using DotNext;
 using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Monitoring.Stats;
-using System.Threading.Tasks;
 using EventStore.Core.Metrics;
+using EventStore.Core.Services.Monitoring.Stats;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Bus;
@@ -165,7 +166,8 @@ namespace EventStore.Core.Bus;
 							}
 
 							_queueStats.ProcessingEnded(1);
-						} catch (OperationCanceledException ex) when (ex.CancellationToken == _lifetimeToken) {
+						} catch (OperationCanceledException ex) when (
+								ex.CancellationToken.IsOneOf([_lifetimeToken, msg.CancellationToken])) {
 							break;
 						} catch (Exception ex) {
 							Log.Error(ex,

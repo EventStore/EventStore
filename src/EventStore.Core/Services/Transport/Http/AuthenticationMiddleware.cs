@@ -1,5 +1,5 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
 using System.Collections.Generic;
@@ -47,6 +47,12 @@ public class AuthenticationMiddleware : IMiddleware {
 			case HttpAuthenticationRequestStatus.Authenticated:
 				context.User = principal;
 				await next(context);
+				if (context.Response.StatusCode == 302 && principal.Identity?.IsAuthenticated == false) {
+					if (!context.Request.Path.StartsWithSegments("/ui") && !context.Request.Path.StartsWithSegments("/web")) {
+						context.Response.StatusCode = 401;
+					}
+				}
+
 				break;
 			case HttpAuthenticationRequestStatus.Error:
 				context.Response.StatusCode = HttpStatusCode.InternalServerError;
