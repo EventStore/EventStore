@@ -208,10 +208,12 @@ try {
 		var monitoringService = new MonitoringService();
 		var metricsObserver = new MetricsObserver();
 		try {
-			var builder = WebApplication.CreateBuilder(new WebApplicationOptions {
+			var applicationOptions = new WebApplicationOptions {
 				Args = args,
-				ContentRootPath = AppDomain.CurrentDomain.BaseDirectory
-			});
+				ContentRootPath = IsDevelopmentEnvironment() ? null : AppDomain.CurrentDomain.BaseDirectory
+			};
+
+			var builder = WebApplication.CreateBuilder(applicationOptions);
 			builder.Configuration.AddConfiguration(configuration);
 			builder.Logging.ClearProviders().AddSerilog();
 			builder.Services.Configure<KestrelServerOptions>(configuration.GetSection("Kestrel"));
@@ -253,6 +255,9 @@ try {
 			builder.Services.AddSingleton<JwtTokenService>();
 			builder.Services.AddScoped<AuthService>();
 			builder.Services.AddScoped<AuthenticationStateProvider, AuthStateProvider>();
+
+			Log.Information("Environment: {environment}", builder.Environment.EnvironmentName);
+			Log.Information("Content root path: {contentRoot}", builder.Environment.ContentRootPath);
 
 			var app = builder.Build();
 			hostedService.Node.Startup.Configure(app);
@@ -350,4 +355,9 @@ static ServerOptionsSelectionCallback CreateServerOptionsSelectionCallback(Clust
 
 		return ValueTask.FromResult(serverOptions);
 	};
+}
+
+static bool IsDevelopmentEnvironment() {
+	return IsVarDev("ASPNETCORE_ENVIRONMENT") || IsVarDev("DOTNET_ENVIRONMENT");
+	static bool IsVarDev(string varName) => Environment.GetEnvironmentVariable(varName)?.ToLower() == "development";
 }
