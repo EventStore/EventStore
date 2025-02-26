@@ -208,7 +208,10 @@ try {
 		var monitoringService = new MonitoringService();
 		var metricsObserver = new MetricsObserver();
 		try {
-			var builder = WebApplication.CreateBuilder(args);
+			var builder = WebApplication.CreateBuilder(new WebApplicationOptions {
+				Args = args,
+				ContentRootPath = AppDomain.CurrentDomain.BaseDirectory
+			});
 			builder.Configuration.AddConfiguration(configuration);
 			builder.Logging.ClearProviders().AddSerilog();
 			builder.Services.Configure<KestrelServerOptions>(configuration.GetSection("Kestrel"));
