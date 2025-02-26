@@ -256,8 +256,8 @@ try {
 			builder.Services.AddScoped<AuthService>();
 			builder.Services.AddScoped<AuthenticationStateProvider, AuthStateProvider>();
 
-			Log.Information("Environment: {environment}", builder.Environment.EnvironmentName);
-			Log.Information("Content root path: {contentRoot}", builder.Environment.ContentRootPath);
+			Log.Information("Environment Name: {0}", builder.Environment.EnvironmentName);
+			Log.Information("ContentRoot Path: {0}", builder.Environment.ContentRootPath);
 
 			var app = builder.Build();
 			hostedService.Node.Startup.Configure(app);
