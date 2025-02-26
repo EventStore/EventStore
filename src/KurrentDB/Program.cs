@@ -208,7 +208,12 @@ try {
 		var monitoringService = new MonitoringService();
 		var metricsObserver = new MetricsObserver();
 		try {
-			var builder = WebApplication.CreateBuilder(args);
+			var applicationOptions = new WebApplicationOptions {
+				Args = args,
+				ContentRootPath = AppDomain.CurrentDomain.BaseDirectory
+			};
+
+			var builder = WebApplication.CreateBuilder(applicationOptions);
 			builder.Configuration.AddConfiguration(configuration);
 			builder.Logging.ClearProviders().AddSerilog();
 			builder.Services.Configure<KestrelServerOptions>(configuration.GetSection("Kestrel"));
@@ -250,6 +255,9 @@ try {
 			builder.Services.AddSingleton<JwtTokenService>();
 			builder.Services.AddScoped<AuthService>();
 			builder.Services.AddScoped<AuthenticationStateProvider, AuthStateProvider>();
+
+			Log.Information("Environment Name: {0}", builder.Environment.EnvironmentName);
+			Log.Information("ContentRoot Path: {0}", builder.Environment.ContentRootPath);
 
 			var app = builder.Build();
 			hostedService.Node.Startup.Configure(app);
