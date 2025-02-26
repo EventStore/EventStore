@@ -16,15 +16,15 @@
 
 	<!-- Required packages -->
 	<ItemGroup>
-		<PackageReference Include="Kurrent.Surge.Core" Version="1.0.0-alpha.351" />
-		<PackageReference Include="Kurrent.Surge.DataProtection" Version="1.0.0-alpha.351" />
-		<PackageReference Include="Kurrent.Toolkit" Version="1.0.0-alpha.351" />
-		<PackageReference Include="Kurrent.Connectors.Elasticsearch" Version="1.0.0-alpha.351" />
-		<PackageReference Include="Kurrent.Connectors.Http" Version="1.0.0-alpha.351" />
-		<PackageReference Include="Kurrent.Connectors.Kafka" Version="1.0.0-alpha.351" />
-		<PackageReference Include="Kurrent.Connectors.KurrentDB" Version="1.0.0-alpha.351" />
-		<PackageReference Include="Kurrent.Connectors.MongoDB" Version="1.0.0-alpha.351" />
-		<PackageReference Include="Kurrent.Connectors.RabbitMQ" Version="1.0.0-alpha.351" />
+		<PackageReference Include="Kurrent.Surge.Core" Version="1.0.0-alpha.353" />
+		<PackageReference Include="Kurrent.Surge.DataProtection" Version="1.0.0-alpha.354" />
+		<PackageReference Include="Kurrent.Toolkit" Version="1.0.0-alpha.354" />
+		<PackageReference Include="Kurrent.Connectors.Elasticsearch" Version="1.0.0-alpha.352" />
+		<PackageReference Include="Kurrent.Connectors.Http" Version="1.0.0-alpha.354" />
+		<PackageReference Include="Kurrent.Connectors.Kafka" Version="1.0.0-alpha.354" />
+		<PackageReference Include="Kurrent.Connectors.KurrentDB" Version="1.0.0-alpha.354" />
+		<PackageReference Include="Kurrent.Connectors.MongoDB" Version="1.0.0-alpha.353" />
+		<PackageReference Include="Kurrent.Connectors.RabbitMQ" Version="1.0.0-alpha.354" />
 		<PackageReference Include="Eventuous.Application" Version="0.15.0" />
 		<PackageReference Include="Eventuous.Extensions.AspNetCore" Version="0.15.0" />
 		<PackageReference Include="Eventuous.Extensions.DependencyInjection" Version="0.15.0" />
@@ -57,19 +57,16 @@
 <!--		<PackageReference Include="Microsoft.Extensions.Options" PrivateAssets="all"/>-->
 <!--		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" PrivateAssets="all"/>-->
 <!--		<PackageReference Include="Microsoft.Extensions.Configuration.Json" PrivateAssets="all"/>-->
-	</ItemGroup>
 
-	<ItemGroup>
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" PrivateAssets="all"/>
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" PrivateAssets="all"/>
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection"/>
-		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" PrivateAssets="all"/>
-		<PackageReference Include="Microsoft.Extensions.Options" PrivateAssets="all"/>
-		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" PrivateAssets="all"/>
-		<PackageReference Include="Microsoft.Extensions.Logging" PrivateAssets="all"/>
 		<PackageReference Include="Microsoft.Extensions.Configuration" PrivateAssets="all"/>
 		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" PrivateAssets="all"/>
 		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" PrivateAssets="all"/>
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" PrivateAssets="all"/>
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.Extensions.Logging" PrivateAssets="all"/>
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" PrivateAssets="all"/>
+		<PackageReference Include="Microsoft.Extensions.Options" PrivateAssets="all"/>
+		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" PrivateAssets="all"/>
 	</ItemGroup>
 
 	<ItemGroup>
