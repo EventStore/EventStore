@@ -1,7 +1,7 @@
 @page "/ui/cluster"
 @rendermode InteractiveServer
 @attribute [Authorize]
-@implements IDisposable
+@inherits KurrentDB.Components.Licensed.WithLicense
 @using EventStore.Common.Utils
 @using EventStore.Core.Bus
 @using EventStore.Core.Metrics
@@ -9,6 +9,7 @@
 @using KurrentDB.Components.Cluster.Monitoring
 @using KurrentDB.Tools
 @using Microsoft.AspNetCore.Authorization
+@using KurrentDB.Components.Licensed
 @inject IPublisher Publisher
 @inject MonitoringService MonitoringService
 @inject InternalExporter InternalExporter
@@ -17,6 +18,10 @@
 <PageTitle>KurrentDB: Cluster</PageTitle>
 
 <MudGrid>
+	<MudItem xs="12">
+		<MudDivider/>
+		<MudText>Node status</MudText>
+	</MudItem>
 	<MudItem xs="12">
 		<MudCard Class="ma-2">
 			<MudCardHeader>
@@ -40,11 +45,19 @@
 			</MudCardContent>
 		</MudCard>
 	</MudItem>
+	<MudItem xs="12">
+		<MudDivider/>
+		<MudText>Cluster status</MudText>
+	</MudItem>
 	@foreach (var member in _clusterInfo?.Members ?? []) {
 		<MudItem xs="@CardWidth">
 			<ClusterMember Member="member"></ClusterMember>
 		</MudItem>
 	}
+	<MudItem xs="12">
+		<MudDivider/>
+		<MudText>Resources</MudText>
+	</MudItem>
 	<MudItem xs="3">
 		<MudPaper Class="pa-16 ma-2" Outlined="true">
 			<div class="mud-chart mud-chart-legend-bottom">
@@ -68,50 +81,58 @@
 	<MudItem xs="3">
 		<MetricDonut Value="@_disk" Name="Disk"></MetricDonut>
 	</MudItem>
-	<MudItem xs="6">
-		<MudPaper Outlined="true">
-			<MudTimeSeriesChart
-				ChartSeries="@_cpuSeries"
-				@bind-SelectedIndex="_index"
-				Width="100%"
-				Height="350px"
-				ChartOptions="@_options"
-				TimeLabelSpacing="TimeSpan.FromMinutes(5)"/>
-		</MudPaper>
-	</MudItem>
-	<MudItem xs="6">
-		<MudPaper Outlined="true">
-			<MudTimeSeriesChart
-				ChartSeries="@_ramSeries"
-				@bind-SelectedIndex="_index"
-				Width="100%"
-				Height="350px"
-				ChartOptions="@_options"
-				TimeLabelSpacing="TimeSpan.FromMinutes(5)"/>
-		</MudPaper>
-	</MudItem>
-	<MudItem xs="6">
-		<MudPaper Outlined="true">
-			<MudTimeSeriesChart
-				ChartSeries="@_eventsSeries"
-				@bind-SelectedIndex="_index"
-				Width="100%"
-				Height="350px"
-				ChartOptions="@_options"
-				CanHideSeries
-				TimeLabelSpacing="TimeSpan.FromMinutes(5)"/>
-		</MudPaper>
-	</MudItem>
-	<MudItem xs="6">
-		<MudPaper Outlined="true">
-			<MudTimeSeriesChart
-				ChartSeries="@_eventBytesSeries"
-				@bind-SelectedIndex="_index"
-				Width="100%"
-				Height="350px"
-				ChartOptions="@_options"
-				CanHideSeries
-				TimeLabelSpacing="TimeSpan.FromMinutes(5)"/>
-		</MudPaper>
-	</MudItem>
+	<LicensedContent>
+		<MudItem xs="6">
+			<MudPaper Outlined="true">
+				<MudTimeSeriesChart
+					ChartSeries="@_cpuSeries"
+					@bind-SelectedIndex="_index"
+					Width="100%"
+					Height="350px"
+					ChartOptions="@_options"
+					TimeLabelSpacing="TimeSpan.FromMinutes(5)"/>
+			</MudPaper>
+		</MudItem>
+		<MudItem xs="6">
+			<MudPaper Outlined="true">
+				<MudTimeSeriesChart
+					ChartSeries="@_ramSeries"
+					@bind-SelectedIndex="_index"
+					Width="100%"
+					Height="350px"
+					ChartOptions="@_options"
+					TimeLabelSpacing="TimeSpan.FromMinutes(5)"/>
+			</MudPaper>
+		</MudItem>
+	</LicensedContent>
+	<LicensedContent>
+		<MudItem xs="12">
+			<MudDivider/>
+			<MudText>Throughput</MudText>
+		</MudItem>
+		<MudItem xs="6">
+			<MudPaper Outlined="true">
+				<MudTimeSeriesChart
+					ChartSeries="@_eventsSeries"
+					@bind-SelectedIndex="_index"
+					Width="100%"
+					Height="350px"
+					ChartOptions="@_options"
+					CanHideSeries
+					TimeLabelSpacing="TimeSpan.FromMinutes(5)"/>
+			</MudPaper>
+		</MudItem>
+		<MudItem xs="6">
+			<MudPaper Outlined="true">
+				<MudTimeSeriesChart
+					ChartSeries="@_eventBytesSeries"
+					@bind-SelectedIndex="_index"
+					Width="100%"
+					Height="350px"
+					ChartOptions="@_options"
+					CanHideSeries
+					TimeLabelSpacing="TimeSpan.FromMinutes(5)"/>
+			</MudPaper>
+		</MudItem>
+	</LicensedContent>
 </MudGrid>

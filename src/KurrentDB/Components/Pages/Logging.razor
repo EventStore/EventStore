@@ -3,12 +3,12 @@
 @using System.ComponentModel
 @using KurrentDB.Tools
 @using Microsoft.AspNetCore.Authorization
-@using Serilog
 @using Serilog.Events
+@using KurrentDB.Components.Licensed
 @inject LogObserver LogObserver
+@inherits LicensedPage
 @implements IDisposable
 
-<PageTitle>KurrentDB: Logs</PageTitle>
 
 <MudDataGrid @ref="_dataGrid" Items="@LogObserver.Items" Dense="@true" Filterable="true">
 	<Columns>
@@ -27,8 +27,10 @@
 	bool _defaultSortingApplied;
 
 	protected override async Task OnInitializedAsync() {
-		LogObserver.PropertyChanged += HandleUpdate;
 		await base.OnInitializedAsync();
+		if (HasLicense) {
+			LogObserver.PropertyChanged += HandleUpdate;
+		}
 	}
 
 	protected override async Task OnAfterRenderAsync(bool firstRender) {
@@ -39,7 +41,6 @@
 			StateHasChanged();
 		}
 	}
-
 	void HandleUpdate(object sender, PropertyChangedEventArgs e) {
 		Task.Run(() => InvokeAsync(Update));
 	}
@@ -59,10 +60,14 @@
 	};
 
 	public void Dispose() {
-		LogObserver.PropertyChanged -= HandleUpdate;
+		if (HasLicense) {
+			LogObserver.PropertyChanged -= HandleUpdate;
+		}
 	}
 
 	void Update() {
 		StateHasChanged();
 	}
+
+	protected override string PageName => "Read-time logs";
 }

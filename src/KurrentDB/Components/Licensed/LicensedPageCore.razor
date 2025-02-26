@@ -1,0 +1,18 @@
+@inherits WithLicense
+
+<PageTitle>KurrentDB: @PageName</PageTitle>
+
+@if (HasLicense) {
+	@Body
+} else {
+	<MudText>
+		@PageName page requires a valid
+		<MudLink Href="/ui/license">license</MudLink>
+		.
+	</MudText>
+}
+
+@code {
+	protected virtual string PageName => string.Empty;
+	private protected virtual RenderFragment Body => null;
+}
