@@ -9,13 +9,14 @@ using System.Threading.Tasks;
 using EventStore.Core.Cluster;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using KurrentDB.Components.Licensed;
 using KurrentDB.Tools;
 using MudBlazor;
 using ChartSeries = KurrentDB.Tools.ChartSeries;
 
 namespace KurrentDB.Components.Cluster;
 
-public partial class Cluster {
+public partial class Cluster : WithLicense, IDisposable {
 	ClientClusterInfo _clusterInfo;
 	Timer _timer;
 
@@ -30,6 +31,7 @@ public partial class Cluster {
 
 		_timer = new(Callback, null, 0, 1000);
 		MetricsObserver.DataUpdated += MonitoringServiceOnDataUpdated;
+		_hasLicense = LicenseService.CurrentLicense != null;
 	}
 
 	async Task RefreshStatus() {
@@ -98,6 +100,7 @@ public partial class Cluster {
 	double _cpu;
 	double _ram;
 	double _disk;
+	bool _hasLicense;
 
 	public void Dispose() {
 		_timer.Dispose();

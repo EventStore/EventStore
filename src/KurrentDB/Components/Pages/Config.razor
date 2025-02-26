@@ -1,12 +1,12 @@
 @page "/ui/config"
+@attribute [Authorize]
 @using EventStore.Core
 @using Microsoft.AspNetCore.Authorization
+@using KurrentDB.Components.Licensed
+@inherits LicensedPage
 @inject ClusterVNodeOptions Configuration
-@attribute [Authorize]
 
-<PageTitle>KurrentDB: Configuration</PageTitle>
-
-<MudDataGrid Items="@_items" Dense="@true" Filterable="true">
+<MudDataGrid Items="@_items" Dense="true" Filterable="true">
 	<Columns>
 		<PropertyColumn Property="x => x.Metadata.Name" Title="Option"/>
 		<TemplateColumn>
@@ -20,7 +20,7 @@
 		<PropertyColumn Property="x => x.SourceDisplayName" Title="Source"/>
 		<TemplateColumn Title="Default">
 			<CellTemplate>
-				<MudCheckBox Disabled="@true" Value="context.Item.IsDefault"></MudCheckBox>
+				<MudCheckBox Disabled="true" Value="context.Item.IsDefault"></MudCheckBox>
 			</CellTemplate>
 		</TemplateColumn>
 	</Columns>
@@ -28,6 +28,8 @@
 
 @code {
 	IReadOnlyCollection<LoadedOption> _items;
+
+	protected override string PageName => "Configuration";
 
 	protected override void OnInitialized() {
 		base.OnInitialized();

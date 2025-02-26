@@ -60,7 +60,8 @@
 		}
 
 		await AuthService.Login(principal);
-		NavigationManager.NavigateTo(ReturnUrl ?? "/");
+		var redirectUrl = string.IsNullOrWhiteSpace(ReturnUrl) ? "/ui/cluster" : ReturnUrl;
+		NavigationManager.NavigateTo(redirectUrl);
 	}
 
 	private sealed class LoginInputModel {
