@@ -210,7 +210,7 @@ try {
 		try {
 			var applicationOptions = new WebApplicationOptions {
 				Args = args,
-				ContentRootPath = IsDevelopmentEnvironment() ? null : AppDomain.CurrentDomain.BaseDirectory
+				ContentRootPath = AppDomain.CurrentDomain.BaseDirectory
 			};
 
 			var builder = WebApplication.CreateBuilder(applicationOptions);
@@ -355,9 +355,4 @@ static ServerOptionsSelectionCallback CreateServerOptionsSelectionCallback(Clust
 
 		return ValueTask.FromResult(serverOptions);
 	};
-}
-
-static bool IsDevelopmentEnvironment() {
-	return IsVarDev("ASPNETCORE_ENVIRONMENT") || IsVarDev("DOTNET_ENVIRONMENT");
-	static bool IsVarDev(string varName) => Environment.GetEnvironmentVariable(varName)?.ToLower() == "development";
 }
