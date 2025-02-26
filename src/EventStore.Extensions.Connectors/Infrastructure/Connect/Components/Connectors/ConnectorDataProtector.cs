@@ -5,7 +5,7 @@ using Kurrent.Surge.Connectors;
 using Kurrent.Surge.DataProtection;
 using Microsoft.Extensions.Configuration;
 
-namespace EventStore.Connectors.Connect.Components.Connectors;
+namespace EventStore.Connect.Connectors;
 
 public interface IConnectorDataProtector {
     ValueTask<IDictionary<string, string?>> Protect(

@@ -1,4 +1,5 @@
 using System.Collections.Frozen;
+using EventStore.Connect.Connectors;
 using Kurrent.Connectors.Elasticsearch;
 using Kurrent.Connectors.KurrentDB;
 using Kurrent.Connectors.Http;

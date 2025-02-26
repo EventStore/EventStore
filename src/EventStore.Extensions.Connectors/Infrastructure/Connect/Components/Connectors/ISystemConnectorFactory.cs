@@ -4,7 +4,7 @@
 using Kurrent.Surge.Connectors;
 using Microsoft.Extensions.Configuration;
 
-namespace EventStore.Connectors.Infrastructure.Connect.Components.Connectors;
+namespace EventStore.Connect.Connectors;
 
 public interface ISystemConnectorFactory {
     IConnector CreateConnector(ConnectorId connectorId, IConfiguration configuration);

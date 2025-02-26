@@ -9,7 +9,7 @@ using Kurrent.Connectors.MongoDB;
 using Kurrent.Connectors.RabbitMQ;
 using Kurrent.Connectors.Serilog;
 
-namespace EventStore.Connectors.Connect.Components.Connectors;
+namespace EventStore.Connect.Connectors;
 
 [PublicAPI]
 public class SerilogSinkConnectorDataProtector : ConnectorDataProtector<SerilogSinkOptions>;

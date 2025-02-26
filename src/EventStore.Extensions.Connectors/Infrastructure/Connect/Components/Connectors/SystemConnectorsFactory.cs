@@ -4,7 +4,6 @@
 using EventStore.Connect.Processors;
 using EventStore.Connectors;
 using EventStore.Connectors.Connect.Components.Connectors;
-using EventStore.Connectors.Infrastructure.Connect.Components.Connectors;
 using EventStore.Connectors.System;
 using Kurrent.Surge.Connectors.Sinks;
 using EventStore.Core.Bus;

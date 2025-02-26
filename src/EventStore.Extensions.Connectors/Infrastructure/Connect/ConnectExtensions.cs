@@ -10,7 +10,6 @@ using EventStore.Connect.Producers.Configuration;
 using EventStore.Connect.Readers;
 using EventStore.Connect.Readers.Configuration;
 using EventStore.Connectors.Connect.Components.Producers;
-using EventStore.Connectors.Infrastructure.Connect.Components.Connectors;
 using EventStore.Core.Bus;
 using Kurrent.Surge;
 using Kurrent.Surge.Connectors;

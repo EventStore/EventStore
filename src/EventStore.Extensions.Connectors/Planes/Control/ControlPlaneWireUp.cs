@@ -2,8 +2,6 @@ using EventStore.Connect.Connectors;
 using Kurrent.Surge.Connectors;
 using Kurrent.Surge.Leases;
 using EventStore.Connect.Schema;
-using EventStore.Connectors.Connect.Components.Connectors;
-using EventStore.Connectors.Infrastructure.Connect.Components.Connectors;
 using EventStore.Connectors.System;
 using EventStore.Core.Bus;
 using Kurrent.Surge.DataProtection;
