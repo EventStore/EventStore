@@ -21,6 +21,7 @@ using Kurrent.Surge.Schema;
 using Kurrent.Surge.Schema.Serializers;
 using EventStore.System.Testing.Fixtures;
 using EventStore.Toolkit.Testing.Xunit.Extensions.AssemblyFixture;
+using Kurrent.Surge.DataProtection;
 using Microsoft.Extensions.DependencyInjection;
 using FakeTimeProvider = Microsoft.Extensions.Time.Testing.FakeTimeProvider;
 using WithExtension = EventStore.Toolkit.Testing.WithExtension;
@@ -106,6 +107,8 @@ public partial class ConnectorsAssemblyFixture : ClusterVNodeFixture {
     public IServiceProvider  ConnectorServices { get; private set; } = null!;
 
     public ISnapshotProjectionsStore SnapshotProjectionsStore => NodeServices.GetRequiredService<ISnapshotProjectionsStore>();
+    public IManager                  Manager                  => NodeServices.GetRequiredService<IManager>();
+    public IDataProtector            DataProtector            => NodeServices.GetRequiredService<IDataProtector>();
 
     public IProducer Producer { get; private set; } = null!;
     public IReader   Reader   { get; private set; } = null!;

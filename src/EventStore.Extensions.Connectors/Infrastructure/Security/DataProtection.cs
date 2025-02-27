@@ -17,7 +17,7 @@ public static class DataProtection {
     public static IServiceCollection AddSurgeDataProtection(this IServiceCollection services) {
         var configuration = services.BuildServiceProvider().GetRequiredService<IConfiguration>();
 
-        var token = configuration["KurrentDB:DataProtection:Token"] ?? configuration["EventStore:DataProtection:Token"];
+        var token = configuration["Kurrent:DataProtection:Token"] ?? configuration["EventStore:DataProtection:Token"];
 
         if (string.IsNullOrEmpty(token))
             throw new InvalidOperationException("The DataProtection:Token configuration value is required");
