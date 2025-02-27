@@ -260,4 +260,4 @@ unique identifier, such as region, user ID, or other identifiers.
 
 ## Tutorial
 
-[Learn how to set up and use a Kafka Sink connector in KurrentDB through a tutorial.](https://developers.kurrent.io/tutorials/Kafka_Sink.md)
+[Learn how to set up and use a Kafka Sink connector in KurrentDB through a tutorial.](/tutorials/Kafka_Sink.md)
