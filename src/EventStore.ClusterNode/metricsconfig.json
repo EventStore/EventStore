@@ -5,6 +5,7 @@
 	"Meters": [
 		"EventStore.Core",
 		"EventStore.Projections.Core",
+		"Kurrent",
 		"Kurrent.Connectors",
 		"Kurrent.Connectors.Sinks"
 	],
