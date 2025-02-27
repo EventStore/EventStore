@@ -1,5 +1,6 @@
 @page "/ui/login"
 @using System.ComponentModel.DataAnnotations
+@using System.Security.Claims
 @using EventStore.Plugins.Authentication
 @using KurrentDB.Services
 @using Microsoft.AspNetCore.Http
@@ -24,7 +25,7 @@
 				</MudCardActions>
 			</MudCard>
 		</MudItem>
-		<MudFlexBreak />
+		<MudFlexBreak/>
 		<MudItem xs="6">
 		</MudItem>
 	</MudGrid>
@@ -42,24 +43,37 @@
 		if (firstRender && !AuthService.IsLoggedIn) {
 			var restoredFromState = await AuthService.GetStateFromTokenAsync();
 			if (restoredFromState) {
-				if (!string.IsNullOrEmpty(ReturnUrl)) {
-					NavigationManager.NavigateTo(ReturnUrl);
-				}
+				Redirect();
+			}
+
+			// Try to login with a dummy user that will always work in insecure mode
+			var dummy = JwtTokenService.GenerateRandomString(10);
+			var (status, principal) = await LoginUser(dummy, dummy);
+			if (status == HttpAuthenticationRequestStatus.Authenticated) {
+				await AuthService.Login(principal);
+				Redirect();
 			}
 		}
 	}
 
 	public async Task LoginUser() {
-		var request = new HttpAuthenticationRequest(new DefaultHttpContext(), Input.Username, Input.Password);
-		AuthProvider.Authenticate(request);
-		var (status, principal) = await request.AuthenticateAsync();
-
+		var (status, principal) = await LoginUser(Input.Username, Input.Password);
 		if (status != HttpAuthenticationRequestStatus.Authenticated) {
 			Snackbar.Add("Invalid username or password", Severity.Error);
 			return;
 		}
 
 		await AuthService.Login(principal);
+		Redirect();
+	}
+
+	async Task<(HttpAuthenticationRequestStatus, ClaimsPrincipal)> LoginUser(string username, string password) {
+		var request = new HttpAuthenticationRequest(new DefaultHttpContext(), username, password);
+		AuthProvider.Authenticate(request);
+		return await request.AuthenticateAsync();
+	}
+
+	void Redirect() {
 		var redirectUrl = string.IsNullOrWhiteSpace(ReturnUrl) ? "/ui/cluster" : ReturnUrl;
 		NavigationManager.NavigateTo(redirectUrl);
 	}
