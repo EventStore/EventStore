@@ -1,8 +1,7 @@
 using EventStore.Connect.Consumers;
 using EventStore.Core;
-using EventStore.Streaming;
-using EventStore.Streaming.Consumers;
-using EventStore.Streaming.Producers;
+using Kurrent.Surge;
+using Kurrent.Surge.Producers;
 
 namespace EventStore.Extensions.Connectors.Tests.Connect.Producers;
 
@@ -61,7 +60,7 @@ public class SystemProducerTests(ITestOutputHelper output, ConnectorsAssemblyFix
 
 		return;
 
-        static Message MapRecordToMessage(EventStoreRecord record) =>
+        static Message MapRecordToMessage(SurgeRecord record) =>
             new() {
                 Value    = record.Value,
                 Key      = record.Key,

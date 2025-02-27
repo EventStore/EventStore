@@ -5,9 +5,9 @@ using EventStore.Connectors.Management.Contracts.Events;
 using EventStore.Connectors.Management.Contracts.Queries;
 using EventStore.Connectors.Management.Data;
 using EventStore.Extensions.Connectors.Tests;
-using EventStore.Streaming.Processors;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
+using Kurrent.Surge.Processors;
 
 namespace EventStore.Connectors.Tests.Management;
 

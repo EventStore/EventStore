@@ -7,20 +7,18 @@ using EventStore.Connect.Producers;
 using EventStore.Connect.Producers.Configuration;
 using EventStore.Connect.Readers;
 using EventStore.Connect.Readers.Configuration;
-using EventStore.Connectors.Control;
 using EventStore.Connectors.Infrastructure;
 using EventStore.Connectors.Management;
 using EventStore.Connectors.Management.Contracts.Events;
-using EventStore.Core.Bus;
 using EventStore.Extensions.Connectors.Tests;
-using EventStore.Streaming;
-using EventStore.Streaming.Consumers;
-using EventStore.Streaming.Persistence.State;
-using EventStore.Streaming.Processors;
-using EventStore.Streaming.Producers;
-using EventStore.Streaming.Readers;
-using EventStore.Streaming.Schema;
-using EventStore.Streaming.Schema.Serializers;
+using Kurrent.Surge;
+using Kurrent.Surge.Consumers;
+using Kurrent.Surge.Persistence.State;
+using Kurrent.Surge.Processors;
+using Kurrent.Surge.Producers;
+using Kurrent.Surge.Readers;
+using Kurrent.Surge.Schema;
+using Kurrent.Surge.Schema.Serializers;
 using EventStore.System.Testing.Fixtures;
 using EventStore.Toolkit.Testing.Xunit.Extensions.AssemblyFixture;
 using Microsoft.Extensions.DependencyInjection;
@@ -152,7 +150,7 @@ public partial class ConnectorsAssemblyFixture : ClusterVNodeFixture {
                 StartPosition        = RecordPosition.Earliest,
                 LastCommitedPosition = RecordPosition.Unset
             },
-            EventStoreRecord.None,
+            SurgeRecord.None,
             FakeConsumer.Instance,
             StateStore,
             CreateLogger("TestLogger"),
@@ -162,7 +160,7 @@ public partial class ConnectorsAssemblyFixture : ClusterVNodeFixture {
         return context;
     }
 
-    public async ValueTask<EventStoreRecord> CreateRecord<T>(T message, SchemaDefinitionType schemaType = SchemaDefinitionType.Json, string? streamId = null) {
+    public async ValueTask<SurgeRecord> CreateRecord<T>(T message, SchemaDefinitionType schemaType = SchemaDefinitionType.Json, string? streamId = null) {
         var schemaInfo = SchemaRegistry.CreateSchemaInfo<T>(schemaType);
 
         // Tweaks so we don't have conflict with the connector plugin that already registered those messages.
@@ -204,7 +202,7 @@ public partial class ConnectorsAssemblyFixture : ClusterVNodeFixture {
         var headers = new Headers();
         schemaInfo.InjectIntoHeaders(headers);
 
-        return new EventStoreRecord {
+        return new SurgeRecord {
             Id = Guid.NewGuid(),
             Position = streamId is null
                 ? RecordPosition.ForLog(sequenceId)
@@ -241,12 +239,12 @@ class FakeConsumer : IConsumer {
 
     public ValueTask DisposeAsync() => throw new NotImplementedException();
 
-    public IAsyncEnumerable<EventStoreRecord> Records(CancellationToken stoppingToken = new CancellationToken()) => throw new NotImplementedException();
+    public IAsyncEnumerable<SurgeRecord> Records(CancellationToken stoppingToken = new CancellationToken()) => throw new NotImplementedException();
 
-    public Task<IReadOnlyList<RecordPosition>> Track(EventStoreRecord record, CancellationToken cancellationToken = new CancellationToken()) =>
+    public Task<IReadOnlyList<RecordPosition>> Track(SurgeRecord record, CancellationToken cancellationToken = new CancellationToken()) =>
         Task.FromResult<IReadOnlyList<RecordPosition>>(new List<RecordPosition>());
 
-    public Task<IReadOnlyList<RecordPosition>> Commit(EventStoreRecord record, CancellationToken cancellationToken = new CancellationToken()) =>
+    public Task<IReadOnlyList<RecordPosition>> Commit(SurgeRecord record, CancellationToken cancellationToken = new CancellationToken()) =>
         Task.FromResult<IReadOnlyList<RecordPosition>>(new List<RecordPosition>());
 
     public Task<IReadOnlyList<RecordPosition>> CommitAll(CancellationToken cancellationToken = new CancellationToken()) =>

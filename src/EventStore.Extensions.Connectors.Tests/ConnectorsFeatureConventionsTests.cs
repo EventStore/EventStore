@@ -1,4 +1,4 @@
-using EventStore.Streaming.Consumers;
+using Kurrent.Surge.Consumers;
 using EventStore.Toolkit.Testing.Fixtures;
 using EventStore.Toolkit.Testing.Xunit;
 using Shouldly;
