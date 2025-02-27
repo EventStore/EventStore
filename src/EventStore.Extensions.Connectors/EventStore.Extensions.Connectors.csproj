@@ -4,7 +4,7 @@
 		<OutputType>library</OutputType>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<NoWarn>$(NoWarn);CS1591;CS1998;CS8618;CS8524;CS8655;RCS1194;NU1604;NU1602</NoWarn>
+		<NoWarn>$(NoWarn);CS1591;CS1998;CS8618;CS8524;CS8655;RCS1194</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -50,23 +50,9 @@
 
 	</ItemGroup>
 
-	<!-- Exclude all packages/assets provided by ESDB that break on runtime or may cause issues -->
 	<ItemGroup>
 		<!-- Contains Plugin and License components -->
 		<PackageReference Include="EventStore.Plugins" Version="25.2.6" ExcludeAssets="runtime" />
-<!--		<PackageReference Include="Microsoft.Extensions.Options" PrivateAssets="all"/>-->
-<!--		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" PrivateAssets="all"/>-->
-<!--		<PackageReference Include="Microsoft.Extensions.Configuration.Json" PrivateAssets="all"/>-->
-
-		<PackageReference Include="Microsoft.Extensions.Configuration" PrivateAssets="all"/>
-		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" PrivateAssets="all"/>
-		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" PrivateAssets="all"/>
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" PrivateAssets="all"/>
-		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" PrivateAssets="all" />
-		<PackageReference Include="Microsoft.Extensions.Logging" PrivateAssets="all"/>
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" PrivateAssets="all"/>
-		<PackageReference Include="Microsoft.Extensions.Options" PrivateAssets="all"/>
-		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" PrivateAssets="all"/>
 	</ItemGroup>
 
 	<ItemGroup>
