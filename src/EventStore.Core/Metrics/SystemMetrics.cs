@@ -1,5 +1,5 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 #nullable enable
 
@@ -13,7 +13,7 @@ using static EventStore.Common.Configuration.MetricsConfiguration;
 
 namespace EventStore.Core.Metrics;
 
-public class SystemMetrics(Meter meter, TimeSpan timeout, Dictionary<SystemTracker, bool> config) {
+public class SystemMetrics(Meter meter, TimeSpan timeout, Dictionary<SystemTracker, bool> config, bool legacyNames) {
 	public void CreateLoadAverageMetric(string metricName, Dictionary<SystemTracker, string> dimNames) {
 		if (RuntimeInformation.IsWindows)
 			return;
@@ -43,7 +43,10 @@ public class SystemMetrics(Meter meter, TimeSpan timeout, Dictionary<SystemTrack
 		dims.Register(SystemTracker.TotalMem, RuntimeStats.GetTotalMemory);
 
 		if (dims.AnyRegistered())
-			meter.CreateObservableGauge(metricName, dims.GenObserve(), "bytes");
+			if (legacyNames)
+				meter.CreateObservableGauge($"{metricName}-bytes", dims.GenObserve());
+			else
+				meter.CreateObservableGauge(metricName, dims.GenObserve(), "bytes");
 	}
 
 	public void CreateDiskMetric(string metricName, string dbPath, Dictionary<SystemTracker, string> dimNames) {
@@ -55,7 +58,10 @@ public class SystemMetrics(Meter meter, TimeSpan timeout, Dictionary<SystemTrack
 		dims.Register(SystemTracker.DriveTotalBytes, GenMeasure(info => info.TotalBytes));
 
 		if (dims.AnyRegistered())
-			meter.CreateObservableGauge(metricName, dims.GenObserve(), "bytes");
+			if (legacyNames)
+				meter.CreateObservableGauge($"{metricName}-bytes", dims.GenObserve());
+			else
+				meter.CreateObservableGauge(metricName, dims.GenObserve(), "bytes");
 		
 		return;
 

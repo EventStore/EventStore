@@ -1,5 +1,5 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
 using System.Collections.Generic;
@@ -28,14 +28,14 @@ public sealed class TFChunkTrackerTests : IDisposable {
 		var meter = new Meter($"{typeof(TFChunkTrackerTests)}");
 		_listener = new TestMeterListener<long>(meter);
 		_doubleListener = new TestMeterListener<double>(meter);
-		var byteMetric = new CounterMetric(meter, "eventstore-io", unit: "bytes");
-		var eventMetric = new CounterMetric(meter, "eventstore-io", unit: "events");
+		var byteMetric = new CounterMetric(meter, "eventstore-io", unit: "bytes", legacyNames: false);
+		var eventMetric = new CounterMetric(meter, "eventstore-io", unit: "events", legacyNames: false);
 		var writerCheckpoint = new InMemoryCheckpoint(WriterCheckpoint);
 
 		var readTag = new KeyValuePair<string, object>("activity", "read");
 		_sut = new TFChunkTracker(
 			readDistribution: new LogicalChunkReadDistributionMetric(meter, "chunk-read-distribution", writerCheckpoint, ChunkSize),
-			readDurationMetric: new DurationMetric(meter, "record-read-duration", _clock),
+			readDurationMetric: new DurationMetric(meter, "record-read-duration", legacyNames: false, _clock),
 			readBytes: new CounterSubMetric(byteMetric, [readTag]),
 			readEvents: new CounterSubMetric(eventMetric, [readTag]));
 	}

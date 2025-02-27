@@ -4,7 +4,7 @@
   display: none;
 }
 
-body {
+body, html {
   font-size: 15px;
 }
 
@@ -17,55 +17,45 @@ body:has(#kapa-widget-container) .vp-back-to-top-button {
   vertical-align: middle;
 }
 
+//.vp-hero-image {
+//  width: 100%;
+  //height: 288px;
+  //max-width: 288px;
+//}
+
 .vp-nav-links {
   font-size: 1rem;
 }
 
 @font-face {
-  font-family: "Museo Sans";
-  src: url("/fonts/museosans-100-webfont.woff2") format("woff2"),
-  url("/fonts/museosans-100-webfont.woff") format("woff");
-  font-weight: 100;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "Museo Sans";
-  src: url("/fonts/museosans-300-webfont.woff2") format("woff2"),
-  url("/fonts/museosans-300-webfont.woff") format("woff");
+  font-family: "Solina";
+  src: url("/fonts/Solina-Light.woff2") format("woff2"),
+  url("/fonts/Solina-Light.woff") format("woff");
   font-weight: 300;
   font-style: normal;
 }
 
 @font-face {
-  font-family: "Museo Sans";
-  src: url("/fonts/museosans_500-webfont.woff2") format("woff2"),
-  url("/fonts/museosans_500-webfont.woff") format("woff");
+  font-family: "Solina";
+  src: url("/fonts/Solina-Regular.woff2") format("woff2"),
+  url("/fonts/Solina-Regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Solina";
+  src: url("/fonts/Solina-Medium.woff2") format("woff2"),
+  url("/fonts/Solina-Medium.woff") format("woff");
   font-weight: 500;
   font-style: normal;
 }
 
 @font-face {
-  font-family: "Museo Sans";
-  src: url("/fonts/museosans_500_italic-webfont.woff2") format("woff2"),
-  url("/fonts/museosans_500_italic-webfont.woff") format("woff");
-  font-weight: 500;
-  font-style: italic;
-}
-
-@font-face {
-  font-family: "Museo Sans";
-  src: url("/fonts/museosans_700-webfont.woff2") format("woff2"),
-  url("/fonts/museosans_700-webfont.woff") format("woff");
+  font-family: "Solina";
+  src: url("/fonts/Solina-Bold.woff2") format("woff2"),
+  url("/fonts/Solina-Bold.woff") format("woff");
   font-weight: 700;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "Museo Sans";
-  src: url("/fonts/museosans_900-webfont.woff2") format("woff2"),
-  url("/fonts/museosans_900-webfont.woff") format("woff");
-  font-weight: 900;
   font-style: normal;
 }
 
@@ -73,4 +63,23 @@ body:has(#kapa-widget-container) .vp-back-to-top-button {
 .theme-hope-content:not(.custom)>ol p,
 .theme-hope-content:not(.custom)>ul p {
   text-align: left;
+}
+
+html[data-theme='dark'] #kapa-widget-portal {
+  code {
+    background: rgba(127, 127, 127, 0.12);
+  }
+
+  blockquote {
+    border-color: #eee;
+  }
+}
+
+/* Fix for center-alignment issue on `.not-found` pages */
+.vp-page.not-found .theme-hope-content,
+.vp-page.not-found .vp-breadcrumb,
+.vp-page.not-found .vp-page-title,
+.vp-page.not-found .vp-toc-placeholder {
+  text-align: initial;
+  width: var(--content-width, 740px);
 }

@@ -1,5 +1,5 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
 using System.Collections.Generic;
@@ -7,6 +7,7 @@ using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Threading.Tasks;
 using DotNext;
+using EventStore.Common.Configuration;
 using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Bus;
@@ -167,7 +168,7 @@ public sealed class ProjectionsSubsystem : ISubsystem,
 		_coreWorkers = ProjectionCoreWorkersNode.CreateCoreWorkers(standardComponents, projectionsStandardComponents);
 		_queueMap = _coreWorkers.ToDictionary(v => v.Key, v => v.Value.CoreInputQueue.As<IPublisher>());
 
-		ConfigureProjectionMetrics(standardComponents.ProjectionStats);
+		ConfigureProjectionMetrics(standardComponents.MetricsConfiguration);
 
 		ProjectionManagerNode.CreateManagerService(standardComponents, projectionsStandardComponents, _queueMap,
 			_projectionsQueryExpiry, _projectionTracker);
@@ -177,19 +178,20 @@ public sealed class ProjectionsSubsystem : ISubsystem,
 		 builder.UseEndpoints(endpoints => endpoints.MapGrpcService<ProjectionManagement>());
 	}
 
-	private void ConfigureProjectionMetrics(bool isEnabled) {
-		if (!isEnabled)
+	private void ConfigureProjectionMetrics(MetricsConfiguration conf) {
+		if (!conf.ProjectionStats)
 			return;
 
-		var projectionMeter = new Meter("KurrentDB.Projections.Core", version: "1.0.0");
+		var projectionMeter = new Meter(conf.ProjectionsMeterName, version: "1.0.0");
+		var serviceName = conf.ServiceName;
 
 		var tracker = new ProjectionTracker();
 		_projectionTracker = tracker;
 
-		projectionMeter.CreateObservableCounter("kurrentdb-projection-events-processed-after-restart-total", tracker.ObserveEventsProcessed);
-		projectionMeter.CreateObservableUpDownCounter("kurrentdb-projection-progress", tracker.ObserveProgress);
-		projectionMeter.CreateObservableUpDownCounter("kurrentdb-projection-running", tracker.ObserveRunning);
-		projectionMeter.CreateObservableUpDownCounter("kurrentdb-projection-status", tracker.ObserveStatus);
+		projectionMeter.CreateObservableCounter($"{serviceName}-projection-events-processed-after-restart-total", tracker.ObserveEventsProcessed);
+		projectionMeter.CreateObservableUpDownCounter($"{serviceName}-projection-progress", tracker.ObserveProgress);
+		projectionMeter.CreateObservableUpDownCounter($"{serviceName}-projection-running", tracker.ObserveRunning);
+		projectionMeter.CreateObservableUpDownCounter($"{serviceName}-projection-status", tracker.ObserveStatus);
 	}
 
 	public void ConfigureServices(IServiceCollection services, IConfiguration configuration) =>

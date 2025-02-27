@@ -29,6 +29,7 @@ services:
       args:
         NUGET_CREDS_EVENTSTORE: ${NUGET_CREDS_EVENTSTORE}
         NUGET_CREDS_KURRENTDB: ${NUGET_CREDS_KURRENTDB}
+        RUNTIME: ${RUNTIME}
     env_file:
       - shared.env
     environment:
@@ -57,6 +58,7 @@ services:
       args:
         NUGET_CREDS_EVENTSTORE: ${NUGET_CREDS_EVENTSTORE}
         NUGET_CREDS_KURRENTDB: ${NUGET_CREDS_KURRENTDB}
+        RUNTIME: ${RUNTIME}
     env_file:
       - shared.env
     environment:
@@ -85,6 +87,7 @@ services:
       args:
         NUGET_CREDS_EVENTSTORE: ${NUGET_CREDS_EVENTSTORE}
         NUGET_CREDS_KURRENTDB: ${NUGET_CREDS_KURRENTDB}
+        RUNTIME: ${RUNTIME}
     env_file:
       - shared.env
     environment:

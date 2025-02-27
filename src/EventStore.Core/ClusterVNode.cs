@@ -1,5 +1,5 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
 using System.Collections.Generic;
@@ -81,7 +81,6 @@ using EventStore.Plugins.Authorization;
 using EventStore.Plugins.Subsystems;
 using EventStore.Plugins.Transforms;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -124,7 +123,7 @@ public abstract class ClusterVNode {
 	abstract public IPublisher MainQueue { get; }
 	abstract public ISubscriber MainBus { get; }
 	abstract public QueueStatsManager QueueStatsManager { get; }
-	abstract public IStartup Startup { get; }
+	abstract public IInternalStartup Startup { get; }
 	abstract public IAuthenticationProvider AuthenticationProvider { get; }
 	abstract public IHttpService HttpService { get; }
 	abstract public VNodeInfo NodeInfo { get; }
@@ -162,7 +161,7 @@ public class ClusterVNode<TStreamId> :
 
 	public override QueueStatsManager QueueStatsManager => _queueStatsManager;
 
-	public override IStartup Startup => _startup;
+	public override IInternalStartup Startup => _startup;
 
 	public override IAuthenticationProvider AuthenticationProvider {
 		get { return _authenticationProvider; }
@@ -1579,7 +1578,7 @@ public class ClusterVNode<TStreamId> :
 		_subsystems = options.Subsystems;
 
 		var standardComponents = new StandardComponents(Db.Config, _mainQueue, _mainBus, _timerService, _timeProvider,
-			httpSendService, new IHttpService[] { _httpService }, _workersHandler, _queueStatsManager, trackers.QueueTrackers, metricsConfiguration.ProjectionStats);
+			httpSendService, new IHttpService[] { _httpService }, _workersHandler, _queueStatsManager, trackers.QueueTrackers, metricsConfiguration);
 
 		IServiceCollection ConfigureNodeServices(IServiceCollection services) {
 			services
@@ -1588,6 +1587,7 @@ public class ClusterVNode<TStreamId> :
 				.AddSingleton(standardComponents)
 				.AddSingleton(authorizationGateway)
 				.AddSingleton(certificateProvider)
+				.AddSingleton(_authenticationProvider)
 				.AddSingleton<IReadOnlyList<IDbTransform>>(new List<IDbTransform> { new IdentityDbTransform() })
 				.AddSingleton<IReadOnlyList<IClusterVNodeStartupTask>>(new List<IClusterVNodeStartupTask> { })
 				.AddSingleton<IReadOnlyList<IHttpAuthenticationProvider>>(httpAuthenticationProviders)

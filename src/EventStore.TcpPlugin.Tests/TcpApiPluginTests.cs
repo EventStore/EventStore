@@ -143,8 +143,7 @@ public class TcpApiPluginTests {
 		return new StandardComponents(dbConfig, mainQueue, mainBus,
 			timerService, timeProvider: null, httpForwarder: null, httpServices: [],
 			networkSendService: workersHandler, queueStatsManager: queueStatsManager,
-			trackers: queueTrackers,
-			projectionStats: false);
+			trackers: queueTrackers, metricsConfiguration: new());
 	}
 
 	[Fact]

@@ -1,5 +1,5 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
 using System.Collections.Generic;
@@ -18,7 +18,6 @@ using EventStore.Plugins.Transforms;
 namespace EventStore.Core.XUnit.Tests.Services.Archive.Storage;
 
 public abstract class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
-	protected const string AwsCliProfileName = "default";
 	protected const string AwsRegion = "eu-west-1";
 	protected const string AwsBucket = "archiver-unit-tests";
 
@@ -41,7 +40,6 @@ public abstract class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
 						Path = ArchivePath
 					},
 					S3 = new() {
-						AwsCliProfileName = AwsCliProfileName,
 						Bucket = AwsBucket,
 						Region = AwsRegion,
 					}
