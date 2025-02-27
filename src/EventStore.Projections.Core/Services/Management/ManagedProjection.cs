@@ -280,6 +280,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			if (_lastReceivedStatistics == null) {
 				status = new ProjectionStatistics {
 					Name = _name,
+					EffectiveName = _name,
 					ProjectionId = _projectionId,
 					Epoch = -1,
 					Version = -1,
