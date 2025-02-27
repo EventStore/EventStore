@@ -9,11 +9,11 @@ namespace EventStore.Connect.Connectors;
 
 public interface IConnectorDataProtector {
     ValueTask<IDictionary<string, string?>> Protect(
-        string connectorId, IDictionary<string, string?> settings, IDataProtector dataProtector, CancellationToken ct = default
+        string connectorId, IDictionary<string, string?> settings, IDataProtector? dataProtector, CancellationToken ct = default
     );
 
     ValueTask<IConfiguration> Unprotect(
-        IConfiguration configuration, IDataProtector dataProtector, CancellationToken ct = default
+        IConfiguration configuration, IDataProtector? dataProtector, CancellationToken ct = default
     );
 }
 
@@ -21,8 +21,11 @@ public abstract class ConnectorDataProtector<T> : IConnectorDataProtector where 
     public virtual string[] Keys => [];
 
     public async ValueTask<IDictionary<string, string?>> Protect(
-        string connectorId, IDictionary<string, string?> settings, IDataProtector dataProtector, CancellationToken ct = default
+        string connectorId, IDictionary<string, string?> settings, IDataProtector? dataProtector, CancellationToken ct = default
     ) {
+        if (dataProtector is null)
+            return settings;
+
         foreach (var key in Keys) {
             if (!settings.TryGetValue(key, out var plainText) || string.IsNullOrEmpty(plainText))
                 continue;
@@ -34,8 +37,11 @@ public abstract class ConnectorDataProtector<T> : IConnectorDataProtector where 
     }
 
     public async ValueTask<IConfiguration> Unprotect(
-        IConfiguration configuration, IDataProtector dataProtector, CancellationToken ct = default
+        IConfiguration configuration, IDataProtector? dataProtector, CancellationToken ct = default
     ) {
+        if (dataProtector is null)
+            return configuration;
+
         foreach (var key in Keys) {
             var value = configuration[key];
 

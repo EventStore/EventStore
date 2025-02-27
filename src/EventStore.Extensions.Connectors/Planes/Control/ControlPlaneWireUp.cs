@@ -54,7 +54,7 @@ public static class ControlPlaneWireUp {
             .AddSingleton<ISystemConnectorFactory>(ctx => {
                 var validator              = ctx.GetRequiredService<IConnectorValidator>();
                 var connectorDataProtector = ctx.GetService<IConnectorDataProtector>() ?? ConnectorsMasterDataProtector.Instance;
-                var dataProtector          = ctx.GetRequiredService<IDataProtector>();
+                var dataProtector          = ctx.GetService<IDataProtector>();
 
                 var options = new SystemConnectorsFactoryOptions {
                     CheckpointsStreamTemplate = Streams.CheckpointsStreamTemplate,

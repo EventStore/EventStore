@@ -18,7 +18,7 @@ public class ConnectorsPlugin : SubsystemsPlugin {
             .AddConnectSystemComponents()
             .AddConnectorsControlPlane()
             .AddConnectorsManagementPlane()
-            .AddSurgeDataProtection();
+            .AddConnectorsDataProtection();
     }
 
     public override void ConfigureApplication(IApplicationBuilder app, IConfiguration configuration) {

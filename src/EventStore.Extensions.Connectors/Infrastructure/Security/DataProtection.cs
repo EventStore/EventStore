@@ -3,38 +3,46 @@
 
 using EventStore.Connect.Connectors;
 using EventStore.Connect.Schema;
-using EventStore.Connectors.Connect.Components.Connectors;
 using EventStore.Connectors.Management;
 using Kurrent.Surge.DataProtection;
 using Kurrent.Surge.Schema;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using DataProtectionProtocol = Kurrent.Surge.DataProtection.Protocol;
+using static System.String;
+using static System.StringComparer;
 
 namespace EventStore.Connectors.Infrastructure.Security;
 
 public static class DataProtection {
-    public static IServiceCollection AddSurgeDataProtection(this IServiceCollection services) {
-        var configuration = services.BuildServiceProvider().GetRequiredService<IConfiguration>();
+    public static IServiceCollection AddConnectorsDataProtection(this IServiceCollection services) {
+        var serviceProvider = services.BuildServiceProvider();
 
-        var token = configuration["Kurrent:DataProtection:Token"] ?? configuration["EventStore:DataProtection:Token"];
+        var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+        var logger        = serviceProvider.GetRequiredService<ILogger<DataProtector>>();
 
-        if (string.IsNullOrEmpty(token))
-            throw new InvalidOperationException("The DataProtection:Token configuration value is required");
+        var token = configuration["KurrentDB:DataProtection:Token"] ?? configuration["EventStore:DataProtection:Token"];
 
-        services
-            .AddMessageSchemaRegistration()
-            .AddDataProtection(configuration)
-            .ProtectKeysWithToken(token)
-            .PersistKeysToSurge();
+        if (IsNullOrWhiteSpace(token)) {
+            logger.LogWarning("DATA PROTECTION IS DISABLED BECAUSE NO TOKEN WAS PROVIDED");
+        } else {
+            logger.LogInformation("Data protection is enabled");
+
+            services
+                .AddMessageSchemaRegistration()
+                .AddDataProtection(configuration)
+                .ProtectKeysWithToken(token)
+                .PersistKeysToSurge();
+        }
 
         services.AddSingleton<ConnectorDomainServices.ProtectConnectorSettings>(ctx => {
+            var surgeDataProtector     = ctx.GetService<IDataProtector>();
             var connectorDataProtector = ctx.GetService<IConnectorDataProtector>() ?? ConnectorsMasterDataProtector.Instance;
-            var surgeDataProtector     = ctx.GetRequiredService<IDataProtector>();
 
             return (connectorId, settings) => connectorDataProtector.Protect(
                 connectorId,
-                settings: new Dictionary<string, string?>(settings, StringComparer.OrdinalIgnoreCase),
+                settings: new Dictionary<string, string?>(settings, OrdinalIgnoreCase),
                 surgeDataProtector
             );
         });
