@@ -7,6 +7,7 @@ using EventStore.Core.Cluster;
 using EventStore.Core.Messages;
 using EventStore.Extensions.Connectors.Tests;
 using EventStore.Toolkit;
+using Kurrent.Toolkit;
 using Microsoft.Extensions.Logging;
 using Shouldly;
 using MemberInfo = EventStore.Core.Cluster.MemberInfo;

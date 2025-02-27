@@ -1,11 +1,12 @@
 namespace EventStore.Connectors.Control;
+using Kurrent.Surge.Connectors;
 
 /// <summary>
 /// Represents a connector in the cluster.
 /// The connector resource is identified by its <see cref="ConnectorId"/>.
 /// </summary>
-public record ConnectorResource(EventStore.Connect.Connectors.ConnectorId ConnectorId, ClusterNodeState Affinity) : IComparable<ConnectorResource>, IComparable {
-	public static readonly ConnectorResource Unmapped = new(EventStore.Connect.Connectors.ConnectorId.None, ClusterNodeState.Unmapped);
+public record ConnectorResource(ConnectorId ConnectorId, ClusterNodeState Affinity) : IComparable<ConnectorResource>, IComparable {
+	public static readonly ConnectorResource Unmapped = new(ConnectorId.None, ClusterNodeState.Unmapped);
 
 	public override string ToString() => ConnectorId.ToString();
 
@@ -58,5 +59,5 @@ public record ConnectorResource(EventStore.Connect.Connectors.ConnectorId Connec
 
 	#endregion . relational members .
 
-    public static implicit operator EventStore.Connect.Connectors.ConnectorId(ConnectorResource _) => _.ConnectorId;
+    public static implicit operator ConnectorId(ConnectorResource _) => _.ConnectorId;
 }

@@ -1,6 +1,6 @@
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
-using EventStore.Connect.Connectors;
+using Kurrent.Surge.Connectors;
 
 namespace EventStore.Connectors.Control.Assignment;
 
@@ -20,7 +20,7 @@ public record ClusterConnectorsAssignment : IReadOnlyDictionary<ClusterNodeId, N
 
     public Guid AssignmentId { get; }
 
-    public ClusterConnectorsAssignment AddNodeAssignments(IEnumerable<(ConnectorId ConnectorId, ClusterNodeId NodeId)> assignments) {
+    public ClusterConnectorsAssignment AddNodeAssignments(IEnumerable<(Kurrent.Surge.Connectors.ConnectorId ConnectorId, ClusterNodeId NodeId)> assignments) {
         Dictionary<ClusterNodeId, NodeConnectorsAssignment> currentClusterAssignment = new(Assignments);
 
         foreach (var assignmentsByNode in assignments.GroupBy(x => x.NodeId)) {

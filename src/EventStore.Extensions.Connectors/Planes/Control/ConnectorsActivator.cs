@@ -1,8 +1,8 @@
-using EventStore.Connect.Connectors;
+using Kurrent.Surge.Connectors;
 using FluentValidation;
 using ActivatedConnectors = System.Collections.Concurrent.ConcurrentDictionary<
-    EventStore.Connect.Connectors.ConnectorId,
-    (EventStore.Connect.Connectors.IConnector Instance, int Revision)
+    Kurrent.Surge.Connectors.ConnectorId,
+    (Kurrent.Surge.Connectors.IConnector Instance, int Revision)
 >;
 
 namespace EventStore.Connectors.Control;

@@ -1,6 +1,7 @@
 // ReSharper disable CheckNamespace
 
 using EventStore.Connect.Connectors;
+using Kurrent.Surge.Connectors;
 using EventStore.Connect.Consumers;
 using EventStore.Connect.Consumers.Configuration;
 using EventStore.Connect.Processors;
@@ -11,11 +12,11 @@ using EventStore.Connect.Readers;
 using EventStore.Connect.Readers.Configuration;
 using EventStore.Connectors.Connect.Components.Producers;
 using EventStore.Core.Bus;
-using EventStore.Streaming.Persistence.State;
-using EventStore.Streaming.Producers;
-using EventStore.Streaming.Producers.Configuration;
-using EventStore.Streaming.Schema;
-using EventStore.Streaming.Schema.Serializers;
+using Kurrent.Surge.Persistence.State;
+using Kurrent.Surge.Producers;
+using Kurrent.Surge.Producers.Configuration;
+using Kurrent.Surge.Schema;
+using Kurrent.Surge.Schema.Serializers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -84,7 +85,7 @@ public static class ConnectExtensions {
                 .Publisher(publisher)
                 .SchemaRegistry(schemaRegistry)
                 .StateStore(stateStore)
-                .Logging(new() {
+                .Logging(new Kurrent.Surge.Configuration.LoggingOptions {
                     Enabled       = true,
                     LoggerFactory = loggerFactory,
                     LogName       = "EventStore.Connect.SystemProcessor"

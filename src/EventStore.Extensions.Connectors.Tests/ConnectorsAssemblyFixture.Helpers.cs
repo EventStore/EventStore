@@ -1,8 +1,8 @@
 using System.Runtime.CompilerServices;
-using EventStore.Streaming;
-using EventStore.Streaming.Producers;
-using EventStore.Streaming.Schema;
 using Eventuous;
+using Kurrent.Surge;
+using Kurrent.Surge.Producers;
+using Kurrent.Surge.Schema;
 
 namespace EventStore.Extensions.Connectors.Tests;
 
