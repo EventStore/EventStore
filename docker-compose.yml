@@ -41,7 +41,6 @@ services:
       - KURRENTDB_CERTIFICATE_PRIVATE_KEY_FILE=/etc/kurrentdb/certs/node1/node.key
       - KURRENTDB_ADVERTISE_HOST_TO_CLIENT_AS=127.0.0.1
       - KURRENTDB_ADVERTISE_NODE_PORT_TO_CLIENT_AS=2111
-      - KURRENTDB_DATAPROTECTION_TOKEN=secret-token
     ports:
       - 2111:2113
     networks:
@@ -71,7 +70,6 @@ services:
       - KURRENTDB_CERTIFICATE_PRIVATE_KEY_FILE=/etc/kurrentdb/certs/node2/node.key
       - KURRENTDB_ADVERTISE_HOST_TO_CLIENT_AS=127.0.0.1
       - KURRENTDB_ADVERTISE_NODE_PORT_TO_CLIENT_AS=2112
-      - KURRENTDB_DATAPROTECTION_TOKEN=secret-token
     ports:
       - 2112:2113
     networks:
@@ -101,7 +99,6 @@ services:
       - KURRENTDB_CERTIFICATE_PRIVATE_KEY_FILE=/etc/kurrentdb/certs/node3/node.key
       - KURRENTDB_ADVERTISE_HOST_TO_CLIENT_AS=127.0.0.1
       - KURRENTDB_ADVERTISE_NODE_PORT_TO_CLIENT_AS=2113
-      - KURRENTDB_DATAPROTECTION_TOKEN=secret-token
     ports:
       - 2113:2113
     networks:
