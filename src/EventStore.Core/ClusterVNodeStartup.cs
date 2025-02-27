@@ -1,14 +1,16 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Threading.Tasks;
 using EventStore.Common.Configuration;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Metrics;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Grpc;
 using EventStore.Core.Services.Transport.Grpc.Cluster;
@@ -17,8 +19,9 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Plugins;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using EventStore.Transport.Http;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
@@ -34,13 +37,13 @@ using Operations = EventStore.Core.Services.Transport.Grpc.Operations;
 using ClusterGossip = EventStore.Core.Services.Transport.Grpc.Cluster.Gossip;
 using ClientGossip = EventStore.Core.Services.Transport.Grpc.Gossip;
 using ServerFeatures = EventStore.Core.Services.Transport.Grpc.ServerFeatures;
+using Serilog;
 
 #nullable enable
 namespace EventStore.Core;
 
-public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.SystemReady>,
+public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMessage.SystemReady>,
 	IHandle<SystemMessage.BecomeShuttingDown> {
-
 	private readonly IReadOnlyList<IPlugableComponent> _plugableComponents;
 	private readonly IPublisher _mainQueue;
 	private readonly IPublisher _monitoringQueue;
@@ -51,6 +54,7 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 	private readonly IExpiryStrategy _expiryStrategy;
 	private readonly KestrelHttpService _httpService;
 	private readonly IConfiguration _configuration;
+	private readonly MetricsConfiguration _metricsConfiguration;
 	private readonly Trackers _trackers;
 	private readonly StatusCheck _statusCheck;
 	private readonly Func<IServiceCollection, IServiceCollection> _configureNodeServices;
@@ -78,34 +82,19 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 		string clusterDns,
 		Func<IServiceCollection, IServiceCollection> configureNodeServices,
 		Action<IApplicationBuilder> configureNode) {
-
-		Ensure.Positive(maxAppendSize, nameof(maxAppendSize));
-
-		if (httpService == null) {
-			throw new ArgumentNullException(nameof(httpService));
-		}
-
-		ArgumentNullException.ThrowIfNull(configuration);
-
-		if (mainBus == null) {
-			throw new ArgumentNullException(nameof(mainBus));
-		}
-
-		if (monitoringQueue == null) {
-			throw new ArgumentNullException(nameof(monitoringQueue));
-		}
 		_plugableComponents = plugableComponents;
 		_mainQueue = mainQueue;
-		_monitoringQueue = monitoringQueue;
-		_mainBus = mainBus;
+		_monitoringQueue = monitoringQueue ?? throw new ArgumentNullException(nameof(monitoringQueue));
+		_mainBus = mainBus ?? throw new ArgumentNullException(nameof(mainBus));
 		_httpMessageHandler = httpMessageHandler;
 		_authenticationProvider = authenticationProvider;
 		_authorizationProvider = authorizationProvider ?? throw new ArgumentNullException(nameof(authorizationProvider));
-		_maxAppendSize = maxAppendSize;
+		_maxAppendSize = Ensure.Positive(maxAppendSize);
 		_writeTimeout = writeTimeout;
 		_expiryStrategy = expiryStrategy;
-		_httpService = httpService;
-		_configuration = configuration;
+		_httpService = Ensure.NotNull(httpService);
+		_configuration = Ensure.NotNull(configuration);
+		_metricsConfiguration = MetricsConfiguration.Get(_configuration);
 		_trackers = trackers;
 		_clusterDns = clusterDns;
 		_configureNodeServices = configureNodeServices ?? throw new ArgumentNullException(nameof(configureNodeServices));
@@ -113,87 +102,107 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 		_statusCheck = new StatusCheck(this);
 	}
 
-	public void Configure(IApplicationBuilder app) {
+	public void Configure(WebApplication app) {
 		_configureNode(app);
+
+		var forcePlainTextMetrics =
+			_metricsConfiguration.LegacyCoreNaming &&
+			_metricsConfiguration.LegacyProjectionsNaming;
 
 		var internalDispatcher = new InternalDispatcherEndpoint(_mainQueue, _httpMessageHandler);
 		_mainBus.Subscribe(internalDispatcher);
 
-		app = app.Map("/health", _statusCheck.Configure)
-			// AuthenticationMiddleware uses _httpAuthenticationProviders and assigns
-			// the resulting ClaimsPrinciple to HttpContext.User
-			.UseMiddleware<AuthenticationMiddleware>()
+		app.Map("/health", _statusCheck.Configure);
+		// AuthenticationMiddleware uses _httpAuthenticationProviders and assigns
+		// the resulting ClaimsPrinciple to HttpContext.User
+		app.UseMiddleware<AuthenticationMiddleware>();
 
-			// UseAuthentication/UseAuthorization allow the rest of the pipeline to access auth
-			// in a conventional way (e.g. with AuthorizeAttribute). The server doesn't make use
-			// of this yet but plugins may. The registered authentication scheme (es auth)
-			// is driven by the HttpContext.User established above
-			.UseAuthentication()
-			.UseRouting()
-			.UseAuthorization();
+		// UseAuthentication/UseAuthorization allow the rest of the pipeline to access auth
+		// in a conventional way (e.g. with AuthorizeAttribute). The server doesn't make use
+		// of this yet but plugins may. The registered authentication scheme (es auth)
+		// is driven by the HttpContext.User established above
+		app.UseAuthentication();
+		app.UseRouting();
+		app.UseCors("default");
+		app.UseAuthorization();
+		app.UseAntiforgery();
 
 		// allow all subsystems to register their legacy controllers before calling MapLegacyHttp
 		foreach (var component in _plugableComponents)
 			component.ConfigureApplication(app, _configuration);
 
-		app.UseEndpoints(ep => {
-				_authenticationProvider.ConfigureEndpoints(ep);
+		_authenticationProvider.ConfigureEndpoints(app);
+		app.UseStaticFiles();
 
-				ep.MapGrpcService<PersistentSubscriptions>();
-				ep.MapGrpcService<Users>();
-				ep.MapGrpcService<Streams<TStreamId>>();
-				ep.MapGrpcService<ClusterGossip>();
-				ep.MapGrpcService<Elections>();
-				ep.MapGrpcService<Operations>();
-				ep.MapGrpcService<ClientGossip>();
-				ep.MapGrpcService<Monitoring>();
-				ep.MapGrpcService<ServerFeatures>();
+		// Select an appropriate controller action and codec.
+		//    Success -> Add InternalContext (HttpEntityManager, urimatch, ...) to HttpContext
+		//    Fail -> Pipeline terminated with response.
+		app.UseMiddleware<KestrelToInternalBridgeMiddleware>();
 
-				// enable redaction service on unix sockets only
-				ep.MapGrpcService<Redaction>().AddEndpointFilter(async (c, next) => {
-					if (!c.HttpContext.IsUnixSocketConnection())
-						return Results.BadRequest("Redaction is only available via Unix Sockets");
-					return await next(c).ConfigureAwait(false);
-				});
+		// Looks up the InternalContext to perform the check.
+		// Terminal if auth check is not successful.
+		app.UseMiddleware<AuthorizationMiddleware>();
 
-				// Map the legacy controller endpoints with special middleware pipeline
-				ep.MapLegacyHttp(
-					ep.CreateApplicationBuilder()
-						// Select an appropriate controller action and codec.
-						//    Success -> Add InternalContext (HttpEntityManager, urimatch, ...) to HttpContext
-						//    Fail -> Pipeline terminated with response.
-						.UseMiddleware<KestrelToInternalBridgeMiddleware>()
+		// Open telemetry currently guarded by our custom authz for consistency with stats
+		app.UseOpenTelemetryPrometheusScrapingEndpoint(x => {
+			if (x.Request.Path != "/metrics")
+				return false;
 
-						// Looks up the InternalContext to perform the check.
-						// Terminal if auth check is not successful.
-						.UseMiddleware<AuthorizationMiddleware>()
+			// Prometheus scrapes preferring application/openmetrics-text, but the prometheus exporter
+			// these days adds `_total` suffix to counters when outputting openmetrics format (as
+			// required by the spec). DisableTotalNameSuffixForCounters only affects plain text output.
+			// So if we are exporting legacy metrics, where we do not want the _total suffix for
+			// backwards compatibility, then force the exporter to respond with plain text metrics as it
+			// did in 23.10 and 24.10.
+			if (forcePlainTextMetrics)
+				x.Request.Headers.Remove("Accept");
+			return true;
+		});
 
-						// Open telemetry currently guarded by our custom authz for consistency with stats
-						.UseOpenTelemetryPrometheusScrapingEndpoint()
+		// Internal dispatcher looks up the InternalContext to call the appropriate controller
+		app.Use((ctx, next) => internalDispatcher.InvokeAsync(ctx, next));
 
-						// Internal dispatcher looks up the InternalContext to call the appropriate controller
-						.Use(x => internalDispatcher.InvokeAsync)
-						.Build(),
-					_httpService);
-			});
+		app.MapGrpcService<PersistentSubscriptions>();
+		app.MapGrpcService<Users>();
+		app.MapGrpcService<Streams<TStreamId>>();
+		app.MapGrpcService<ClusterGossip>();
+		app.MapGrpcService<Elections>();
+		app.MapGrpcService<Operations>();
+		app.MapGrpcService<ClientGossip>();
+		app.MapGrpcService<Monitoring>();
+		app.MapGrpcService<ServerFeatures>();
+		// enable redaction service on unix sockets only
+		app.MapGrpcService<Redaction>().AddEndpointFilter(async (c, next) => {
+			if (!c.HttpContext.IsUnixSocketConnection())
+				return Results.BadRequest("Redaction is only available via Unix Sockets");
+			return await next(c).ConfigureAwait(false);
+		});
 	}
 
-	public IServiceProvider ConfigureServices(IServiceCollection services) {
-		var metricsConfiguration = MetricsConfiguration.Get(_configuration);
-
-		services = services
-			.AddRouting()
-			.AddAuthentication(o => o
-				.AddScheme<EventStoreAuthenticationHandler>("es auth", displayName: null))
-				.Services
-			.AddAuthorization()
-			.AddSingleton(_authenticationProvider)
-			.AddSingleton(_authorizationProvider)
-			.AddSingleton<ISubscriber>(_mainBus)
-			.AddSingleton<IPublisher>(_mainQueue)
+	public void ConfigureServices(IServiceCollection services) {
+		// Web-related registrations
+		services.AddRouting();
+		services.AddAuthentication(o => {
+			o.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+			o.AddScheme<EventStoreAuthenticationHandler>("es auth", displayName: null);
+		}).AddCookie(x => x.LoginPath = "/ui/login");
+		services.AddAuthorization();
+		services.AddAntiforgery(s => s.Cookie.Expiration = TimeSpan.Zero);
+		services
 			.AddSingleton<AuthenticationMiddleware>()
 			.AddSingleton<AuthorizationMiddleware>()
 			.AddSingleton(new KestrelToInternalBridgeMiddleware(_httpService.UriRouter, _httpService.LogHttpRequests, _httpService.AdvertiseAsHost, _httpService.AdvertiseAsPort))
+			.AddSingleton(_authenticationProvider)
+			.AddSingleton(_authorizationProvider);
+		services.AddCors(o => o.AddPolicy(
+			"default",
+			b => b.AllowAnyOrigin().WithMethods(HttpMethod.Options, HttpMethod.Get).AllowAnyHeader())
+		);
+
+		// Other dependencies
+		services
+			.AddSingleton<ISubscriber>(_mainBus)
+			.AddSingleton<IPublisher>(_mainQueue)
 			.AddSingleton(new Streams<TStreamId>(_mainQueue, _maxAppendSize,
 				_writeTimeout, _expiryStrategy,
 				_trackers.GrpcTrackers,
@@ -208,71 +217,68 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 			.AddSingleton(new ClientGossip(_mainQueue, _authorizationProvider, _trackers.GossipTrackers.ProcessingRequestFromGrpcClient))
 			.AddSingleton(new Monitoring(_monitoringQueue))
 			.AddSingleton(new Redaction(_mainQueue, _authorizationProvider))
-			.AddSingleton<ServerFeatures>()
+			.AddSingleton<ServerFeatures>();
 
-			// OpenTelemetry
-			.AddOpenTelemetry()
+		// OpenTelemetry
+		services.AddOpenTelemetry()
 			.WithMetrics(meterOptions => meterOptions
-				.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("kurrentdb"))
-				.AddMeter(metricsConfiguration.Meters)
-				.AddView(i => {
-					if (i.Name == MetricsBootstrapper.LogicalChunkReadDistributionName)
-						// 20 buckets, 0, 1, 2, 4, 8, ...
-						return new ExplicitBucketHistogramConfiguration {
-							Boundaries = [
-								0,
-								.. Enumerable.Range(0, count: 19).Select(x => 1 << x)
-							]
-						};
-					else if (i.Name.StartsWith("kurrentdb-") &&
-						i.Name.EndsWith("-latency") &&
-						i.Unit == "seconds")
-						return new ExplicitBucketHistogramConfiguration {
-							Boundaries = [
-								0.001, //    1 ms
-								0.005, //    5 ms
-								0.01,  //   10 ms
-								0.05,  //   50 ms
-								0.1,   //  100 ms
-								0.5,   //  500 ms
-								1,     // 1000 ms
-								5,     // 5000 ms
-							]
-						};
-					else if (i.Name.StartsWith("kurrentdb-") &&
-						i.Unit == "seconds")
-						return new ExplicitBucketHistogramConfiguration {
-							Boundaries = [
-								0.000_001, // 1 microsecond
-								0.000_01,
-								0.000_1,
-								0.001, // 1 millisecond
-								0.01,
-								0.1,
-								1, // 1 second
-								10,
-							]
-						};
-					return default;
-				})
-				.AddPrometheusExporter(options => options.ScrapeResponseCacheDurationMilliseconds = 1000))
-			.Services
+				.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(_metricsConfiguration.ServiceName))
+				.AddMeter(_metricsConfiguration.Meters)
+				.AddView(ViewConfig)
+				.AddInternalExporter()
+				.AddPrometheusExporter(options => {
+					if (_metricsConfiguration is { LegacyCoreNaming: true, LegacyProjectionsNaming: true }) {
+						options.DisableTotalNameSuffixForCounters = true;
+					} else if (_metricsConfiguration.LegacyCoreNaming || _metricsConfiguration.LegacyProjectionsNaming) {
+						Log.Error("Inconsistent Meter names: {names}. Please use EventStore or KurrentDB for all.",
+							string.Join(", ", _metricsConfiguration.Meters));
+					}
 
-			// gRPC
+					options.ScrapeResponseCacheDurationMilliseconds = 1000;
+				}));
+
+		// gRPC
+		services
 			.AddSingleton<RetryInterceptor>()
-			.AddGrpc(options => {
-				options.Interceptors.Add<RetryInterceptor>();
-			})
-			.AddServiceOptions<Streams<TStreamId>>(options =>
-				options.MaxReceiveMessageSize = TFConsts.EffectiveMaxLogRecordSize)
-			.Services;
+			.AddGrpc(options => options.Interceptors.Add<RetryInterceptor>())
+			.AddServiceOptions<Streams<TStreamId>>(options => options.MaxReceiveMessageSize = TFConsts.EffectiveMaxLogRecordSize);
 
-		services = _configureNodeServices(services);
+		// Ask the node itself to add DI registrations
+		_configureNodeServices(services);
 
+		// Let pluggable components to register their services
 		foreach (var component in _plugableComponents)
 			component.ConfigureServices(services, _configuration);
+		return;
 
-		return services.BuildServiceProvider();
+		MetricStreamConfiguration? ViewConfig(Instrument i) {
+			if (i.Name == MetricsBootstrapper.LogicalChunkReadDistributionName(_metricsConfiguration.ServiceName))
+				// 20 buckets, 0, 1, 2, 4, 8, ...
+				return new ExplicitBucketHistogramConfiguration { Boundaries = [0, .. Enumerable.Range(0, count: 19).Select(x => 1 << x)] };
+			if (i.Name.StartsWith(_metricsConfiguration.ServiceName + "-") && (i.Name.EndsWith("-latency-seconds") || i.Name.EndsWith("-latency") && i.Unit == "seconds"))
+				return new ExplicitBucketHistogramConfiguration {
+					Boundaries = [
+						0.001, //    1 ms
+						0.005, //    5 ms
+						0.01, //   10 ms
+						0.05, //   50 ms
+						0.1, //  100 ms
+						0.5, //  500 ms
+						1, // 1000 ms
+						5, // 5000 ms
+					]
+				};
+			if (i.Name.StartsWith(_metricsConfiguration.ServiceName + "-") && (i.Name.EndsWith("-seconds") || i.Unit == "seconds"))
+				return new ExplicitBucketHistogramConfiguration {
+					Boundaries = [
+						0.000_001, // 1 microsecond
+						0.000_01, 0.000_1, 0.001, // 1 millisecond
+						0.01, 0.1, 1, // 1 second
+						10,
+					]
+				};
+			return default;
+		}
 	}
 
 	public void Handle(SystemMessage.SystemReady _) => _ready = true;
@@ -284,11 +290,7 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 		private readonly int _livecode = 204;
 
 		public StatusCheck(ClusterVNodeStartup<TStreamId> startup) {
-			if (startup == null) {
-				throw new ArgumentNullException(nameof(startup));
-			}
-
-			_startup = startup;
+			_startup = startup ?? throw new ArgumentNullException(nameof(startup));
 		}
 
 		public void Configure(IApplicationBuilder builder) =>
@@ -299,7 +301,7 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 		private MidFunc Live => (context, next) => {
 			if (_startup._ready) {
 				if (context.Request.Query.TryGetValue("liveCode", out var expected) &&
-					int.TryParse(expected, out var statusCode)) {
+				    int.TryParse(expected, out var statusCode)) {
 					context.Response.StatusCode = statusCode;
 				} else {
 					context.Response.StatusCode = _livecode;
@@ -307,6 +309,7 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 			} else {
 				context.Response.StatusCode = 503;
 			}
+
 			return Task.CompletedTask;
 		};
 

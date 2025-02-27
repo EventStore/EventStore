@@ -47,7 +47,8 @@ public static class ConnectExtensions {
                 });
         });
 
-        services.AddSingleton<Func<SystemConsumerBuilder>>(ctx => { var publisher      = ctx.GetRequiredService<IPublisher>();
+        services.AddSingleton<Func<SystemConsumerBuilder>>(ctx => {
+            var publisher      = ctx.GetRequiredService<IPublisher>();
             var loggerFactory  = ctx.GetRequiredService<ILoggerFactory>();
             var schemaRegistry = ctx.GetRequiredService<SchemaRegistry>();
 
@@ -96,8 +97,7 @@ public static class ConnectExtensions {
         });
 
         services.AddSingleton<IConnectorValidator, SystemConnectorsValidation>();
-        services.AddSingleton<ISystemConnectorFactory, SystemConnectorsFactory>();
-
+        // services.AddSingleton<IConnectorFactory, SystemConnectorsFactory>();
         services.AddSingleton<Func<GrpcProducerBuilder>>(ctx => {
             var loggerFactory  = ctx.GetRequiredService<ILoggerFactory>();
             var schemaRegistry = ctx.GetRequiredService<SchemaRegistry>();
