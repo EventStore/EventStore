@@ -25,10 +25,12 @@ public class ConnectorsPlugin : SubsystemsPlugin {
 
     public override (bool Enabled, string EnableInstructions) IsEnabled(IConfiguration configuration) {
         var enabled = configuration.GetValue(
-            $"EventStore:{Name}:Enabled",
-            configuration.GetValue($"{Name}:Enabled",
-                configuration.GetValue("Enabled", true)
-            )
+	        $"EventStore:{Name}:Enabled",
+	        configuration.GetValue($"KurrentDB:{Name}:Enabled",
+		        configuration.GetValue($"{Name}:Enabled",
+			        configuration.GetValue("Enabled", true)
+		        )
+	        )
         );
 
         return (enabled, "Please check the documentation for instructions on how to enable the plugin.");
