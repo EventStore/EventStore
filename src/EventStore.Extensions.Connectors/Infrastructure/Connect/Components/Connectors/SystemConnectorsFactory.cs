@@ -9,6 +9,8 @@ using Kurrent.Surge.Connectors.Sinks;
 using EventStore.Core.Bus;
 using Kurrent.Surge;
 using Kurrent.Surge.Connectors;
+using Kurrent.Surge.Connectors.Diagnostics.Metrics;
+using Kurrent.Surge.Connectors.Sinks.Diagnostics.Metrics;
 using Kurrent.Surge.Consumers;
 using Kurrent.Surge.Consumers.Configuration;
 using Kurrent.Surge.Persistence.State;
@@ -39,6 +41,8 @@ public class SystemConnectorsFactory(
     IConnectorValidator            Validation { get; } = validation;
     IServiceProvider               Services   { get; } = services;
 
+    static DisposeCallback? OnDisposeCallback;
+
     public IConnector CreateConnector(ConnectorId connectorId, IConfiguration configuration) {
         var sinkOptions = configuration.GetRequiredOptions<SinkOptions>();
 
@@ -46,13 +50,19 @@ public class SystemConnectorsFactory(
 
         var sink = CreateSink(sinkOptions.InstanceTypeName);
 
-        if (sinkOptions.Transformer.Enabled)
-            sink = new RecordTransformerSink(sink, new JintRecordTransformer(sinkOptions.Transformer.DecodeFunction()));
+        if (sinkOptions.Transformer.Enabled) {
+	        var transformer = new JintRecordTransformer(sinkOptions.Transformer.DecodeFunction()) {
+                // ReSharper disable once AccessToModifiedClosure
+                ErrorCallback = errorType => SinkMetrics.TrackTransformError(connectorId, sink.MetricsLabel, errorType)
+	        };
+	        sink = new RecordTransformerSink(sink, transformer);
+        }
 
-        var sinkProxy = new SinkProxy(connectorId,
-            sink,
-            configuration,
-            Services);
+        ConnectorMetrics.TrackSinkConnectorCreated(sink.GetType(), connectorId);
+
+        OnDisposeCallback = () => ConnectorMetrics.TrackSinkConnectorClosed(sink.GetType(), connectorId);
+
+        var sinkProxy = new SinkProxy(connectorId, sink, configuration, Services);
 
         var processor = ConfigureProcessor(connectorId, sinkOptions, sinkProxy);
 
@@ -149,7 +159,10 @@ public class SystemConnectorsFactory(
             await processor.Activate(stoppingToken);
         }
 
-        public ValueTask DisposeAsync() =>
-            processor.DisposeAsync();
+        public async ValueTask DisposeAsync() {
+            await sinkProxy.DisposeAsync();
+            await processor.DisposeAsync();
+            OnDisposeCallback?.Invoke();
+        }
     }
 }
