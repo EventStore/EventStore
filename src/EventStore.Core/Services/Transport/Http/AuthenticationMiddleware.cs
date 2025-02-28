@@ -48,8 +48,10 @@ public class AuthenticationMiddleware : IMiddleware {
 				context.User = principal;
 				await next(context);
 				if (context.Response.StatusCode == 302 && principal.Identity?.IsAuthenticated == false) {
-					// Unless the call is for the UI or web pages, return a 401
-					if (!context.Request.Path.StartsWithSegments("/ui") && !context.Request.Path.StartsWithSegments("/web")) {
+					// Unless the call is for the UI, web pages, or oauth, return a 401
+					if (!context.Request.Path.StartsWithSegments("/ui")
+					    && !context.Request.Path.StartsWithSegments("/web")
+					    && !context.Request.Path.StartsWithSegments("/oauth")) {
 						// Avoid setting the status code if the response has already started
 						if (!context.Response.HasStarted) {
 							context.Response.StatusCode = 401;
