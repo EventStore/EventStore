@@ -55,6 +55,7 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 	private ITFChunkScavengerLog _logger;
 
 	private int _threads = 1;
+	private bool _skipIndexCheck;
 	private bool _mergeChunks;
 	private bool _syncOnly;
 	private string _dbPath;
@@ -103,6 +104,11 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 
 	public Scenario<TLogFormat, TStreamId> WithThreads(int threads) {
 		_threads = threads;
+		return this;
+	}
+
+	public Scenario<TLogFormat, TStreamId> SkipIndexCheck() {
+		_skipIndexCheck = true;
 		return this;
 	}
 
@@ -308,7 +314,9 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 			ptableVersion: PTableVersions.IndexV4,
 			maxAutoMergeIndexLevel: int.MaxValue,
 			pTableMaxReaderCount: ESConsts.PTableInitialReaderCount,
-			maxSizeForMemory: 1, // convert everything to ptables immediately
+			maxSizeForMemory: _skipIndexCheck
+				? 1_000_000 // we aren't going to check the index so no need to convert to ptables
+				: 1, // convert everything to ptables immediately so we can check the index
 			maxTablesPerLevel: 2,
 			inMem: false);
 		logFormat.StreamNamesProvider.SetTableIndex(tableIndex);
@@ -614,7 +622,8 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 			// The index entries we expected to be kept are kept
 			if (keptRecords != null) {
 				await CheckRecords(keptRecords, dbResult, cancellationTokenSource.Token);
-				await CheckIndex(keptIndexEntries, readIndex, collidingStreams, hasher, cancellationTokenSource.Token);
+				if (!_skipIndexCheck)
+					await CheckIndex(keptIndexEntries, readIndex, collidingStreams, hasher, cancellationTokenSource.Token);
 			}
 
 			_assertState?.Invoke(scavengeState);
@@ -750,7 +759,7 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 					beforePosition: long.MaxValue,
 					token));
 
-			if (result.EventInfos.Length > 100)
+			if (result.EventInfos.Length > 10_000)
 				throw new Exception("wasn't expecting a stream this long in the tests");
 
 			Assert.All(result.EventInfos, info => {
