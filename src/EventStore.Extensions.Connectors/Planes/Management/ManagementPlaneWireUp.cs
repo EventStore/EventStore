@@ -8,6 +8,7 @@ using Kurrent.Surge.Connectors;
 using EventStore.Connect.Producers.Configuration;
 using EventStore.Connect.Readers.Configuration;
 using EventStore.Connect.Schema;
+using EventStore.Connectors.Connect.Components.Connectors;
 using EventStore.Connectors.Eventuous;
 using EventStore.Connectors.Infrastructure;
 using EventStore.Connectors.Management.Contracts.Events;
@@ -20,6 +21,7 @@ using EventStore.Connectors.System;
 using EventStore.Plugins.Licensing;
 using Kurrent.Toolkit;
 using FluentValidation;
+using Kurrent.Surge.DataProtection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Grpc.JsonTranscoding;
 using Microsoft.Extensions.DependencyInjection;
@@ -72,6 +74,13 @@ public static class ManagementPlaneWireUp {
                           ?? new SystemConnectorsValidation();
 
             return validation.ValidateSettings;
+        });
+
+        services.AddSingleton<ConnectorDomainServices.ProtectConnectorSettings>(ctx => {
+	        var connectorDataProtector = ctx.GetService<IConnectorDataProtector>() ?? ConnectorsMasterDataProtector.Instance;
+	        var dataProtector = ctx.GetRequiredService<IDataProtector>();
+
+            return (connectorId, settings) => connectorDataProtector.Protect(connectorId, settings, dataProtector);
         });
 
         services

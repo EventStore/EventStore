@@ -1,4 +1,5 @@
 using System.Collections.Frozen;
+using EventStore.Connect.Connectors;
 using Kurrent.Connectors.Elasticsearch;
 using Kurrent.Connectors.KurrentDB;
 using Kurrent.Connectors.Http;
@@ -15,20 +16,20 @@ namespace EventStore.Connectors.Connect.Components.Connectors;
 public class ConnectorCatalogue {
     public const string EntitlementPrefix = "CONNECTORS";
 
-    static readonly ConnectorCatalogue Instance = new();
+    public static readonly ConnectorCatalogue Instance = new();
 
     FrozenDictionary<Type, ConnectorCatalogueItem>   Items        { get; }
     FrozenDictionary<string, ConnectorCatalogueItem> ItemsByAlias { get; }
 
     ConnectorCatalogue() {
         Items = new Dictionary<Type, ConnectorCatalogueItem> {
-            [typeof(HttpSink)]     = For<HttpSink, HttpSinkValidator>([$"{EntitlementPrefix}_HTTP_SINK"], false),
-            [typeof(SerilogSink)]  = For<SerilogSink, SerilogSinkValidator>([$"{EntitlementPrefix}_SERILOG_SINK"], false),
-            [typeof(KafkaSink)]    = For<KafkaSink, KafkaSinkValidator>([$"{EntitlementPrefix}_KAFKA_SINK"], true),
-            [typeof(RabbitMqSink)] = For<RabbitMqSink, RabbitMqSinkValidator>([$"{EntitlementPrefix}_RABBITMQ_SINK"], true),
-            [typeof(KurrentDbSink)] = For<KurrentDbSink, KurrentDbSinkValidator>([$"{EntitlementPrefix}_ESDB_SINK", $"{EntitlementPrefix}_ESDB_SOURCE"], true),
-            [typeof(ElasticsearchSink)] = For<ElasticsearchSink, ElasticsearchSinkValidator>([$"{EntitlementPrefix}_ELASTICSEARCH_SINK", $"{EntitlementPrefix}_ELASTICSEARCH_SOURCE"], true),
-            [typeof(MongoDbSink)] = For<MongoDbSink, MongoDbSinkValidator>([$"{EntitlementPrefix}_MONGODB_SINK"], true),
+            [typeof(HttpSink)]     = For<HttpSink, HttpSinkValidator, HttpSinkConnectorDataProtector>([$"{EntitlementPrefix}_HTTP_SINK"], false),
+            [typeof(SerilogSink)]  = For<SerilogSink, SerilogSinkValidator, SerilogSinkConnectorDataProtector>([$"{EntitlementPrefix}_SERILOG_SINK"], false),
+            [typeof(KafkaSink)]    = For<KafkaSink, KafkaSinkValidator, KafkaSinkConnectorDataProtector>([$"{EntitlementPrefix}_KAFKA_SINK"], true),
+            [typeof(RabbitMqSink)] = For<RabbitMqSink, RabbitMqSinkValidator, RabbitMqSinkConnectorDataProtector>([$"{EntitlementPrefix}_RABBITMQ_SINK"], true),
+            [typeof(KurrentDbSink)] = For<KurrentDbSink, KurrentDbSinkValidator, KurrentDbSinkConnectorDataProtector>([$"{EntitlementPrefix}_ESDB_SINK", $"{EntitlementPrefix}_ESDB_SOURCE"], true),
+            [typeof(ElasticsearchSink)] = For<ElasticsearchSink, ElasticsearchSinkValidator, ElasticsearchSinkConnectorDataProtector>([$"{EntitlementPrefix}_ELASTICSEARCH_SINK", $"{EntitlementPrefix}_ELASTICSEARCH_SOURCE"], true),
+            [typeof(MongoDbSink)] = For<MongoDbSink, MongoDbSinkValidator, MongoDbSinkConnectorDataProtector>([$"{EntitlementPrefix}_MONGODB_SINK"], true),
         }.ToFrozenDictionary();
 
         ItemsByAlias = Items
@@ -56,15 +57,17 @@ public readonly record struct ConnectorCatalogueItem() {
 
     public Type ConnectorType          { get; init; } = Type.Missing.GetType();
     public Type ConnectorValidatorType { get; init; } = Type.Missing.GetType();
+    public Type ConnectorProtectorType { get; init; } = Type.Missing.GetType();
 
     public bool     RequiresLicense      { get; init; } = true;
     public string[] RequiredEntitlements { get; init; } = [];
     public string[] Aliases              { get; init; } = [];
 
-    public static ConnectorCatalogueItem For<T, TValidator>(string[] requiredEntitlements, bool requiresLicense) {
+    public static ConnectorCatalogueItem For<T, TValidator, TProtector>(string[] requiredEntitlements, bool requiresLicense) {
         return new ConnectorCatalogueItem {
             ConnectorType          = typeof(T),
             ConnectorValidatorType = typeof(TValidator),
+            ConnectorProtectorType = typeof(TProtector),
             RequiredEntitlements   = requiredEntitlements,
             RequiresLicense        = requiresLicense,
             Aliases                = [typeof(T).FullName!, typeof(T).Name, typeof(T).Name.Kebaberize()]

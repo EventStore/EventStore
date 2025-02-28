@@ -1,3 +1,4 @@
+using EventStore.Connect.Connectors;
 using Kurrent.Surge.Connectors;
 using FluentValidation;
 using ActivatedConnectors = System.Collections.Concurrent.ConcurrentDictionary<
@@ -10,7 +11,7 @@ namespace EventStore.Connectors.Control;
 public delegate IConnector CreateConnector(ConnectorId connectorId, IDictionary<string, string?> settings);
 
 public class ConnectorsActivator(CreateConnector createConnector) {
-    public ConnectorsActivator(IConnectorFactory connectorFactory) : this(connectorFactory.CreateConnector) { }
+    public ConnectorsActivator(ISystemConnectorFactory connectorFactory) : this(connectorFactory.CreateConnector) { }
 
     CreateConnector     CreateConnector { get; } = createConnector;
     ActivatedConnectors Connectors      { get; } = [];

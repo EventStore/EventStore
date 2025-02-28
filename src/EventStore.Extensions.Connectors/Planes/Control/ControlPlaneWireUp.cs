@@ -4,6 +4,7 @@ using Kurrent.Surge.Leases;
 using EventStore.Connect.Schema;
 using EventStore.Connectors.System;
 using EventStore.Core.Bus;
+using Kurrent.Surge.DataProtection;
 using Kurrent.Toolkit;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -50,8 +51,10 @@ public static class ControlPlaneWireUp {
 
     static IServiceCollection AddConnectorsActivator(this IServiceCollection services) =>
         services
-            .AddSingleton<IConnectorFactory>(ctx => {
-                var validator = ctx.GetRequiredService<IConnectorValidator>();
+            .AddSingleton<ISystemConnectorFactory>(ctx => {
+                var validator              = ctx.GetRequiredService<IConnectorValidator>();
+                var connectorDataProtector = ctx.GetService<IConnectorDataProtector>() ?? ConnectorsMasterDataProtector.Instance;
+                var dataProtector          = ctx.GetService<IDataProtector>();
 
                 var options = new SystemConnectorsFactoryOptions {
                     CheckpointsStreamTemplate = Streams.CheckpointsStreamTemplate,
@@ -61,10 +64,14 @@ public static class ControlPlaneWireUp {
                         AcquisitionTimeout = TimeSpan.FromSeconds(60),
                         AcquisitionDelay   = TimeSpan.FromSeconds(5),
                         StreamTemplate     = Streams.LeasesStreamTemplate
+                    },
+                    ProcessConfiguration = configuration => {
+                        validator.EnsureValid(configuration);
+                        return connectorDataProtector.Unprotect(configuration, dataProtector).AsTask().GetAwaiter().GetResult();
                     }
                 };
 
-                return new SystemConnectorsFactory(options, validator, ctx);
+                return new SystemConnectorsFactory(options, ctx);
             })
             .AddSingleton<ConnectorsActivator>();
 
