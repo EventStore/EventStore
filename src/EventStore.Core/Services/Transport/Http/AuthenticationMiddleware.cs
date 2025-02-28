@@ -49,7 +49,8 @@ public class AuthenticationMiddleware : IMiddleware {
 				await next(context);
 				if (context.Response.StatusCode == 302 && principal.Identity?.IsAuthenticated == false) {
 					// Unless the call is made from a browser, return 401 instead of redirecting to the login page
-					if (context.Request.Headers.UserAgent.FirstOrDefault()?.StartsWith("Mozilla") == false){
+					var userAgent = context.Request.Headers.UserAgent.FirstOrDefault();
+					if (userAgent == null || userAgent.StartsWith("Mozilla") == false){
 						// Avoid setting the status code if the response has already started
 						if (!context.Response.HasStarted) {
 							context.Response.StatusCode = 401;
