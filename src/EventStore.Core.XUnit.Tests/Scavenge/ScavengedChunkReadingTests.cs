@@ -33,7 +33,7 @@ public class ScavengedChunkReadingTests : SqliteDbPerTest<ScavengedChunkReadingT
 					Rec.Write(t++, "ab-1"),
 					Rec.Write(t++, "ab-1"),
 					..Enumerable.Range(0, 2738)
-						.Select(i => Rec.Write(t++, "cd-1")),
+						.Select(_ => Rec.Write(t++, "cd-1")),
 				])
 				.Chunk(
 					Rec.Write(t++, "$$ab-1", "$metadata", metadata: SoftDelete),
