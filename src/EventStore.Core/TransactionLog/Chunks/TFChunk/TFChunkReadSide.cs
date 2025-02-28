@@ -238,11 +238,12 @@ public partial class TFChunk {
 					midpoints[i] = new(x, ReadPosMap(posMapTable, x, posmapSize));
 				}
 
-				if (i < midpoints.Length - 1)
-					throw new Exception("The table with midpoints is not populated correctly");
+				// add the very last item as the last midpoints (there can be 0, 1 or more of these)
+				var lastMidpoint = new Midpoint(mapCount - 1, ReadPosMap(posMapTable, mapCount - 1, posmapSize));
+				while (i < midpoints.Length) {
+					midpoints[i++] = lastMidpoint;
+				}
 
-				// add the very last item as the last midpoint (possibly it is done twice)
-				midpoints[^1] = new(mapCount - 1, ReadPosMap(posMapTable, mapCount - 1, posmapSize));
 				return midpoints;
 			}
 		}
