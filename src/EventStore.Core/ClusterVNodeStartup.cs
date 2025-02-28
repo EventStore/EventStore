@@ -113,6 +113,8 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 		_mainBus.Subscribe(internalDispatcher);
 
 		app.Map("/health", _statusCheck.Configure);
+		app.UseCors("default");
+
 		// AuthenticationMiddleware uses _httpAuthenticationProviders and assigns
 		// the resulting ClaimsPrinciple to HttpContext.User
 		app.UseMiddleware<AuthenticationMiddleware>();
@@ -123,7 +125,6 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 		// is driven by the HttpContext.User established above
 		app.UseAuthentication();
 		app.UseRouting();
-		app.UseCors("default");
 		app.UseAuthorization();
 		app.UseAntiforgery();
 
