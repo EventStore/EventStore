@@ -21,7 +21,7 @@ using ExistingEvent = EventStore.Projections.Core.XUnit.Tests.TestHelpers.Existi
 namespace EventStore.Projections.Core.XUnit.Tests.CheckpointManagers;
 
 /// More tests for MultiStreamMultiOutputCheckpointManager exist in the NUnit tests,
-/// and derive from <see cref="Services.core_projection.checkpoint_manager.multi_stream.TestFixtureWithMultiStreamCheckpointManager"/>
+/// and derive from <see cref="Core.Tests.Services.core_projection.checkpoint_manager.multi_stream.TestFixtureWithMultiStreamCheckpointManager"/>
 public class MultiStreamMultiOutputCheckpointManagerTests {
 	private const string ProjectionName = "test-projection";
 	private const string OrderStreamName = $"$projections-{ProjectionName}-order";
