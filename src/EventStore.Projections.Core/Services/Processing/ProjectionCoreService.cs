@@ -72,7 +72,7 @@ public class ProjectionCoreService
 		_ioDispatcher = ioDispatcher;
 		_subscriptionDispatcher = subscriptionDispatcher;
 		_timeProvider = timeProvider;
-		_processingStrategySelector = new ProcessingStrategySelector(_subscriptionDispatcher);
+		_processingStrategySelector = new ProcessingStrategySelector(_subscriptionDispatcher, configuration.MaxProjectionStateSize);
 		_factory = new ProjectionStateHandlerFactory(TimeSpan.FromMilliseconds(configuration.ProjectionCompilationTimeout),
 			TimeSpan.FromMilliseconds(configuration.ProjectionExecutionTimeout));
 	}

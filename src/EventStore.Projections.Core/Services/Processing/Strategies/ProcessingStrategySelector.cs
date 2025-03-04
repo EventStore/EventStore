@@ -9,10 +9,12 @@ namespace EventStore.Projections.Core.Services.Processing.Strategies;
 public class ProcessingStrategySelector {
 	private readonly ILogger _logger = Serilog.Log.ForContext<ProcessingStrategySelector>();
 	private readonly ReaderSubscriptionDispatcher _subscriptionDispatcher;
+	private readonly int _maxProjectionStateSize;
 
 	public ProcessingStrategySelector(
-		ReaderSubscriptionDispatcher subscriptionDispatcher) {
+		ReaderSubscriptionDispatcher subscriptionDispatcher, int maxProjectionStateSize) {
 		_subscriptionDispatcher = subscriptionDispatcher;
+		_maxProjectionStateSize = maxProjectionStateSize;
 	}
 
 	public ProjectionProcessingStrategy CreateProjectionProcessingStrategy(
@@ -33,7 +35,8 @@ public class ProcessingStrategySelector {
 				sourceDefinition,
 				_logger,
 				_subscriptionDispatcher,
-				enableContentTypeValidation)
+				enableContentTypeValidation,
+				_maxProjectionStateSize)
 			: new ContinuousProjectionProcessingStrategy(
 				name,
 				projectionVersion,
@@ -42,6 +45,7 @@ public class ProcessingStrategySelector {
 				sourceDefinition,
 				_logger,
 				_subscriptionDispatcher,
-				enableContentTypeValidation);
+				enableContentTypeValidation,
+				_maxProjectionStateSize);
 	}
 }

@@ -12,6 +12,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Tests.TransactionLog;
+using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -61,7 +62,7 @@ public class TestFixtureWithProjectionSubsystem {
 		builder.Services.AddSingleton(_standardComponents);
 
 		Subsystem = new ProjectionsSubsystem(
-			new ProjectionSubsystemOptions(1, ProjectionType.All, true, TimeSpan.FromSeconds(3), true, 500, 250));
+			new ProjectionSubsystemOptions(1, ProjectionType.All, true, TimeSpan.FromSeconds(3), true, 500, 250, Opts.MaxProjectionStateSizeDefault));
 
 		Subsystem.ConfigureServices(builder.Services, new ConfigurationBuilder().Build());
 		Subsystem.ConfigureApplication(builder.Build().UseRouting(), EmptyConfiguration);

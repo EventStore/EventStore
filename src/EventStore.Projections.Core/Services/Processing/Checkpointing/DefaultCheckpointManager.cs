@@ -35,10 +35,10 @@ public class DefaultCheckpointManager : CoreProjectionCheckpointManager,
 		IODispatcher ioDispatcher, ProjectionConfig projectionConfig, string name, PositionTagger positionTagger,
 		ProjectionNamesBuilder namingBuilder, bool usePersistentCheckpoints, bool producesRunningResults,
 		bool definesFold,
-		CoreProjectionCheckpointWriter coreProjectionCheckpointWriter)
+		CoreProjectionCheckpointWriter coreProjectionCheckpointWriter, int maxProjectionStateSize)
 		: base(
 			publisher, projectionCorrelationId, projectionConfig, name, positionTagger, namingBuilder,
-			usePersistentCheckpoints) {
+			usePersistentCheckpoints, maxProjectionStateSize) {
 		if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
 		_projectionVersion = projectionVersion;
 		_runAs = runAs;

@@ -9,6 +9,7 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Tests.Helpers.IODispatcherTests;
+using EventStore.Core.Util;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Services.Processing.Checkpointing;
@@ -51,12 +52,12 @@ public abstract class with_multi_stream_checkpoint_manager<TLogFormat, TStreamId
 
 		_coreProjectionCheckpointWriter = new CoreProjectionCheckpointWriter(
 			_namingBuilder.MakeCheckpointStreamName(), _ioDispatcher,
-			_projectionVersion, _projectionName);
+			_projectionVersion, _projectionName, Opts.MaxProjectionStateSizeDefault);
 
 		_checkpointManager = new MultiStreamMultiOutputCheckpointManager(_bus, _projectionId, _projectionVersion,
 			SystemAccounts.System,
 			_ioDispatcher, _projectionConfig, _projectionName, _positionTagger, _namingBuilder, true, true, false,
-			_coreProjectionCheckpointWriter);
+			_coreProjectionCheckpointWriter, Opts.MaxProjectionStateSizeDefault);
 
 		When();
 	}

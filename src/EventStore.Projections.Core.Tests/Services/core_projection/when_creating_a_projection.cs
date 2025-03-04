@@ -6,6 +6,7 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Util;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Services.Processing.Strategies;
@@ -47,7 +48,7 @@ public class when_creating_a_projection {
 				projectionStateHandler.GetSourceDefinition(),
 				null,
 				_subscriptionDispatcher,
-				true).Create(
+				true, Opts.MaxProjectionStateSizeDefault).Create(
 				Guid.NewGuid(),
 				new FakePublisher(),
 				Guid.NewGuid(),
@@ -74,7 +75,7 @@ public class when_creating_a_projection {
 				projectionStateHandler.GetSourceDefinition(),
 				null,
 				_subscriptionDispatcher,
-				true).Create(
+				true, Opts.MaxProjectionStateSizeDefault).Create(
 				Guid.NewGuid(),
 				new FakePublisher(),
 				Guid.NewGuid(),
@@ -99,7 +100,7 @@ public class when_creating_a_projection {
 				projectionStateHandler.GetSourceDefinition(),
 				null,
 				_subscriptionDispatcher,
-				true).Create(
+				true, Opts.MaxProjectionStateSizeDefault).Create(
 				Guid.NewGuid(),
 				new FakePublisher(),
 				Guid.NewGuid(),
@@ -124,7 +125,7 @@ public class when_creating_a_projection {
 				projectionStateHandler.GetSourceDefinition(),
 				null,
 				_subscriptionDispatcher,
-				true).Create(
+				true, Opts.MaxProjectionStateSizeDefault).Create(
 				Guid.NewGuid(),
 				new FakePublisher(),
 				Guid.NewGuid(),
@@ -149,7 +150,7 @@ public class when_creating_a_projection {
 				projectionStateHandler.GetSourceDefinition(),
 				null,
 				_subscriptionDispatcher,
-				true).Create(
+				true, Opts.MaxProjectionStateSizeDefault).Create(
 				Guid.NewGuid(),
 				new FakePublisher(),
 				Guid.NewGuid(),
@@ -174,7 +175,7 @@ public class when_creating_a_projection {
 				projectionStateHandler.GetSourceDefinition(),
 				null,
 				_subscriptionDispatcher,
-				true).Create(
+				true, Opts.MaxProjectionStateSizeDefault).Create(
 				Guid.NewGuid(),
 				null,
 				Guid.NewGuid(),
@@ -198,7 +199,7 @@ public class when_creating_a_projection {
 			projectionStateHandler.GetSourceDefinition(),
 			null,
 			_subscriptionDispatcher,
-			true).Create(
+			true, Opts.MaxProjectionStateSizeDefault).Create(
 			Guid.NewGuid(),
 			new FakePublisher(),
 			Guid.NewGuid(),
@@ -222,7 +223,7 @@ public class when_creating_a_projection {
 				projectionStateHandler.GetSourceDefinition(),
 				null,
 				_subscriptionDispatcher,
-				true).Create(
+				true, Opts.MaxProjectionStateSizeDefault).Create(
 				Guid.NewGuid(),
 				new FakePublisher(),
 				Guid.NewGuid(),
@@ -247,7 +248,7 @@ public class when_creating_a_projection {
 				projectionStateHandler.GetSourceDefinition(),
 				null,
 				_subscriptionDispatcher,
-				true).Create(
+				true, Opts.MaxProjectionStateSizeDefault).Create(
 				Guid.NewGuid(),
 				new FakePublisher(),
 				Guid.NewGuid(),
@@ -274,7 +275,7 @@ public class when_creating_a_projection {
 				projectionStateHandler.GetSourceDefinition(),
 				null,
 				_subscriptionDispatcher,
-				true).Create(
+				true, Opts.MaxProjectionStateSizeDefault).Create(
 				Guid.NewGuid(),
 				new FakePublisher(),
 				Guid.NewGuid(),
@@ -299,7 +300,7 @@ public class when_creating_a_projection {
 				projectionStateHandler.GetSourceDefinition(),
 				null,
 				_subscriptionDispatcher,
-				true).Create(
+				true, Opts.MaxProjectionStateSizeDefault).Create(
 				Guid.NewGuid(),
 				new FakePublisher(),
 				Guid.NewGuid(),
