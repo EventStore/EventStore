@@ -48,6 +48,7 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 	private readonly ISubscriber _mainBus;
 	private readonly IAuthenticationProvider _authenticationProvider;
 	private readonly int _maxAppendSize;
+	private readonly int _maxAppendEventSize;
 	private readonly TimeSpan _writeTimeout;
 	private readonly IExpiryStrategy _expiryStrategy;
 	private readonly KestrelHttpService _httpService;
@@ -71,6 +72,7 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 		IAuthenticationProvider authenticationProvider,
 		IAuthorizationProvider authorizationProvider,
 		int maxAppendSize,
+		int maxAppendEventSize,
 		TimeSpan writeTimeout,
 		IExpiryStrategy expiryStrategy,
 		KestrelHttpService httpService,
@@ -81,6 +83,7 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 		Action<IApplicationBuilder> configureNode) {
 
 		Ensure.Positive(maxAppendSize, nameof(maxAppendSize));
+		Ensure.Positive(maxAppendEventSize, nameof(maxAppendEventSize));
 
 		if (httpService == null) {
 			throw new ArgumentNullException(nameof(httpService));
@@ -103,6 +106,7 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 		_authenticationProvider = authenticationProvider;
 		_authorizationProvider = authorizationProvider ?? throw new ArgumentNullException(nameof(authorizationProvider));
 		_maxAppendSize = maxAppendSize;
+		_maxAppendEventSize = maxAppendEventSize;
 		_writeTimeout = writeTimeout;
 		_expiryStrategy = expiryStrategy;
 		_httpService = httpService;
@@ -195,7 +199,7 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 			.AddSingleton<AuthenticationMiddleware>()
 			.AddSingleton<AuthorizationMiddleware>()
 			.AddSingleton(new KestrelToInternalBridgeMiddleware(_httpService.UriRouter, _httpService.LogHttpRequests, _httpService.AdvertiseAsHost, _httpService.AdvertiseAsPort))
-			.AddSingleton(new Streams<TStreamId>(_mainQueue, _maxAppendSize,
+			.AddSingleton(new Streams<TStreamId>(_mainQueue, _maxAppendSize, _maxAppendEventSize,
 				_writeTimeout, _expiryStrategy,
 				_trackers.GrpcTrackers,
 				_authorizationProvider))

@@ -1622,6 +1622,7 @@ public class ClusterVNode<TStreamId> :
 			_mainQueue, monitoringQueue, _mainBus, _workersHandler,
 			_authenticationProvider, _authorizationProvider,
 			options.Application.MaxAppendSize,
+			options.Application.MaxAppendEventSize,
 			TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs),
 			expiryStrategy ?? new DefaultExpiryStrategy(),
 			_httpService,
