@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using DotNext;
 using DotNext.IO;
@@ -57,10 +58,13 @@ internal sealed class WriterWorkItem : Disposable {
 
 	public void AppendData(ReadOnlyMemory<byte> buf) {
 		// as we are always append-only, stream's position should be right here
-		_fileStream?.Write(buf.Span);
-
-		//MEMORY
-		_memStream?.Write(buf.Span);
+		if (MemoryMarshal.TryGetArray(buf, out var array) && array.Array is not null) {
+			_fileStream?.Write(array.Array, array.Offset, array.Count);
+			_memStream?.Write(array.Array, array.Offset, array.Count);
+		} else {
+			_fileStream?.Write(buf.Span);
+			_memStream?.Write(buf.Span);
+		}
 	}
 
 	public void ResizeStream(int fileSize) {
