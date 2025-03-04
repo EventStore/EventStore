@@ -2,10 +2,9 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
-using System.Xml;
+using System.Text.Json;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using Formatting = Newtonsoft.Json.Formatting;
 
@@ -52,46 +51,24 @@ public static class Json {
 		return result;
 	}
 
-	public static object DeserializeObject(JObject value, Type type, JsonSerializerSettings settings) {
-		JsonSerializer jsonSerializer = JsonSerializer.Create(settings);
-		return jsonSerializer.Deserialize(new JTokenReader(value), type);
-	}
+	private static JsonReaderOptions JsonReaderOptions = new() {
+		AllowTrailingCommas = true,
+		CommentHandling = JsonCommentHandling.Skip,
+		MaxDepth = 64, // default - just being explicit
+	};
 
-	public static object DeserializeObject(JObject value, Type type, params JsonConverter[] converters) {
-		var settings = converters == null || converters.Length <= 0
-			? null
-			: new JsonSerializerSettings {Converters = converters};
-		return DeserializeObject(value, type, settings);
-	}
+	public static bool IsValidUtf8Json(this ReadOnlyMemory<byte> value) {
+		// Don't bother letting an Exception getting thrown.
+		if (value.IsEmpty)
+			return false;
 
-	public static XmlDocument ToXmlDocument(this JObject value, string deserializeRootElementName,
-		bool writeArrayAttribute) {
-		return (XmlDocument)DeserializeObject(value, typeof(XmlDocument), new JsonConverter[] {
-			new XmlNodeConverter {
-				DeserializeRootElementName = deserializeRootElementName,
-				WriteArrayAttribute = writeArrayAttribute
-			}
-		});
-	}
-
-	public static bool IsValidJson(this string value) {
 		try {
-			JToken.Parse(value);
+			var reader = new Utf8JsonReader(value.Span, JsonReaderOptions);
+			while (reader.Read())
+				reader.Skip();
+			return true;
 		} catch {
 			return false;
 		}
-
-		return true;
-	}
-
-	public static bool IsValidJson(this ReadOnlyMemory<byte> value) {
-		if (value.IsEmpty) return false;  //Don't bother letting an Exception getting thrown.
-		try {
-			JToken.Parse(Helper.UTF8NoBom.GetString(value.Span));
-		} catch {
-			return false;
-		}
-
-		return true;
 	}
 }
