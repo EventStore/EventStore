@@ -30,6 +30,8 @@ public class ResolvedEvent {
 	public readonly bool IsJson;
 	public readonly DateTime Timestamp;
 
+	public readonly ReadOnlyMemory<byte> DataMemory;
+
 	public readonly string Data;
 	public readonly string Metadata;
 	public readonly string PositionMetadata;
@@ -51,6 +53,8 @@ public class ResolvedEvent {
 		EventType = @event != null ? @event.EventType : null;
 		IsJson = @event != null && (@event.Flags & PrepareFlags.IsJson) != 0;
 		Timestamp = positionEvent.TimeStamp;
+
+		DataMemory = @event?.Data ?? ReadOnlyMemory<byte>.Empty;
 
 		//TODO: handle utf-8 conversion exception
 		Data = @event != null && @event.Data.Length > 0 ? Helper.UTF8NoBom.GetString(@event.Data.Span) : null;
@@ -81,7 +85,7 @@ public class ResolvedEvent {
 					tag = positionEvent.Metadata.ParseCheckpointTagJson();
 					var parsedPosition = tag.Position;
 					if (parsedPosition == new TFPos(long.MinValue, long.MinValue) &&
-					    @event.Metadata.IsValidJson()) {
+					    @event.Metadata.IsValidUtf8Json()) {
 						tag = @event.Metadata.ParseCheckpointTagJson();
 						if (tag != null) {
 							parsedPosition = tag.Position;

@@ -5,7 +5,7 @@ using System;
 
 namespace EventStore.Core.Data;
 
-public struct ResolvedEvent : IEquatable<ResolvedEvent> {
+public readonly struct ResolvedEvent : IEquatable<ResolvedEvent> {
 	public static readonly ResolvedEvent[] EmptyArray = new ResolvedEvent[0];
 	public static readonly ResolvedEvent EmptyEvent = new ResolvedEvent();
 
