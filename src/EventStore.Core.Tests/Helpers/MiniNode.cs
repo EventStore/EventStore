@@ -88,7 +88,8 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 		IAuthorizationProviderFactory authorizationProviderFactory = null,
 		IExpiryStrategy expiryStrategy = null,
 		string transform = "identity",
-		IReadOnlyList<IDbTransform> newTransforms = null) {
+		IReadOnlyList<IDbTransform> newTransforms = null,
+		int maxAppendEventSize = TFConsts.EffectiveMaxLogRecordSize) {
 
 		RunningTime.Start();
 		RunCount += 1;
@@ -119,7 +120,8 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 					AllowAnonymousEndpointAccess = true,
 					AllowAnonymousStreamAccess = true,
 					StatsPeriodSec = 60 * 60,
-					WorkerThreads = 1
+					WorkerThreads = 1,
+					MaxAppendEventSize = maxAppendEventSize
 				},
 				Interface = new() {
 					ReplicationHeartbeatInterval = 10_000,

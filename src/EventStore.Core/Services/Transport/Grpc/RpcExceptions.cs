@@ -127,6 +127,16 @@ public static class RpcExceptions {
 				{Constants.Exceptions.ActualVersion, actualVersion?.ToString() ?? string.Empty}
 			});
 
+	public static RpcException MaxAppendEventSizeExceeded(string eventId, int proposedEventSize, int maxAppendEventSize) =>
+		new(
+			new Status(StatusCode.InvalidArgument, $"Event with Id: {eventId}, Size: {proposedEventSize}, exceeds Maximum Append Event Size of {maxAppendEventSize}."),
+			new Metadata {
+				{Constants.Exceptions.ExceptionKey, Constants.Exceptions.MaximumAppendEventSizeExceeded},
+				{Constants.Exceptions.MaximumAppendEventSize, maxAppendEventSize.ToString()},
+				{Constants.Exceptions.EventId, eventId},
+				{Constants.Exceptions.ProposedAppendEventSize, proposedEventSize.ToString()}
+			});
+
 	public static RpcException MaxAppendSizeExceeded(int maxAppendSize) =>
 		new(
 			new Status(StatusCode.InvalidArgument, $"Maximum Append Size of {maxAppendSize} Exceeded."),

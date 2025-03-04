@@ -58,6 +58,17 @@ partial class Status {
 			Code = Code.InvalidArgument
 		};
 
+	public static Status MaximumAppendEventSizeExceeded(string eventId, uint proposedEventSize, uint maxAppendEventSize) =>
+		new() {
+			Details = Any.Pack(new MaximumAppendEventSizeExceeded {
+				EventId = eventId,
+				ProposedEventSize = proposedEventSize,
+				MaxAppendEventSize = maxAppendEventSize
+			}),
+			Message = nameof(MaximumAppendEventSizeExceeded),
+			Code = Code.InvalidArgument
+		};
+
 	public static Status BadRequest(string message) => new() {
 		Details = Any.Pack(new BadRequest {Message = message}),
 		Message = nameof(BadRequest),

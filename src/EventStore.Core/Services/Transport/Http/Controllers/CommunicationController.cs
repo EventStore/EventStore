@@ -46,9 +46,9 @@ public abstract class CommunicationController : IHttpController {
 		return new RequestParams(done: true);
 	}
 
-	protected RequestParams SendTooBig(HttpEntityManager httpEntityManager) {
+	protected RequestParams SendTooBig(HttpEntityManager httpEntityManager, int maxAppendEventSize) {
 		httpEntityManager.ReplyStatus(HttpStatusCode.RequestEntityTooLarge,
-			"Too large events received. Limit is 4mb",
+			$"Too large events received. Limit is {maxAppendEventSize} bytes.",
 			e => Log.Debug("Too large events received over HTTP"));
 		return new RequestParams(done: true);
 	}

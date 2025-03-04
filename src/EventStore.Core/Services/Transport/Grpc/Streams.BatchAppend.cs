@@ -38,7 +38,7 @@ partial class Streams<TStreamId> {
 		var worker = new BatchAppendWorker(_publisher, _provider,
 			_batchAppendTracker,
 			requestStream, responseStream,
-			context.GetHttpContext().User, _maxAppendSize, _writeTimeout,
+			context.GetHttpContext().User, _maxAppendSize, _maxAppendEventSize, _writeTimeout,
 			GetRequiresLeader(context.RequestHeaders));
 
 		await worker.Work(context.CancellationToken);
@@ -52,6 +52,7 @@ partial class Streams<TStreamId> {
 		private readonly IServerStreamWriter<BatchAppendResp> _responseStream;
 		private readonly ClaimsPrincipal _user;
 		private readonly int _maxAppendSize;
+		private readonly int _maxAppendEventSize;
 		private readonly TimeSpan _writeTimeout;
 		private readonly bool _requiresLeader;
 		private readonly Channel<BatchAppendResp> _channel;
@@ -61,7 +62,7 @@ partial class Streams<TStreamId> {
 		public BatchAppendWorker(IPublisher publisher, IAuthorizationProvider authorizationProvider,
 			IDurationTracker tracker,
 			IAsyncStreamReader<BatchAppendReq> requestStream, IServerStreamWriter<BatchAppendResp> responseStream,
-			ClaimsPrincipal user, int maxAppendSize, TimeSpan writeTimeout, bool requiresLeader) {
+			ClaimsPrincipal user, int maxAppendSize, int maxAppendEventSize, TimeSpan writeTimeout, bool requiresLeader) {
 			_publisher = publisher;
 			_authorizationProvider = authorizationProvider;
 			_tracker = tracker;
@@ -69,6 +70,7 @@ partial class Streams<TStreamId> {
 			_responseStream = responseStream;
 			_user = user;
 			_maxAppendSize = maxAppendSize;
+			_maxAppendEventSize = maxAppendEventSize;
 			_writeTimeout = writeTimeout;
 			_requiresLeader = requiresLeader;
 			_channel = Channel.CreateUnbounded<BatchAppendResp>(new() {
@@ -179,14 +181,23 @@ partial class Streams<TStreamId> {
 							continue;
 						}
 
-						clientWriteRequest.AddEvents(request.ProposedMessages.Select(FromProposedMessage));
+						try {
+							clientWriteRequest.AddEvents(request.ProposedMessages.Select(FromProposedMessage), _maxAppendEventSize);
 
-						if (clientWriteRequest.Size > _maxAppendSize) {
+							if (clientWriteRequest.Size > _maxAppendSize) {
+								pendingWrites.TryRemove(correlationId, out _);
+								await writer.WriteAsync(new BatchAppendResp {
+									CorrelationId = request.CorrelationId,
+									StreamIdentifier = clientWriteRequest.StreamId,
+									Error = Status.MaximumAppendSizeExceeded((uint)_maxAppendSize)
+								}, cancellationToken);
+							}
+						} catch (MaxAppendEventSizeExceededException ex) {
 							pendingWrites.TryRemove(correlationId, out _);
 							await writer.WriteAsync(new BatchAppendResp {
 								CorrelationId = request.CorrelationId,
 								StreamIdentifier = clientWriteRequest.StreamId,
-								Error = Status.MaximumAppendSizeExceeded((uint)_maxAppendSize)
+								Error = Status.MaximumAppendEventSizeExceeded(ex.EventId, (uint)ex.ProposedEventSize, (uint)ex.MaxAppendEventSize)
 							}, cancellationToken);
 						}
 
@@ -318,6 +329,19 @@ partial class Streams<TStreamId> {
 		}
 	}
 
+	private class MaxAppendEventSizeExceededException : Exception {
+		public string EventId { get; }
+		public int ProposedEventSize { get; }
+		public int MaxAppendEventSize { get; }
+
+		public MaxAppendEventSizeExceededException(string eventId, int proposedEventSize, int maxAppendEventSize)
+			: base($"Event with Id: {eventId}, Size: {proposedEventSize}, exceeded Max Append Event Size of {maxAppendEventSize}") {
+			EventId = eventId;
+			ProposedEventSize = proposedEventSize;
+			MaxAppendEventSize = maxAppendEventSize;
+		}
+	}
+
 	private record ClientWriteRequest {
 		public Guid CorrelationId { get; }
 		public string StreamId { get; }
@@ -338,9 +362,14 @@ partial class Streams<TStreamId> {
 			Task.Delay(timeout, cancellationToken).ContinueWith(_ => onTimeout(), cancellationToken);
 		}
 
-		public ClientWriteRequest AddEvents(IEnumerable<Event> events) {
+		public ClientWriteRequest AddEvents(IEnumerable<Event> events, int maxAppendEventSize) {
 			foreach (var e in events) {
-				_size += Event.SizeOnDisk(e.EventType, e.Data, e.Metadata);
+				var eventSize = Event.SizeOnDisk(e.EventType, e.Data, e.Metadata);
+				if (eventSize > maxAppendEventSize) {
+					throw new MaxAppendEventSizeExceededException(e.EventId.ToString(), eventSize, maxAppendEventSize);
+				}
+
+				_size += eventSize;
 				_events.Add(e);
 			}
 

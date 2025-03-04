@@ -71,7 +71,11 @@ internal partial class Streams<TStreamId> {
 					throw RpcExceptions.RequiredMetadataPropertyMissing(Constants.Metadata.ContentType);
 				}
 
-				size += Event.SizeOnDisk(eventType, data, metadata);
+				var eventSize = Event.SizeOnDisk(eventType, data, metadata);
+				if (eventSize > _maxAppendEventSize) {
+					throw RpcExceptions.MaxAppendEventSizeExceeded(proposedMessage.Id.ToString(), eventSize, _maxAppendEventSize);
+				}
+				size += eventSize;
 
 				if (size > _maxAppendSize) {
 					throw RpcExceptions.MaxAppendSizeExceeded(_maxAppendSize);
