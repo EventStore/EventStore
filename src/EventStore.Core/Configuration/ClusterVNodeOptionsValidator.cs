@@ -97,6 +97,11 @@ public static class ClusterVNodeOptionsValidator {
 			throw new InvalidConfigurationException(
 				"Only Read Only Replica nodes can be Archivers.");
 		}
+
+		if (options.Projection.MaxProjectionStateSize > TFConsts.EffectiveMaxLogRecordSize) {
+			throw new ArgumentOutOfRangeException(nameof(options.Projection.MaxProjectionStateSize),
+				$"{nameof(options.Projection.MaxProjectionStateSize)} exceeded {TFConsts.EffectiveMaxLogRecordSize} bytes.");
+		}
 	}
 
 	public static bool ValidateForStartup(ClusterVNodeOptions options) {

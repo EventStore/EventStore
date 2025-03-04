@@ -7,19 +7,21 @@ using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Services.Replication;
+using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Services.Processing.Checkpointing;
 using EventStore.Projections.Core.Services.Processing.MultiStream;
 using EventStore.Projections.Core.XUnit.Tests.TestHelpers;
+using FluentAssertions.Common;
 using Xunit;
 using ExistingEvent = EventStore.Projections.Core.XUnit.Tests.TestHelpers.ExistingStreamsHelper.ExistingEvent;
 
 namespace EventStore.Projections.Core.XUnit.Tests.CheckpointManagers;
 
 /// More tests for MultiStreamMultiOutputCheckpointManager exist in the NUnit tests,
-/// and derive from <see cref="EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager.multi_stream.TestFixtureWithMultiStreamCheckpointManager"/>
+/// and derive from <see cref="Services.core_projection.checkpoint_manager.multi_stream.TestFixtureWithMultiStreamCheckpointManager"/>
 public class MultiStreamMultiOutputCheckpointManagerTests {
 	private const string ProjectionName = "test-projection";
 	private const string OrderStreamName = $"$projections-{ProjectionName}-order";
@@ -38,7 +40,7 @@ public class MultiStreamMultiOutputCheckpointManagerTests {
 		var envelope = new FakeEnvelope();
 		_ioDispatcher = new IODispatcher(_publisher, envelope);
 		_checkpointWriter = new CoreProjectionCheckpointWriter(
-				namingBuilder.MakeCheckpointStreamName(),_ioDispatcher, projectionVersion, ProjectionName);
+				namingBuilder.MakeCheckpointStreamName(),_ioDispatcher, projectionVersion, ProjectionName, Opts.MaxProjectionStateSizeDefault);
 		_existingStreams = new ExistingStreamsHelper();
 
 		var projectionConfig = new ProjectionConfig(SystemAccounts.System, 10, 1000, 20, 2,
@@ -48,7 +50,7 @@ public class MultiStreamMultiOutputCheckpointManagerTests {
 		_sut = new MultiStreamMultiOutputCheckpointManager(
 			_publisher, projectionId, projectionVersion, SystemAccounts.System, _ioDispatcher, projectionConfig, ProjectionName,
 			positionTagger, namingBuilder, usePersistentCheckpoints: true, producesRunningResults: true, definesFold: false,
-			_checkpointWriter);
+			_checkpointWriter, Opts.MaxProjectionStateSizeDefault);
 	}
 
 	[Theory]

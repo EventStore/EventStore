@@ -4,10 +4,10 @@
 using System;
 using System.Diagnostics.Contracts;
 using EventStore.Core.Bus;
+using EventStore.Projections.Core.Common;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing.Emitting.EmittedEvents;
 using EventStore.Projections.Core.Services.Processing.Partitioning;
-using Serilog;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing.Checkpointing;
@@ -18,6 +18,7 @@ public abstract class CoreProjectionCheckpointManager : IProjectionCheckpointMan
 	protected readonly ProjectionNamesBuilder _namingBuilder;
 	protected readonly ProjectionConfig _projectionConfig;
 	protected readonly ILogger _logger;
+	protected readonly int _maxProjectionStateSize;
 
 	private readonly bool _usePersistentCheckpoints;
 
@@ -41,7 +42,6 @@ public abstract class CoreProjectionCheckpointManager : IProjectionCheckpointMan
 	protected bool _stopped;
 
 	private PartitionState _currentProjectionState;
-	private bool _largeStateWarningLogged = false;
 
 	protected CoreProjectionCheckpointManager(
 		IPublisher publisher,
@@ -50,13 +50,15 @@ public abstract class CoreProjectionCheckpointManager : IProjectionCheckpointMan
 		string name,
 		PositionTagger positionTagger,
 		ProjectionNamesBuilder namingBuilder,
-		bool usePersistentCheckpoints) {
+		bool usePersistentCheckpoints,
+		int maxProjectionStateSize) {
 		if (publisher == null) throw new ArgumentNullException("publisher");
 		if (projectionConfig == null) throw new ArgumentNullException("projectionConfig");
 		if (name == null) throw new ArgumentNullException("name");
 		if (positionTagger == null) throw new ArgumentNullException("positionTagger");
 		if (namingBuilder == null) throw new ArgumentNullException("namingBuilder");
 		if (name == "") throw new ArgumentException("name");
+		if (maxProjectionStateSize == 0) throw new ArgumentException(nameof(maxProjectionStateSize));
 
 		_lastProcessedEventPosition = new PositionTracker(positionTagger);
 		_zeroTag = positionTagger.MakeZeroCheckpointTag();
@@ -69,6 +71,7 @@ public abstract class CoreProjectionCheckpointManager : IProjectionCheckpointMan
 		_usePersistentCheckpoints = usePersistentCheckpoints;
 		_requestedCheckpointState = new PartitionState("", null, _zeroTag);
 		_currentProjectionState = new PartitionState("", null, _zeroTag);
+		_maxProjectionStateSize = maxProjectionStateSize;
 	}
 
 	protected abstract ProjectionCheckpoint CreateProjectionCheckpoint(CheckpointTag checkpointPosition);
@@ -187,19 +190,11 @@ public abstract class CoreProjectionCheckpointManager : IProjectionCheckpointMan
 	}
 
 	private void CheckStateSize(PartitionState result , string partition) {
-		if (!_largeStateWarningLogged && result.Size >= 8_000_000 && !partition.Equals("")) {
-			Log.Warning(
-				"State size for the Projection {projectionName} for Partition {partitionName} is greater than 8 MB. State size for a projection must be less than 16 MB. Current state size for Partition {partitionName} is {stateSize} MB.",
-				_namingBuilder.EffectiveProjectionName, partition, partition,
-				result.Size / Math.Pow(10, 6));
-			_largeStateWarningLogged = true;
-		}
-		else if (!_largeStateWarningLogged && result.Size >= 8_000_000 && partition.Equals("") ) {
-			Log.Warning(
-				"State size for the Projection {projectionName} is greater than 8 MB. State size for a projection must be less than 16 MB. Current state size for Projection {projectionName} is {stateSize} MB.",
-				_namingBuilder.EffectiveProjectionName, _namingBuilder.EffectiveProjectionName,
-				result.Size / Math.Pow(10, 6));
-			_largeStateWarningLogged = true;
+		if (result.Size >= _maxProjectionStateSize) {
+			var partitionMessage = partition == string.Empty ? string.Empty : $" in partition '{partition}'";
+			Failed(
+				$"The state size of projection '{_namingBuilder.EffectiveProjectionName}'{partitionMessage} " +
+				$"exceeds the maximum projection state size of {_maxProjectionStateSize} bytes. Current state size: {result.Size}");
 		}
 	}
 

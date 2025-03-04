@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
@@ -51,7 +52,7 @@ public abstract class TestFixtureWithCoreProjectionCheckpointManager<TLogFormat,
 		_projectionVersion = new ProjectionVersion(1, 0, 0);
 		_projectionName = "projection";
 		_checkpointWriter = new CoreProjectionCheckpointWriter(
-			_namingBuilder.MakeCheckpointStreamName(), _ioDispatcher, _projectionVersion, _projectionName);
+			_namingBuilder.MakeCheckpointStreamName(), _ioDispatcher, _projectionVersion, _projectionName, Opts.MaxProjectionStateSizeDefault);
 		_checkpointReader = new CoreProjectionCheckpointReader(
 			GetInputQueue(), _projectionCorrelationId, _ioDispatcher, _projectionCheckpointStreamId,
 			_projectionVersion, _checkpointsEnabled);
@@ -63,7 +64,7 @@ public abstract class TestFixtureWithCoreProjectionCheckpointManager<TLogFormat,
 			_bus, _projectionCorrelationId, _projectionVersion, null, _ioDispatcher, _config, _projectionName,
 			new StreamPositionTagger(0, "stream"), _namingBuilder, _checkpointsEnabled, _producesResults,
 			_definesFold,
-			_checkpointWriter);
+			_checkpointWriter, Opts.MaxProjectionStateSizeDefault);
 	}
 
 	protected new virtual void Given() {

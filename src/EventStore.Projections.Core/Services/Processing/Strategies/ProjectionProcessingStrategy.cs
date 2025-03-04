@@ -18,11 +18,13 @@ public abstract class ProjectionProcessingStrategy {
 	protected readonly string _name;
 	protected readonly ProjectionVersion _projectionVersion;
 	protected readonly ILogger _logger;
+	protected readonly int _maxProjectionStateSize;
 
-	protected ProjectionProcessingStrategy(string name, ProjectionVersion projectionVersion, ILogger logger) {
+	protected ProjectionProcessingStrategy(string name, ProjectionVersion projectionVersion, ILogger logger, int maxProjectionStateSize) {
 		_name = name;
 		_projectionVersion = projectionVersion;
 		_logger = logger;
+		_maxProjectionStateSize = maxProjectionStateSize;
 	}
 
 	public CoreProjection Create(
@@ -47,7 +49,8 @@ public abstract class ProjectionProcessingStrategy {
 				namingBuilder.MakeCheckpointStreamName(),
 				ioDispatcher,
 				_projectionVersion,
-				namingBuilder.EffectiveProjectionName);
+				namingBuilder.EffectiveProjectionName,
+				_maxProjectionStateSize);
 
 		var partitionStateCache = new PartitionStateCache();
 

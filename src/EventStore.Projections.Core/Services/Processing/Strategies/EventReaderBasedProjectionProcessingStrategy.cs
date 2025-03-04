@@ -23,8 +23,9 @@ public abstract class EventReaderBasedProjectionProcessingStrategy : ProjectionP
 
 	protected EventReaderBasedProjectionProcessingStrategy(
 		string name, ProjectionVersion projectionVersion, ProjectionConfig projectionConfig,
-		IQuerySources sourceDefinition, Serilog.ILogger logger, ReaderSubscriptionDispatcher subscriptionDispatcher, bool enableContentTypeValidation)
-		: base(name, projectionVersion, logger) {
+		IQuerySources sourceDefinition, Serilog.ILogger logger, ReaderSubscriptionDispatcher subscriptionDispatcher,
+		bool enableContentTypeValidation, int maxProjectionStateSize)
+		: base(name, projectionVersion, logger, maxProjectionStateSize) {
 		_projectionConfig = projectionConfig;
 		_sourceDefinition = sourceDefinition;
 		_subscriptionDispatcher = subscriptionDispatcher;
@@ -152,13 +153,13 @@ public abstract class EventReaderBasedProjectionProcessingStrategy : ProjectionP
 				publisher, projectionCorrelationId, _projectionVersion, _projectionConfig.RunAs, ioDispatcher,
 				_projectionConfig, _name, readerStrategy.PositionTagger, namingBuilder,
 				_projectionConfig.CheckpointsEnabled, GetProducesRunningResults(), definesFold,
-				coreProjectionCheckpointWriter);
+				coreProjectionCheckpointWriter, _maxProjectionStateSize);
 		} else {
 			return new DefaultCheckpointManager(
 				publisher, projectionCorrelationId, _projectionVersion, _projectionConfig.RunAs, ioDispatcher,
 				_projectionConfig, _name, readerStrategy.PositionTagger, namingBuilder,
 				_projectionConfig.CheckpointsEnabled, GetProducesRunningResults(), definesFold,
-				coreProjectionCheckpointWriter);
+				coreProjectionCheckpointWriter, _maxProjectionStateSize);
 		}
 	}
 
