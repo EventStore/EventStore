@@ -169,7 +169,7 @@ public class ResolvedEvent {
 		IsJson = isJson;
 		Timestamp = timestamp;
 
-		DataMemory = Helper.UTF8NoBom.GetBytes(data);
+		DataMemory = data is not null ? Helper.UTF8NoBom.GetBytes(data) : ReadOnlyMemory<byte>.Empty;
 		Data = data;
 		Metadata = metadata;
 		PositionMetadata = positionMetadata;
