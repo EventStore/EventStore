@@ -120,7 +120,7 @@ public class ResolvedEvent {
 		_eventOrLinkTargetPosition = eventOrLinkTargetPosition;
 	}
 
-
+	// Called from tests only
 	public ResolvedEvent(
 		string positionStreamId, long positionSequenceNumber, string eventStreamId, long eventSequenceNumber,
 		bool resolvedLinkTo, TFPos position, TFPos eventOrLinkTargetPosition, Guid eventId, string eventType,
@@ -138,6 +138,8 @@ public class ResolvedEvent {
 		IsJson = isJson;
 		Timestamp = timestamp;
 
+		DataMemory = data ?? ReadOnlyMemory<byte>.Empty;
+
 		//TODO: handle utf-8 conversion exception
 		Data = data != null ? Helper.UTF8NoBom.GetString(data) : null;
 		Metadata = metadata != null ? Helper.UTF8NoBom.GetString(metadata) : null;
@@ -145,7 +147,7 @@ public class ResolvedEvent {
 		StreamMetadata = streamMetadata != null ? Helper.UTF8NoBom.GetString(streamMetadata) : null;
 	}
 
-
+	// Called from tests only
 	public ResolvedEvent(
 		string positionStreamId, long positionSequenceNumber, string eventStreamId, long eventSequenceNumber,
 		bool resolvedLinkTo, TFPos position, Guid eventId, string eventType, bool isJson, string data,
@@ -167,6 +169,7 @@ public class ResolvedEvent {
 		IsJson = isJson;
 		Timestamp = timestamp;
 
+		DataMemory = Helper.UTF8NoBom.GetBytes(data);
 		Data = data;
 		Metadata = metadata;
 		PositionMetadata = positionMetadata;
