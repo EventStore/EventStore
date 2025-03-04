@@ -58,16 +58,13 @@ internal sealed class WriterWorkItem : Disposable {
 
 	public void AppendData(ReadOnlyMemory<byte> buf) {
 		// as we are always append-only, stream's position should be right here
-		if (_fileStream is not null) {
-			if (MemoryMarshal.TryGetArray(buf, out var array)) {
-				_fileStream.Write(array.Array, array.Offset, array.Count);
-			} else {
-				_fileStream.Write(buf.Span);
-			}
+		if (MemoryMarshal.TryGetArray(buf, out var array)) {
+			_fileStream?.Write(array.Array, array.Offset, array.Count);
+			_memStream?.Write(array.Array, array.Offset, array.Count);
+		} else {
+			_fileStream?.Write(buf.Span);
+			_memStream?.Write(buf.Span);
 		}
-
-		//MEMORY
-		_memStream?.Write(buf.Span);
 	}
 
 	public void ResizeStream(int fileSize) {
