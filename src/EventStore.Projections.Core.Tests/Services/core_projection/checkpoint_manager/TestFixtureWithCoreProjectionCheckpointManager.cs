@@ -36,6 +36,7 @@ public abstract class TestFixtureWithCoreProjectionCheckpointManager<TLogFormat,
 	protected CoreProjectionCheckpointReader _checkpointReader;
 	protected string _projectionName;
 	protected ProjectionVersion _projectionVersion;
+	protected int _maxProjectionStateSize = Opts.MaxProjectionStateSizeDefault;
 
 	[SetUp]
 	public void setup() {
@@ -64,7 +65,7 @@ public abstract class TestFixtureWithCoreProjectionCheckpointManager<TLogFormat,
 			_bus, _projectionCorrelationId, _projectionVersion, null, _ioDispatcher, _config, _projectionName,
 			new StreamPositionTagger(0, "stream"), _namingBuilder, _checkpointsEnabled, _producesResults,
 			_definesFold,
-			_checkpointWriter, Opts.MaxProjectionStateSizeDefault);
+			_checkpointWriter, _maxProjectionStateSize);
 	}
 
 	protected new virtual void Given() {
