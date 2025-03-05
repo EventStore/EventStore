@@ -18,8 +18,9 @@ public abstract class DefaultProjectionProcessingStrategy : EventReaderBasedProj
 	protected DefaultProjectionProcessingStrategy(
 		string name, ProjectionVersion projectionVersion, IProjectionStateHandler stateHandler,
 		ProjectionConfig projectionConfig, IQuerySources sourceDefinition, ILogger logger,
-		ReaderSubscriptionDispatcher subscriptionDispatcher, bool enableContentTypeValidation)
-		: base(name, projectionVersion, projectionConfig, sourceDefinition, logger, subscriptionDispatcher, enableContentTypeValidation) {
+		ReaderSubscriptionDispatcher subscriptionDispatcher, bool enableContentTypeValidation, int maxProjectionStateSize)
+		: base(name, projectionVersion, projectionConfig, sourceDefinition, logger, subscriptionDispatcher,
+			enableContentTypeValidation, maxProjectionStateSize) {
 		_stateHandler = stateHandler;
 	}
 

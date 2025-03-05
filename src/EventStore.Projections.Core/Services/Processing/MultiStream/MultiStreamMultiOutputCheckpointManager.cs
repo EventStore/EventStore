@@ -33,11 +33,11 @@ public partial class MultiStreamMultiOutputCheckpointManager : DefaultCheckpoint
 		IODispatcher ioDispatcher, ProjectionConfig projectionConfig, string name, PositionTagger positionTagger,
 		ProjectionNamesBuilder namingBuilder, bool usePersistentCheckpoints, bool producesRunningResults,
 		bool definesFold,
-		CoreProjectionCheckpointWriter coreProjectionCheckpointWriter)
+		CoreProjectionCheckpointWriter coreProjectionCheckpointWriter, int maxProjectionStateSize)
 		: base(
 			publisher, projectionCorrelationId, projectionVersion, runAs, ioDispatcher, projectionConfig, name,
 			positionTagger, namingBuilder, usePersistentCheckpoints, producesRunningResults, definesFold,
-			coreProjectionCheckpointWriter) {
+			coreProjectionCheckpointWriter, maxProjectionStateSize) {
 		_positionTagger = positionTagger;
 	}
 
