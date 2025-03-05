@@ -179,7 +179,9 @@ public abstract class CoreProjectionCheckpointManager : IProjectionCheckpointMan
 		if (partition == "" && newState.State == null) // ignore non-root partitions and non-changed states
 			throw new NotSupportedException("Internal check");
 
-		CheckStateSize(newState , partition);
+		if (!CheckStateSize(newState, partition)) {
+			return;
+		}
 
 		if (_usePersistentCheckpoints && partition != "")
 			CapturePartitionStateUpdated(partition, oldState, newState);
@@ -188,13 +190,16 @@ public abstract class CoreProjectionCheckpointManager : IProjectionCheckpointMan
 			_currentProjectionState = newState;
 	}
 
-	private void CheckStateSize(PartitionState result , string partition) {
+	private bool CheckStateSize(PartitionState result , string partition) {
 		if (result.Size > _maxProjectionStateSize) {
 			var partitionMessage = partition == string.Empty ? string.Empty : $" in partition '{partition}'";
 			Failed(
 				$"The state size of projection '{_namingBuilder.EffectiveProjectionName}'{partitionMessage} is {result.Size:N0} bytes " +
 				$"which exceeds the configured MaxProjectionStateSize of {_maxProjectionStateSize:N0} bytes.");
+			return false;
 		}
+
+		return true;
 	}
 
 	public void EventProcessed(CheckpointTag checkpointTag, float progress) {
