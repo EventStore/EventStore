@@ -52,7 +52,7 @@ public abstract class TestFixtureWithCoreProjectionCheckpointManager<TLogFormat,
 		_projectionVersion = new ProjectionVersion(1, 0, 0);
 		_projectionName = "projection";
 		_checkpointWriter = new CoreProjectionCheckpointWriter(
-			_namingBuilder.MakeCheckpointStreamName(), _ioDispatcher, _projectionVersion, _projectionName, Opts.MaxProjectionStateSizeDefault);
+			_namingBuilder.MakeCheckpointStreamName(), _ioDispatcher, _projectionVersion, _projectionName);
 		_checkpointReader = new CoreProjectionCheckpointReader(
 			GetInputQueue(), _projectionCorrelationId, _ioDispatcher, _projectionCheckpointStreamId,
 			_projectionVersion, _checkpointsEnabled);

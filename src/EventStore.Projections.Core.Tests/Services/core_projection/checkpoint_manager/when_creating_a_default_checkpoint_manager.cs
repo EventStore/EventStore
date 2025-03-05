@@ -20,7 +20,7 @@ public class when_creating_a_default_checkpoint_manager<TLogFormat, TStreamId> :
 		// do not create
 		_coreProjectionCheckpointWriter =
 			new CoreProjectionCheckpointWriter(
-				_namingBuilder.MakeCheckpointStreamName(), _ioDispatcher, _projectionVersion, _projectionName, Opts.MaxProjectionStateSizeDefault);
+				_namingBuilder.MakeCheckpointStreamName(), _ioDispatcher, _projectionVersion, _projectionName);
 		_namingBuilder = ProjectionNamesBuilder.CreateForTest("projection");
 	}
 

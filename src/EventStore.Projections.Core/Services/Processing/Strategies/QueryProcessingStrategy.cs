@@ -43,7 +43,7 @@ public class QueryProcessingStrategy : DefaultProjectionProcessingStrategy {
 		IProjectionProcessingPhase firstPhase) {
 		var coreProjectionCheckpointWriter =
 			new CoreProjectionCheckpointWriter(
-				namingBuilder.MakeCheckpointStreamName(), ioDispatcher, _projectionVersion, _name, _maxProjectionStateSize);
+				namingBuilder.MakeCheckpointStreamName(), ioDispatcher, _projectionVersion, _name);
 		var checkpointManager2 = new DefaultCheckpointManager(
 			publisher, projectionCorrelationId, _projectionVersion, SystemAccounts.System, ioDispatcher,
 			_projectionConfig, _name, new PhasePositionTagger(1), namingBuilder, GetUseCheckpoints(), false,

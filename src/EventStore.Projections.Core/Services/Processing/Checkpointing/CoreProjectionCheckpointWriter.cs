@@ -10,6 +10,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
+using Serilog;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing.Checkpointing;
@@ -31,17 +32,16 @@ public class CoreProjectionCheckpointWriter {
 	private const int MinAttemptWarnThreshold = 5;
 	private bool _metaStreamWritten;
 	private Random _random = new Random();
-	private readonly int _maxProjectionStateSize;
+	private bool _largeCheckpointStateWarningLogged = false;
 
 	public CoreProjectionCheckpointWriter(
 		string projectionCheckpointStreamId, IODispatcher ioDispatcher, ProjectionVersion projectionVersion,
-		string name, int maxProjectionStateSize) {
+		string name) {
 		_projectionCheckpointStreamId = projectionCheckpointStreamId;
 		_logger = Serilog.Log.ForContext<CoreProjectionCheckpointWriter>();
 		_ioDispatcher = ioDispatcher;
 		_projectionVersion = projectionVersion;
 		_name = name;
-		_maxProjectionStateSize = maxProjectionStateSize;
 	}
 
 	public void BeginWriteCheckpoint(IEnvelope envelope,
@@ -175,10 +175,12 @@ public class CoreProjectionCheckpointWriter {
 	}
 
 	private void CheckpointStateSizeCheck() {
-		if (_checkpointEventToBePublished.Data.Length > _maxProjectionStateSize) {
-			_envelope.ReplyWith(new CoreProjectionProcessingMessage.Failed(Guid.Empty,
-				$"Projection '{_name}' attempted to write a checkpoint with a state size {_checkpointEventToBePublished.Data.Length:N0} bytes " +
-				$"which exceeds the configured MaxProjectionStateSize of {_maxProjectionStateSize:N0} bytes."));
+		if (!_largeCheckpointStateWarningLogged && _checkpointEventToBePublished.Data.Length >= 8_000_000) {
+			Log.Warning(
+				"State size for the Projection {projectionName} is greater than 8 MB. State size for a projection should be less than 16 MB. Current state size for Projection {projectionName} is {stateSize} MB.",
+				_name, _name,
+				_checkpointEventToBePublished.Data.Length / Math.Pow(10, 6));
+			_largeCheckpointStateWarningLogged = true;
 		}
 	}
 

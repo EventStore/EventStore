@@ -49,8 +49,7 @@ public abstract class ProjectionProcessingStrategy {
 				namingBuilder.MakeCheckpointStreamName(),
 				ioDispatcher,
 				_projectionVersion,
-				namingBuilder.EffectiveProjectionName,
-				_maxProjectionStateSize);
+				namingBuilder.EffectiveProjectionName);
 
 		var partitionStateCache = new PartitionStateCache();
 

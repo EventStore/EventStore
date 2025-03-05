@@ -52,7 +52,7 @@ public abstract class with_multi_stream_checkpoint_manager<TLogFormat, TStreamId
 
 		_coreProjectionCheckpointWriter = new CoreProjectionCheckpointWriter(
 			_namingBuilder.MakeCheckpointStreamName(), _ioDispatcher,
-			_projectionVersion, _projectionName, Opts.MaxProjectionStateSizeDefault);
+			_projectionVersion, _projectionName);
 
 		_checkpointManager = new MultiStreamMultiOutputCheckpointManager(_bus, _projectionId, _projectionVersion,
 			SystemAccounts.System,
