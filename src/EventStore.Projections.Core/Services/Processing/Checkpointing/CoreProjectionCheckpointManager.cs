@@ -57,7 +57,7 @@ public abstract class CoreProjectionCheckpointManager : IProjectionCheckpointMan
 		if (positionTagger == null) throw new ArgumentNullException("positionTagger");
 		if (namingBuilder == null) throw new ArgumentNullException("namingBuilder");
 		if (name == "") throw new ArgumentException("name");
-		if (maxProjectionStateSize == 0) throw new ArgumentException(nameof(maxProjectionStateSize));
+		if (maxProjectionStateSize <= 0) throw new ArgumentException(nameof(maxProjectionStateSize));
 
 		_lastProcessedEventPosition = new PositionTracker(positionTagger);
 		_zeroTag = positionTagger.MakeZeroCheckpointTag();
