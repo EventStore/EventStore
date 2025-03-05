@@ -1057,7 +1057,7 @@ public class ClusterVNode<TStreamId> :
 		var statController = new StatController(monitoringQueue, _workersHandler);
 		var metricsController = new MetricsController();
 		var atomController = new AtomController(_mainQueue, _workersHandler,
-			options.Application.DisableHttpCaching, TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs));
+			options.Application.DisableHttpCaching, options.Application.MaxAppendEventSize, TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs));
 		var gossipController = new GossipController(_mainQueue, _workersHandler,
 			trackers.GossipTrackers.ProcessingRequestFromHttpClient);
 		var persistentSubscriptionController =
@@ -1672,6 +1672,7 @@ public class ClusterVNode<TStreamId> :
 			_mainQueue, monitoringQueue, _mainBus, _workersHandler,
 			_authenticationProvider, _authorizationProvider,
 			options.Application.MaxAppendSize,
+			options.Application.MaxAppendEventSize,
 			TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs),
 			expiryStrategy ?? new DefaultExpiryStrategy(),
 			_httpService,
