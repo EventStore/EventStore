@@ -43,5 +43,6 @@ public class ProjectionsStandardComponents {
 	public int ProjectionCompilationTimeout { get; }
 
 	public int ProjectionExecutionTimeout { get; }
+
 	public int MaxProjectionStateSize { get; }
 }

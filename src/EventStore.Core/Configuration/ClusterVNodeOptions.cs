@@ -747,6 +747,7 @@ public partial record ClusterVNodeOptions {
 		[Description("The time in milliseconds allowed for the compilation phase of user projections"),
 		 Unit("ms")]
 		public int ProjectionCompilationTimeout { get; set; } = 500;
+
 		[Description("The maximum execution time in milliseconds for executing a handler in a user projection. It can be overridden for a specific projection by setting ProjectionExecutionTimeout config for that projection"),
 		 Unit("ms")]
 		public int ProjectionExecutionTimeout { get; set; } = DefaultProjectionExecutionTimeout;
