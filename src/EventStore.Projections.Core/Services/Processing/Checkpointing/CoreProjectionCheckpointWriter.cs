@@ -177,9 +177,8 @@ public class CoreProjectionCheckpointWriter {
 	private void CheckpointStateSizeCheck() {
 		if (_checkpointEventToBePublished.Data.Length > _maxProjectionStateSize) {
 			_envelope.ReplyWith(new CoreProjectionProcessingMessage.Failed(Guid.Empty,
-				$"Projection '{_name}' attempted to write a checkpoint with a state size that exceeds the maximum projection state size of {_maxProjectionStateSize}. " +
-				$"Attempted to create an event of {_checkpointEventToBePublished.Data.Length} bytes."
-			));
+				$"Projection '{_name}' attempted to write a checkpoint with a state size {_checkpointEventToBePublished.Data.Length:N0} bytes " +
+				$"which exceeds the configured MaxProjectionStateSize of {_maxProjectionStateSize:N0} bytes."));
 		}
 	}
 

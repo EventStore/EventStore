@@ -192,8 +192,8 @@ public abstract class CoreProjectionCheckpointManager : IProjectionCheckpointMan
 		if (result.Size > _maxProjectionStateSize) {
 			var partitionMessage = partition == string.Empty ? string.Empty : $" in partition '{partition}'";
 			Failed(
-				$"The state size of projection '{_namingBuilder.EffectiveProjectionName}'{partitionMessage} " +
-				$"exceeds the maximum projection state size of {_maxProjectionStateSize} bytes. Current state size: {result.Size}");
+				$"The state size of projection '{_namingBuilder.EffectiveProjectionName}'{partitionMessage} is {result.Size:N0} bytes " +
+				$"which exceeds the configured MaxProjectionStateSize of {_maxProjectionStateSize:N0} bytes.");
 		}
 	}
 
