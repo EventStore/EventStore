@@ -189,7 +189,7 @@ public abstract class CoreProjectionCheckpointManager : IProjectionCheckpointMan
 	}
 
 	private void CheckStateSize(PartitionState result , string partition) {
-		if (result.Size >= _maxProjectionStateSize) {
+		if (result.Size > _maxProjectionStateSize) {
 			var partitionMessage = partition == string.Empty ? string.Empty : $" in partition '{partition}'";
 			Failed(
 				$"The state size of projection '{_namingBuilder.EffectiveProjectionName}'{partitionMessage} " +
