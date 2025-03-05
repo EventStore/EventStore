@@ -19,7 +19,7 @@ public static class Opts {
 
 	public const int ProjectionsQueryExpiryDefault = 5;
 
-	public const int MaxProjectionStateSizeDefault = 8 * 1024 * 1024;
+	public const int MaxProjectionStateSizeDefault = int.MaxValue;
 
 	public const byte IndexBitnessVersionDefault = Index.PTableVersions.IndexV4;
 
