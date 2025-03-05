@@ -157,10 +157,8 @@ public partial record ClusterVNodeOptions {
 		             "May not exceed 16MB.")]
 		public int MaxAppendSize { get; init; } = 1_024 * 1_024;
 
-		[Description(
-			"The maximum size of an individual event in an append request received over gRPC or HTTP, in bytes. " +
-			"May not exceed 16MB.")]
-		public int MaxAppendEventSize { get; init; } = TFConsts.EffectiveMaxLogRecordSize;
+		[Description("The maximum size of an individual event in an append request received over gRPC or HTTP, in bytes. ")]
+		public int MaxAppendEventSize { get; init; } = int.MaxValue;
 
 		[Description("Disable Authentication, Authorization and TLS on all TCP/HTTP interfaces.")]
 		public bool Insecure { get; init; } = false;

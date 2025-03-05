@@ -65,11 +65,6 @@ public static class ClusterVNodeOptionsValidator {
 				$"{nameof(options.Application.MaxAppendSize)} exceeded {TFConsts.EffectiveMaxLogRecordSize} bytes.");
 		}
 
-		if (options.Application.MaxAppendEventSize > TFConsts.EffectiveMaxLogRecordSize) {
-			throw new ArgumentOutOfRangeException(nameof(options.Application.MaxAppendSize),
-				$"{nameof(options.Application.MaxAppendEventSize)} exceeded {TFConsts.EffectiveMaxLogRecordSize} bytes.");
-		}
-
 		if (options.Cluster.DiscoverViaDns && string.IsNullOrWhiteSpace(options.Cluster.ClusterDns))
 			throw new ArgumentException(
 				"Either DNS Discovery must be disabled (and seeds specified), or a cluster DNS name must be provided.");
