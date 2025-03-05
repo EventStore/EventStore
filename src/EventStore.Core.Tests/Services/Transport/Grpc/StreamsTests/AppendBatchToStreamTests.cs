@@ -235,7 +235,7 @@ public class AppendBatchToStreamTests {
 		[Test]
 		public void is_error() {
 			Assert.AreEqual(_response.ResultCase, BatchAppendResp.ResultOneofCase.Error);
-			Assert.AreEqual(_response.Error.Code, Google.Rpc.Code.DeadlineExceeded);
+			Assert.AreEqual(_response.Error.Code, Code.DeadlineExceeded);
 		}
 
 		[Test]
@@ -272,7 +272,7 @@ public class AppendBatchToStreamTests {
 		[Test]
 		public void is_error() {
 			Assert.AreEqual(_response.ResultCase, BatchAppendResp.ResultOneofCase.Error);
-			Assert.AreEqual(_response.Error.Code, Google.Rpc.Code.DeadlineExceeded);
+			Assert.AreEqual(_response.Error.Code, Code.DeadlineExceeded);
 		}
 
 		[Test]
