@@ -100,11 +100,14 @@ public class AtomController : CommunicationController {
 
 	private readonly IPublisher _networkSendQueue;
 	private readonly TimeSpan _writeTimeout;
+	private readonly int _maxAppendEventSize;
 
 	public AtomController(IPublisher publisher, IPublisher networkSendQueue,
-		bool disableHTTPCaching, TimeSpan writeTimeout) : base(publisher) {
+		bool disableHTTPCaching, int maxAppendEventSize, TimeSpan writeTimeout) : base(publisher) {
 		_networkSendQueue = networkSendQueue;
 		_writeTimeout = writeTimeout;
+		// Preserve the old behaviour where the Atom controller would not accept events larger than 4mb.
+		_maxAppendEventSize = Math.Min(maxAppendEventSize, 4 * 1024 * 1024);
 
 		if (disableHTTPCaching) {
 			// ReSharper disable once RedundantNameQualifier
@@ -875,13 +878,13 @@ public class AtomController : CommunicationController {
 
 	private bool GetRequireLeader(HttpEntityManager manager, out bool requireLeader) {
 		requireLeader = false;
-		
+
 		var onlyLeader = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.RequireLeader);
 		var onlyMaster = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.RequireMaster);
-		
+
 		if (StringValues.IsNullOrEmpty(onlyLeader) && StringValues.IsNullOrEmpty(onlyMaster))
 			return true;
-	
+
 		if (string.Equals(onlyLeader, "True", StringComparison.OrdinalIgnoreCase) ||
 		    string.Equals(onlyMaster, "True", StringComparison.OrdinalIgnoreCase)) {
 			requireLeader = true;
@@ -957,8 +960,8 @@ public class AtomController : CommunicationController {
 				}
 
 				foreach (var e in events) {
-					if (e.Data.Length + e.Metadata.Length > 4 * 1024 * 1024) {
-						SendTooBig(manager);
+					if (e.Data.Length + e.Metadata.Length > _maxAppendEventSize) {
+						SendTooBig(manager, _maxAppendEventSize);
 					}
 				}
 
