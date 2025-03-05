@@ -14,7 +14,6 @@ using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Services.Processing.Checkpointing;
 using EventStore.Projections.Core.Services.Processing.MultiStream;
 using EventStore.Projections.Core.XUnit.Tests.TestHelpers;
-using FluentAssertions.Common;
 using Xunit;
 using ExistingEvent = EventStore.Projections.Core.XUnit.Tests.TestHelpers.ExistingStreamsHelper.ExistingEvent;
 
