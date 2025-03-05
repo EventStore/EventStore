@@ -14,7 +14,8 @@ public class ProjectionsStandardComponents {
 		IPublisher leaderOutputQueue,
 		ISubscriber leaderInputBus,
 		IPublisher leaderInputQueue,
-		bool faultOutOfOrderProjections, int projectionCompilationTimeout, int projectionExecutionTimeout) {
+		bool faultOutOfOrderProjections, int projectionCompilationTimeout, int projectionExecutionTimeout,
+		int maxProjectionStateSize) {
 		ProjectionWorkerThreadCount = projectionWorkerThreadCount;
 		RunProjections = runProjections;
 		LeaderOutputBus = leaderOutputBus;
@@ -24,6 +25,7 @@ public class ProjectionsStandardComponents {
 		FaultOutOfOrderProjections = faultOutOfOrderProjections;
 		ProjectionCompilationTimeout = projectionCompilationTimeout;
 		ProjectionExecutionTimeout = projectionExecutionTimeout;
+		MaxProjectionStateSize = maxProjectionStateSize;
 	}
 
 	public int ProjectionWorkerThreadCount { get; }
@@ -41,4 +43,6 @@ public class ProjectionsStandardComponents {
 	public int ProjectionCompilationTimeout { get; }
 
 	public int ProjectionExecutionTimeout { get; }
+
+	public int MaxProjectionStateSize { get; }
 }

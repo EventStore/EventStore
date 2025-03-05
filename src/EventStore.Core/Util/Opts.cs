@@ -10,7 +10,7 @@ namespace EventStore.Core.Util;
 
 public static class Opts {
 	public const int ConnectionPendingSendBytesThresholdDefault = 10 * 1024 * 1024;
-	
+
 	public const int ConnectionQueueSizeThresholdDefault = 50000;
 
 	public const int HashCollisionReadLimitDefault = 100;
@@ -18,6 +18,8 @@ public static class Opts {
 	public const bool FaultOutOfOrderProjectionsDefault = false;
 
 	public const int ProjectionsQueryExpiryDefault = 5;
+
+	public const int MaxProjectionStateSizeDefault = int.MaxValue;
 
 	public const byte IndexBitnessVersionDefault = Index.PTableVersions.IndexV4;
 

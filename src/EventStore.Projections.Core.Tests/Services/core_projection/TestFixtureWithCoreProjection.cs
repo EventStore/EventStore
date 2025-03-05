@@ -7,6 +7,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Tests.Bus.Helpers;
+using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
@@ -84,13 +85,13 @@ public abstract class TestFixtureWithCoreProjection<TLogFormat, TStreamId> : Tes
 	protected ProjectionProcessingStrategy CreateProjectionProcessingStrategy() {
 		return new ContinuousProjectionProcessingStrategy(
 			_projectionName, _version, _stateHandler, _projectionConfig, _stateHandler.GetSourceDefinition(), null,
-			_subscriptionDispatcher, true);
+			_subscriptionDispatcher, true, Opts.MaxProjectionStateSizeDefault);
 	}
 
 	protected ProjectionProcessingStrategy CreateQueryProcessingStrategy() {
 		return new QueryProcessingStrategy(
 			_projectionName, _version, _stateHandler, _projectionConfig, _stateHandler.GetSourceDefinition(), null,
-			_subscriptionDispatcher, true);
+			_subscriptionDispatcher, true, Opts.MaxProjectionStateSizeDefault);
 	}
 
 	protected virtual ProjectionConfig GivenProjectionConfig() {
