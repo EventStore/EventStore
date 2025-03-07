@@ -4942,6 +4942,26 @@
             ]
           },
           {
+            "name": "MaximumAppendEventSizeExceeded",
+            "fields": [
+              {
+                "id": 1,
+                "name": "eventId",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "proposedEventSize",
+                "type": "uint32"
+              },
+              {
+                "id": 3,
+                "name": "maxAppendEventSize",
+                "type": "uint32"
+              }
+            ]
+          },
+          {
             "name": "BadRequest",
             "fields": [
               {

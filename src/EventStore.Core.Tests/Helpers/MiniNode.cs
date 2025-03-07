@@ -94,7 +94,8 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 		IExpiryStrategy expiryStrategy = null,
 		string transform = "identity",
 		IConfiguration configuration = null,
-		IReadOnlyList<IDbTransform> newTransforms = null) {
+		IReadOnlyList<IDbTransform> newTransforms = null,
+		int maxAppendEventSize = TFConsts.EffectiveMaxLogRecordSize) {
 
 		_httpClientTimeoutSec = httpClientTimeoutSec;
 		RunningTime.Start();
@@ -126,7 +127,8 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 					AllowAnonymousEndpointAccess = true,
 					AllowAnonymousStreamAccess = true,
 					StatsPeriodSec = 60 * 60,
-					WorkerThreads = 1
+					WorkerThreads = 1,
+					MaxAppendEventSize = maxAppendEventSize
 				},
 				Interface = new() {
 					ReplicationHeartbeatInterval = 10_000,

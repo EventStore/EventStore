@@ -50,6 +50,7 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 	private readonly ISubscriber _mainBus;
 	private readonly IAuthenticationProvider _authenticationProvider;
 	private readonly int _maxAppendSize;
+	private readonly int _maxAppendEventSize;
 	private readonly TimeSpan _writeTimeout;
 	private readonly IExpiryStrategy _expiryStrategy;
 	private readonly KestrelHttpService _httpService;
@@ -74,6 +75,7 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 		IAuthenticationProvider authenticationProvider,
 		IAuthorizationProvider authorizationProvider,
 		int maxAppendSize,
+		int maxAppendEventSize,
 		TimeSpan writeTimeout,
 		IExpiryStrategy expiryStrategy,
 		KestrelHttpService httpService,
@@ -90,6 +92,7 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 		_authenticationProvider = authenticationProvider;
 		_authorizationProvider = authorizationProvider ?? throw new ArgumentNullException(nameof(authorizationProvider));
 		_maxAppendSize = Ensure.Positive(maxAppendSize);
+		_maxAppendEventSize = Ensure.Positive(maxAppendEventSize);
 		_writeTimeout = writeTimeout;
 		_expiryStrategy = expiryStrategy;
 		_httpService = Ensure.NotNull(httpService);
@@ -204,7 +207,7 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 		services
 			.AddSingleton<ISubscriber>(_mainBus)
 			.AddSingleton<IPublisher>(_mainQueue)
-			.AddSingleton(new Streams<TStreamId>(_mainQueue, _maxAppendSize,
+			.AddSingleton(new Streams<TStreamId>(_mainQueue, _maxAppendSize, _maxAppendEventSize,
 				_writeTimeout, _expiryStrategy,
 				_trackers.GrpcTrackers,
 				_authorizationProvider))

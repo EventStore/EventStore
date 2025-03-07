@@ -13,6 +13,7 @@ public static class Constants {
 		public const string WrongExpectedVersion = "wrong-expected-version";
 		public const string StreamNotFound = "stream-not-found";
 		public const string MaximumAppendSizeExceeded = "maximum-append-size-exceeded";
+		public const string MaximumAppendEventSizeExceeded = "maximum-append-event-size-exceeded";
 		public const string MissingRequiredMetadataProperty = "missing-required-metadata-property";
 		public const string NotLeader = "not-leader";
 
@@ -37,10 +38,13 @@ public static class Constants {
 		public const string GroupName = "group-name";
 		public const string Reason = "reason";
 		public const string MaximumAppendSize = "maximum-append-size";
+		public const string MaximumAppendEventSize = "maximum-append-event-size";
+		public const string ProposedAppendEventSize = "proposed-append-event-size";
 		public const string RequiredMetadataProperties = "required-metadata-properties";
 		public const string ScavengeId = "scavenge-id";
 		public const string LeaderEndpointHost = "leader-endpoint-host";
 		public const string LeaderEndpointPort = "leader-endpoint-port";
+		public const string EventId = "event-id";
 
 		public const string LoginName = "login-name";
 	}
