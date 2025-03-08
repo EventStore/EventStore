@@ -1,6 +1,5 @@
 ﻿@using System.Security.Claims
-@using EventStore.Common.Utils
-@using KurrentDB.Services
+@using KurrentDB.UI.Services
 @inherits LayoutComponentBase
 @inject Preferences Preferences
 
@@ -13,7 +12,8 @@
 		<MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
 		               OnClick="@(_ => DrawerToggle())"/>
 		<img alt="Kurrent logo" src="@(Preferences.DarkMode ? "logo_white.svg" : "logo_plum.svg")" height="32"/>
-		<MudText Typo="Typo.h5" Class="ml-3">KurrentDB @VersionInfo.Version</MudText>
+		@* <MudText Typo="Typo.h5" Class="ml-3">KurrentDB @VersionInfo.Version</MudText> *@
+		<MudText Typo="Typo.h5" Class="ml-3">KurrentDB</MudText>
 		<MudSpacer/>
 		@if (_showLogout) {
 			<MudIconButton Icon="@(Icons.Material.Filled.Logout)" Color="Color.Inherit" OnClick="@Logout"/>
@@ -37,29 +37,28 @@
 @code {
 	bool _drawerOpen = true;
 	bool _showLogout;
-	MudTheme _theme;
+	MudTheme _theme = null!;
 
-	[Inject] private AuthService AuthService { get; set; }
-	[Inject] private NavigationManager NavigationManager { get; set; }
+	[Inject] private NavigationManager NavigationManager { get; set; } = null!;
 
 	protected override async Task OnAfterRenderAsync(bool firstRender) {
 		if (!firstRender) return;
 
 		Preferences.SetTheme(await _mudThemeProvider.GetSystemPreference());
 		StateHasChanged();
-		AuthService.UserChanged += HandleUserChange;
+		// AuthService.UserChanged += HandleUserChange;
+		//
+		// if (AuthService.IsLoggedIn) return;
 
-		if (AuthService.IsLoggedIn) return;
+		// var url = NavigationManager.ToAbsoluteUri(NavigationManager.Uri).ToString();
+		// if (url.Contains("/login")) {
+		// 	return;
+		// }
 
-		var url = NavigationManager.ToAbsoluteUri(NavigationManager.Uri).ToString();
-		if (url.Contains("/login")) {
-			return;
-		}
-
-		var restoredFromState = await AuthService.GetStateFromTokenAsync();
-		if (restoredFromState) {
-			NavigationManager.Refresh();
-		}
+		// var restoredFromState = await AuthService.GetStateFromTokenAsync();
+		// if (restoredFromState) {
+		// 	NavigationManager.Refresh();
+		// }
 	}
 
 	void HandleUserChange(ClaimsPrincipal principal) {
@@ -138,7 +137,7 @@
 		OverlayLight = "#1e1e2d80",
 	};
 
-	MudThemeProvider _mudThemeProvider;
+	MudThemeProvider _mudThemeProvider = null!;
 
 	string DarkLightModeButtonIcon => Preferences.DarkMode switch {
 		true => Icons.Material.Rounded.AutoMode,

@@ -1668,16 +1668,14 @@ public class ClusterVNode<TStreamId> :
 		_start = StartNode;
 
 		_startup = new ClusterVNodeStartup<TStreamId>(
+			options,
 			modifiedOptions.PlugableComponents,
 			_mainQueue, monitoringQueue, _mainBus, _workersHandler,
 			_authenticationProvider, _authorizationProvider,
-			options.Application.MaxAppendSize,
-			TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs),
 			expiryStrategy ?? new DefaultExpiryStrategy(),
 			_httpService,
 			configuration,
 			trackers,
-			options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null,
 			ConfigureNodeServices,
 			ConfigureNode);
 

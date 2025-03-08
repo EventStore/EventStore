@@ -7,9 +7,12 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
+		<PackageReference Include="Extensions.MudBlazor.StaticInput" Version="3.2.0" />
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="8.0.13" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.13" />
 		<PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.6.0" />
 		<PackageReference Include="MudBlazor.Markdown" Version="8.0.0" />
-		<PackageReference Include="MudBlazor" Version="8.0.0" />
+		<PackageReference Include="MudBlazor" Version="8.3.0" />
 		<PackageReference Include="SharpDotYaml.Extensions.Configuration" Version="0.3.1" />
 		<PackageReference Include="System.ComponentModel.Composition" Version="8.0.0" />
 		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.6.0" />
@@ -20,6 +23,7 @@
 		<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
 		<ProjectReference Include="..\EventStore.PluginHosting\EventStore.PluginHosting.csproj" />
 		<ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj" />
+		<ProjectReference Include="..\KurrentDB.UI\KurrentDB.UI.csproj" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Include="..\EventStore.Common\Utils\version.properties">

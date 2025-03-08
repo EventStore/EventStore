@@ -4,6 +4,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Core.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server;
 using Microsoft.Extensions.Logging;
@@ -13,7 +14,7 @@ namespace KurrentDB.Services;
 public class AuthStateProvider : RevalidatingServerAuthenticationStateProvider {
 	AuthenticationState _authenticationState;
 
-	public AuthStateProvider(AuthService service, ILoggerFactory loggerFactory) : base(loggerFactory) {
+	public AuthStateProvider(IAuthService service, ILoggerFactory loggerFactory) : base(loggerFactory) {
 		_authenticationState = new(service.CurrentUser);
 		service.UserChanged += newUser => {
 			_authenticationState = new(newUser);

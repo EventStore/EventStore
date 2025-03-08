@@ -1,12 +1,12 @@
 @page "/ui/logout"
-@using KurrentDB.Services
+@using EventStore.Core.Authentication
 
 @code {
 	[Inject] private NavigationManager NavigationManager { get; set; }
-	[Inject] private AuthService AuthService { get; set; }
+	[Inject] private IAuthService AuthService { get; set; }
 
 	protected override async Task OnAfterRenderAsync(bool firstRender) {
-		await AuthService.LogoutAsync();
+		await AuthService.Logout();
 		NavigationManager.NavigateTo("/ui/login", true);
 	}
 }

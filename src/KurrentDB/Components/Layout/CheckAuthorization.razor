@@ -1,9 +1,9 @@
-@using KurrentDB.Services
+@using EventStore.Core.Authentication
 
 <h1>@_message</h1>
 
 @code {
-    [Inject] private AuthService AuthService { get; set; }
+    [Inject] private IAuthService AuthService { get; set; }
     [Inject] private NavigationManager NavigationManager { get; set; }
     string _returnUrl;
     string _message = string.Empty;

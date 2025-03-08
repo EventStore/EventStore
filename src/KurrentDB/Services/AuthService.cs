@@ -5,10 +5,11 @@ using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Blazored.LocalStorage;
+using EventStore.Core.Authentication;
 
 namespace KurrentDB.Services;
 
-public class AuthService(JwtTokenService jwtTokenService, ILocalStorageService sessionService) {
+public class AuthService(JwtTokenService jwtTokenService, ILocalStorageService sessionService) : IAuthService {
 	const string AuthTokenName = "auth_token";
 
 	public event Action<ClaimsPrincipal> UserChanged;
@@ -24,7 +25,7 @@ public class AuthService(JwtTokenService jwtTokenService, ILocalStorageService s
 
 	public bool IsLoggedIn => CurrentUser.Identity?.IsAuthenticated ?? false;
 
-	public async Task LogoutAsync() {
+	public async Task Logout() {
 		var authToken = await sessionService.GetItemAsStringAsync(AuthTokenName);
 		if (!string.IsNullOrEmpty(authToken)) {
 			await sessionService.RemoveItemAsync(AuthTokenName);
@@ -37,7 +38,7 @@ public class AuthService(JwtTokenService jwtTokenService, ILocalStorageService s
 		var result = jwtTokenService.TryValidateToken(authToken, out var identity);
 
 		if (!result) {
-			await LogoutAsync();
+			await Logout();
 			return false;
 		}
 
@@ -45,9 +46,11 @@ public class AuthService(JwtTokenService jwtTokenService, ILocalStorageService s
 		return true;
 	}
 
-	public async Task Login(ClaimsPrincipal user) {
+	public async Task Login(ClaimsPrincipal user, bool storeToken = true) {
 		CurrentUser = user;
-		var token = jwtTokenService.CreateToken(user);
-		await sessionService.SetItemAsStringAsync(AuthTokenName, token);
+		if (storeToken) {
+			var token = jwtTokenService.CreateToken(user);
+			await sessionService.SetItemAsStringAsync(AuthTokenName, token);
+		}
 	}
 }

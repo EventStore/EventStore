@@ -16,6 +16,7 @@ using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core;
+using EventStore.Core.Authentication;
 using EventStore.Core.Certificates;
 using EventStore.Core.Configuration;
 using EventStore.Core.Configuration.Sources;
@@ -24,6 +25,7 @@ using KurrentDB;
 using KurrentDB.Components;
 using KurrentDB.Services;
 using KurrentDB.Tools;
+using KurrentDB.UI.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Hosting;
@@ -243,7 +245,10 @@ try {
 			// Later it may be possible to use constructor injection instead if it fits with the bootstrapping strategy.
 			builder.Services.AddSingleton<IHostedService>(hostedService);
 			builder.Services.AddSingleton<Preferences>();
-			builder.Services.AddRazorComponents().AddInteractiveServerComponents();
+			builder.Services
+				.AddRazorComponents()
+				.AddInteractiveServerComponents()
+				.AddInteractiveWebAssemblyComponents();
 			builder.Services.AddCascadingAuthenticationState();
 			builder.Services.AddMudServices();
 			builder.Services.AddMudMarkdownServices();
@@ -253,15 +258,23 @@ try {
 			builder.Services.AddSingleton(metricsObserver);
 			builder.Services.AddBlazoredLocalStorage();
 			builder.Services.AddSingleton<JwtTokenService>();
-			builder.Services.AddScoped<AuthService>();
+			builder.Services.AddScoped<IAuthService, AuthService>();
 			builder.Services.AddScoped<AuthenticationStateProvider, AuthStateProvider>();
 
 			Log.Information("Environment Name: {0}", builder.Environment.EnvironmentName);
 			Log.Information("ContentRoot Path: {0}", builder.Environment.ContentRootPath);
 
 			var app = builder.Build();
+			if (app.Environment.IsDevelopment()) {
+				app.UseWebAssemblyDebugging();
+			}
+
 			hostedService.Node.Startup.Configure(app);
-			app.MapRazorComponents<App>().DisableAntiforgery().AddInteractiveServerRenderMode();
+			app.MapRazorComponents<App>()
+				.DisableAntiforgery()
+				.AddInteractiveServerRenderMode()
+				.AddInteractiveWebAssemblyRenderMode()
+				.AddAdditionalAssemblies(typeof(KurrentDB.UI._Imports).Assembly);
 			await app.RunAsync(token);
 
 			exitCodeSource.TrySetResult(0);

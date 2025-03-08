@@ -1,6 +1,7 @@
 @page "/ui/login"
 @using System.ComponentModel.DataAnnotations
 @using System.Security.Claims
+@using EventStore.Core.Authentication
 @using EventStore.Plugins.Authentication
 @using KurrentDB.Services
 @using Microsoft.AspNetCore.Http
@@ -33,19 +34,21 @@
 @code {
 	[Inject] NavigationManager NavigationManager { get; set; }
 	[Inject] IAuthenticationProvider AuthProvider { get; set; }
-	[Inject] AuthService AuthService { get; set; }
+	[Inject] IAuthService AuthService { get; set; }
 	[Inject] ISnackbar Snackbar { get; set; }
 	[SupplyParameterFromForm] LoginInputModel Input { get; set; } = new();
 	[SupplyParameterFromQuery] string ReturnUrl { get; set; }
+	[CascadingParameter] HttpContext HttpContext { get; set; } = default!;
 
 	protected override async Task OnAfterRenderAsync(bool firstRender) {
+		Console.WriteLine(HttpContext?.User?.Identity?.IsAuthenticated);
 		if (firstRender && !AuthService.IsLoggedIn) {
 			var restoredFromState = await AuthService.GetStateFromTokenAsync();
 			if (restoredFromState) {
 				Redirect();
 			}
 
-			// Try to login with a dummy user that will always work in insecure mode
+			// Try to log in with a dummy user that will always work in insecure mode
 			var dummy = JwtTokenService.GenerateRandomString(10);
 			var (status, principal) = await LoginUser(dummy, dummy);
 			if (status == HttpAuthenticationRequestStatus.Authenticated) {
