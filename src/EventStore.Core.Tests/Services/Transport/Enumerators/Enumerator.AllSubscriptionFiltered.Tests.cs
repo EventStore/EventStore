@@ -60,7 +60,19 @@ public partial class EnumeratorTests {
 
 			Assert.True(await sub.GetNext() is SubscriptionConfirmation);
 			Assert.AreEqual(_eventIds[0], ((Event)await sub.GetNext()).Id);
-			Assert.True(await sub.GetNext() is Checkpoint);
+			var c = AssertEx.IsType<Checkpoint>(await sub.GetNext());
+			Assert.True(c.CheckpointPosition < Position.End);
+			Assert.True(await sub.GetNext() is CaughtUp);
+		}
+
+		[Test]
+		public async Task when_matching_nothing_transition_to_live_checkpoint_should_be_valid() {
+			await using var sub = CreateAllSubscriptionFiltered(
+				_publisher, null, EventFilter.EventType.Prefixes(false, "match-nothing"));
+
+			Assert.True(await sub.GetNext() is SubscriptionConfirmation);
+			var checkpoint = AssertEx.IsType<Checkpoint>(await sub.GetNext());
+			Assert.True(checkpoint.CheckpointPosition < Position.End);
 			Assert.True(await sub.GetNext() is CaughtUp);
 		}
 	}
@@ -110,7 +122,21 @@ public partial class EnumeratorTests {
 
 			Assert.True(await sub.GetNext() is SubscriptionConfirmation);
 			Assert.AreEqual(_eventIds[0], ((Event)await sub.GetNext()).Id);
-			Assert.True(await sub.GetNext() is Checkpoint);
+			var c = AssertEx.IsType<Checkpoint>(await sub.GetNext());
+			Assert.True(c.CheckpointPosition < Position.End);
+			Assert.True(await sub.GetNext() is CaughtUp);
+		}
+
+		[Test]
+		public async Task when_matching_nothing_transition_to_live_checkpoint_should_be_valid() {
+			await using var sub = CreateAllSubscriptionFiltered(
+				_publisher,
+				new Position((ulong)_subscribeFrom.CommitPosition, (ulong)_subscribeFrom.PreparePosition),
+				EventFilter.EventType.Prefixes(false, "match-nothing"));
+
+			Assert.True(await sub.GetNext() is SubscriptionConfirmation);
+			var checkpoint = AssertEx.IsType<Checkpoint>(await sub.GetNext());
+			Assert.True(checkpoint.CheckpointPosition < Position.End);
 			Assert.True(await sub.GetNext() is CaughtUp);
 		}
 	}

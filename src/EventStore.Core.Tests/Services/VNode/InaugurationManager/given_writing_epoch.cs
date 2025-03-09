@@ -22,7 +22,7 @@ public class given_writing_epoch : InaugurationManagerTests {
 		When(GenEpoch(_epochNumber));
 		Assert.AreEqual(2, _publisher.Messages.Count);
 		Assert.IsInstanceOf<SystemMessage.EnablePreLeaderReplication>(_publisher.Messages[0]);
-		var schedule = AssertIsType<TimerMessage.Schedule>(_publisher.Messages[1]);
+		var schedule = AssertEx.IsType<TimerMessage.Schedule>(_publisher.Messages[1]);
 		Assert.IsInstanceOf<SystemMessage.CheckInaugurationConditions>(schedule.ReplyMessage);
 	}
 
