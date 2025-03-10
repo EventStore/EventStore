@@ -20,7 +20,7 @@ public class given_waiting_for_chaser : InaugurationManagerTests {
 	public void when_chaser_caught_up() {
 		When(new SystemMessage.ChaserCaughtUp(_correlationId1));
 		Assert.AreEqual(1, _publisher.Messages.Count);
-		var writeEpoch = AssertIsType<SystemMessage.WriteEpoch>(_publisher.Messages[0]);
+		var writeEpoch = AssertEx.IsType<SystemMessage.WriteEpoch>(_publisher.Messages[0]);
 		Assert.AreEqual(_epochNumber, writeEpoch.EpochNumber);
 	}
 

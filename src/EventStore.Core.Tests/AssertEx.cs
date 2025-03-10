@@ -10,6 +10,11 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests;
 
 public static class AssertEx {
+	public static T IsType<T>(object o) {
+		Assert.IsInstanceOf<T>(o);
+		return (T)o;
+	}
+
 	public static async Task<TException> ThrowsAsync<TException>(Func<Task> code)
 		where TException : Exception {
 		var expected = default(TException);
