@@ -253,6 +253,7 @@ public class ClusterVNode<TStreamId> :
 			.Get<T>() ?? new();
 
 		var experimentalOptions = GetOptions<ExperimentalOptions>("Experimental");
+		OptionsFormatter.LogConfig("Experimental", experimentalOptions);
 		ChunkFileHandle.AsynchronousByDefault = experimentalOptions.AsyncIO;
 
 		var isRunningInContainer = ContainerizedEnvironment.IsRunningInContainer();

@@ -382,9 +382,6 @@ public partial class TFChunk : IChunkBlob {
 			? new TFChunkReadSideScavenged(this, tracker)
 			: new TFChunkReadSideUnscavenged(this, tracker);
 
-		// do not actually cache now because it is too slow when opening the database
-		_readSide.RequestCaching();
-
 		if (verifyHash)
 			await VerifyFileHash(token);
 	}
@@ -775,8 +772,6 @@ public partial class TFChunk : IChunkBlob {
 				writerWorkItem.SetMemStream(memStream);
 			}
 
-			_readSide.Uncache();
-
 			Log.Debug("CACHED TFChunk {chunk} in {elapsed}.", this, sw.Elapsed);
 
 			if (_selfdestructin54321)
@@ -828,9 +823,6 @@ public partial class TFChunk : IChunkBlob {
 				return;
 			if (_cacheStatus is CacheStatus.Cached) {
 				// we won the right to un-cache and chunk was cached
-				// possibly we could use a mem reader work item and do the actual midpoint caching now
-				_readSide.RequestCaching();
-
 				_writerWorkItem?.DisposeMemStream();
 
 				Log.Debug("UNCACHING TFChunk {chunk}.", this);

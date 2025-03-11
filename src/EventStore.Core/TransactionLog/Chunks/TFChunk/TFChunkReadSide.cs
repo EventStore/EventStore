@@ -15,16 +15,12 @@ using EventStore.Core.Exceptions;
 using EventStore.Core.Time;
 using EventStore.Core.TransactionLog.LogRecords;
 using Serilog;
-using static System.Threading.Timeout;
 using Range = EventStore.Core.Data.Range;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
 public partial class TFChunk {
 	public interface IChunkReadSide {
-		void RequestCaching();
-		void Uncache();
-
 		ValueTask<bool> ExistsAt(long logicalPosition, CancellationToken token);
 		ValueTask<long> GetActualPosition(long logicalPosition, CancellationToken token);
 		ValueTask<RecordReadResult> TryReadAt(long logicalPosition, bool couldBeScavenged, CancellationToken token);
@@ -39,14 +35,6 @@ public partial class TFChunk {
 		public TFChunkReadSideUnscavenged(TFChunk chunk, ITransactionFileTracker tracker) : base(chunk, tracker) {
 			if (chunk.ChunkHeader.IsScavenged)
 				throw new ArgumentException("Scavenged TFChunk passed into unscavenged chunk read side.");
-		}
-
-		public void RequestCaching() {
-			// do nothing
-		}
-
-		public void Uncache() {
-			// do nothing
 		}
 
 		public ValueTask<bool> ExistsAt(long logicalPosition, CancellationToken token)
@@ -139,9 +127,8 @@ public partial class TFChunk {
 	}
 
 	private class TFChunkReadSideScavenged : TFChunkReadSide, IChunkReadSide {
-		// must hold _lock to assign to _wantMidpoints and _midpoints
+		// must hold _lock to assign to _midpoints
 		private readonly AsyncExclusiveLock _lock = new();
-		private bool _wantMidpoints;
 		private Midpoint[] _midpoints;
 
 		public TFChunkReadSideScavenged(TFChunk chunk, ITransactionFileTracker tracker)
@@ -150,51 +137,16 @@ public partial class TFChunk {
 				throw new ArgumentException(string.Format("Chunk provided is not scavenged: {0}", chunk));
 		}
 
-		public void Uncache() {
-			_lock.TryAcquire(InfiniteTimeSpan);
-			try {
-				_wantMidpoints = false;
-				_midpoints = null;
-			} finally {
-				_lock.Release();
-			}
-		}
-
-		public void RequestCaching() {
-			_lock.TryAcquire(InfiniteTimeSpan);
-			try {
-				_wantMidpoints = true;
-			} finally {
-				_lock.Release();
-			}
-		}
-
 		private async ValueTask<Midpoint[]> GetOrCreateMidPoints(ReaderWorkItem workItem, CancellationToken token) {
-			// don't use midpoints when reading from memory
-			if (workItem.IsMemory)
-				return null;
-
-			// if we have midpoints we are happy. no synchronization required.
-			// this value may be stale but the midpoints are still valid
+			// double-checked lock pattern
 			if (_midpoints is { } midpoints)
 				return midpoints;
 
-			// if we don't want midpoints we are happy. no synchronization required.
-			// this value may be stale but this is rare and worst case we will perform the read
-			// without the midpoints which will still work.
-			if (!_wantMidpoints)
-				return null;
-
 			await _lock.AcquireAsync(token);
 			try {
-				// guaranteed up to date
 				if (_midpoints is { } midpointsDouble)
 					return midpointsDouble;
 
-				if (!_wantMidpoints)
-					return null;
-
-				// want midpoints but don't have them, get them. synchronization is ok here because rare
 				_midpoints = await PopulateMidpoints(Chunk._midpointsDepth, workItem, token);
 				return _midpoints;
 			} finally {
@@ -209,7 +161,7 @@ public partial class TFChunk {
 
 			var mapCount = Chunk.ChunkFooter.MapCount;
 			if (mapCount is 0) // empty chunk
-				return null;
+				return [];
 
 			var posmapSize = Chunk.ChunkFooter.IsMap12Bytes ? PosMap.FullSize : PosMap.DeprecatedSize;
 			using var posMapTable = UnmanagedMemory.Allocate<byte>(posmapSize * mapCount);
@@ -303,7 +255,7 @@ public partial class TFChunk {
 		}
 
 		private async ValueTask<int> TranslateExactPosition(ReaderWorkItem workItem, long pos, CancellationToken token) {
-			return await GetOrCreateMidPoints(workItem, token) is { } midpoints
+			return await GetOrCreateMidPoints(workItem, token) is { Length: > 0 } midpoints
 				? await TranslateExactWithMidpoints(workItem, midpoints, pos, token)
 				: await TranslateWithoutMidpoints(workItem, pos, 0, Chunk.ChunkFooter.MapCount - 1, exactMatch: true, token);
 		}
@@ -398,7 +350,7 @@ public partial class TFChunk {
 		}
 
 		private async ValueTask<int> TranslateClosestForwardPosition(ReaderWorkItem workItem, long logicalPosition, CancellationToken token) {
-			return await GetOrCreateMidPoints(workItem, token) is { } midpoints
+			return await GetOrCreateMidPoints(workItem, token) is { Length: > 0 } midpoints
 				? await TranslateClosestForwardWithMidpoints(workItem, midpoints, logicalPosition, token)
 				: await TranslateWithoutMidpoints(workItem, logicalPosition, 0,
 					Chunk.ChunkFooter.MapCount - 1, exactMatch: false, token);
