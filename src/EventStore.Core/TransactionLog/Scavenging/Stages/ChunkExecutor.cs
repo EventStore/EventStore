@@ -23,6 +23,7 @@ public class ChunkExecutor<TStreamId, TRecord> : IChunkExecutor<TStreamId> {
 	private readonly long _chunkSize;
 	private readonly bool _unsafeIgnoreHardDeletes;
 	private readonly int _cancellationCheckPeriod;
+	private readonly bool _isArchiver;
 	private readonly int _threads;
 	private readonly Throttle _throttle;
 
@@ -35,6 +36,7 @@ public class ChunkExecutor<TStreamId, TRecord> : IChunkExecutor<TStreamId> {
 		bool unsafeIgnoreHardDeletes,
 		int cancellationCheckPeriod,
 		int threads,
+		bool isArchiver,
 		Throttle throttle) {
 
 		_logger = logger;
@@ -44,6 +46,7 @@ public class ChunkExecutor<TStreamId, TRecord> : IChunkExecutor<TStreamId> {
 		_chunkSize = chunkSize;
 		_unsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
 		_cancellationCheckPeriod = cancellationCheckPeriod;
+		_isArchiver = isArchiver;
 		_threads = Math.Clamp(threads, TFChunkScavenger.MinThreadCount, TFChunkScavenger.MaxThreadCount);
 		_throttle = throttle;
 
@@ -135,6 +138,17 @@ public class ChunkExecutor<TStreamId, TRecord> : IChunkExecutor<TStreamId> {
 						concurrentState.ResetChunkWeights(
 							physicalChunk.ChunkStartNumber,
 							physicalChunk.ChunkEndNumber);
+
+					} else if (_isArchiver) {
+						// Prevent the archive node from executing any chunks, which is important because it
+						// does not yet scavenge remote chunks, but we need to keep the remote and local chunks
+						// in sync (e.g. with the same weight) so that we do scavenge them later.
+						// (otherwise a scavenge with threshold -1 to execute all chunks would be necessary)
+						_logger.Debug(
+							"SCAVENGING: Skipped physical chunk: {oldChunkName} " +
+							"with weight {physicalWeight:N0} because we are the archiver.",
+							physicalChunk.Name,
+							physicalWeight);
 
 					} else if (physicalWeight > scavengePoint.Threshold || _unsafeIgnoreHardDeletes) {
 						await ExecutePhysicalChunk(

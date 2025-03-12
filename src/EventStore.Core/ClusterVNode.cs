@@ -1347,6 +1347,7 @@ public class ClusterVNode<TStreamId> :
 				unsafeIgnoreHardDeletes: options.Database.UnsafeIgnoreHardDelete,
 				cancellationCheckPeriod: cancellationCheckPeriod,
 				threads: message.Threads,
+				isArchiver: options.Cluster.Archiver,
 				throttle: throttle);
 
 			var chunkMerger = new ChunkMerger(
