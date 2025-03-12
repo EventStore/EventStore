@@ -3,16 +3,17 @@
 
 #nullable enable
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using EventStore.Core.Messaging;
+using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
+using EventStore.Core.Services.Archive;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.Scavenging;
 using Microsoft.Extensions.Configuration;
 using Xunit;
-using EventStore.Core.Services.UserManagement;
-using System;
-using EventStore.Core.Configuration.Sources;
 
 namespace EventStore.Core.XUnit.Tests.Scavenge;
 
@@ -37,7 +38,8 @@ public class ScavengeOptionsCalculatorTests {
 				vNodeOptions.Append(new($"{SectionName}:ClusterSize", "1")))
 			.Build();
 		var options = ClusterVNodeOptions.FromConfiguration(config);
-		var sut = new ScavengeOptionsCalculator(options, message);
+		var archiveOptions = config.GetSection($"{SectionName}:Archive").Get<ArchiveOptions>() ?? new();
+		var sut = new ScavengeOptionsCalculator(options, archiveOptions, message);
 		return sut;
 	}
 

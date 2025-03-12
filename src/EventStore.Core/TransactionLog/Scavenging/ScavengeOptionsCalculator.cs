@@ -3,31 +3,25 @@
 
 #nullable enable
 
-using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Archive;
-using Microsoft.Extensions.Configuration;
 
 namespace EventStore.Core.TransactionLog.Scavenging;
 
 // Calculates the way to configure the scavenge based on various configuration sources
 public class ScavengeOptionsCalculator {
 	readonly ClusterVNodeOptions _vNodeOptions;
+	readonly ArchiveOptions _archiveOptions;
 	readonly ClientMessage.ScavengeDatabase _message;
-	readonly bool _archiveEnabled;
 
 	public ScavengeOptionsCalculator(
 		ClusterVNodeOptions vNodeOptions,
+		ArchiveOptions archiveOptions,
 		ClientMessage.ScavengeDatabase message) {
 
 		_vNodeOptions = vNodeOptions;
+		_archiveOptions = archiveOptions;
 		_message = message;
-
-		var archiveOptions = vNodeOptions.ConfigurationRoot?
-			.GetSection($"{KurrentConfigurationKeys.Prefix}:Archive")
-			.Get<ArchiveOptions>() ?? new();
-
-		_archiveEnabled = archiveOptions.Enabled;
 	}
 
 	// Archiving disables chunk merging because the two in combination make things
@@ -39,7 +33,7 @@ public class ScavengeOptionsCalculator {
 	// files in the archive because we do not open file handles to all of them
 	// continuously
 	public bool MergeChunks =>
-		!_archiveEnabled &&
+		!_archiveOptions.Enabled &&
 		!_vNodeOptions.Database.DisableScavengeMerging;
 
 	public int ChunkExecutionThreshold => _message.Threshold ?? 0;

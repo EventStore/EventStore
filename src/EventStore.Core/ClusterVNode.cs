@@ -1249,7 +1249,7 @@ public class ClusterVNode<TStreamId> :
 
 		scavengerFactory = new ScavengerFactory((message, scavengerLogger, logger) => {
 			// currently on the main queue
-			var optionsCalculator = new ScavengeOptionsCalculator(options, message);
+			var optionsCalculator = new ScavengeOptionsCalculator(options, archiveOptions, message);
 
 			var throttle = new Throttle(
 				logger: logger,
@@ -1347,6 +1347,7 @@ public class ClusterVNode<TStreamId> :
 				unsafeIgnoreHardDeletes: options.Database.UnsafeIgnoreHardDelete,
 				cancellationCheckPeriod: cancellationCheckPeriod,
 				threads: message.Threads,
+				isArchiver: options.Cluster.Archiver,
 				throttle: throttle);
 
 			var chunkMerger = new ChunkMerger(
