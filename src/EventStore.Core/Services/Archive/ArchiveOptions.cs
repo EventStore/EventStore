@@ -28,7 +28,7 @@ public class ArchiveOptions {
 		switch (StorageType) {
 			case StorageType.Unspecified:
 				throw new InvalidConfigurationException("Please specify a StorageType (e.g. S3)");
-			case StorageType.FileSystem:
+			case StorageType.FileSystemDevelopmentOnly:
 				FileSystem.Validate();
 				break;
 			case StorageType.S3:
@@ -44,7 +44,9 @@ public class ArchiveOptions {
 
 public enum StorageType {
 	Unspecified,
-	FileSystem,
+	// FileSystem is for development only, it likely will not be able to reliably tell when the archiver
+	// node has scavenged a chunk and replaced it.
+	FileSystemDevelopmentOnly,
 	S3,
 }
 
