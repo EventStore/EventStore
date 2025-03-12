@@ -968,7 +968,6 @@ public class ClusterVNode<TStreamId> :
 		var modifiedOptions = options
 			.WithPlugableComponent(_authorizationProvider)
 			.WithPlugableComponent(_authenticationProvider)
-			.WithPlugableComponent(new OtlpExporterPlugin.OtlpExporterPlugin())
 			.WithPlugableComponent(new ArchivePlugableComponent(options.Cluster.Archiver));
 
 		modifiedOptions = modifiedOptions.WithPlugableComponent(new LicensingPlugin(ex => {
@@ -1715,10 +1714,10 @@ public class ClusterVNode<TStreamId> :
 		out ILRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached> streamMetadataCache,
 		out ICacheResizer streamInfoCacheResizer) {
 
-		streamLastEventNumberCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>(
+		streamLastEventNumberCache = new DataStructures.LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>(
 			"LastEventNumber", streamInfoCacheCapacity);
 
-		streamMetadataCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>(
+		streamMetadataCache = new DataStructures.LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>(
 			"Metadata", streamInfoCacheCapacity);
 
 		streamInfoCacheResizer = new CompositeCacheResizer(
@@ -1736,11 +1735,11 @@ public class ClusterVNode<TStreamId> :
 		out ICacheResizer streamInfoCacheResizer) {
 
 		int LastEventNumberCacheItemSize(TStreamId streamId, IndexBackend<TStreamId>.EventNumberCached eventNumberCached) =>
-			LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>.ApproximateItemSize(
+			DataStructures.LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>.ApproximateItemSize(
 				keyRefsSize: sizer.GetSizeInBytes(streamId),
 				valueRefsSize: 0);
 
-		streamLastEventNumberCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>(
+		streamLastEventNumberCache = new DataStructures.LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>(
 			"LastEventNumber",
 			0,
 			LastEventNumberCacheItemSize,
@@ -1753,11 +1752,11 @@ public class ClusterVNode<TStreamId> :
 
 
 		int MetadataCacheItemSize(TStreamId streamId, IndexBackend<TStreamId>.MetadataCached metadataCached) =>
-			LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>.ApproximateItemSize(
+			DataStructures.LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>.ApproximateItemSize(
 				keyRefsSize: sizer.GetSizeInBytes(streamId),
 				valueRefsSize: metadataCached.ApproximateSize - Unsafe.SizeOf<IndexBackend<TStreamId>.MetadataCached>());
 
-		streamMetadataCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>(
+		streamMetadataCache = new DataStructures.LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>(
 			"Metadata",
 			0,
 			MetadataCacheItemSize,
