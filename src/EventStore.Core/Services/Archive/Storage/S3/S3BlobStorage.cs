@@ -6,12 +6,14 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon;
+using Amazon.Runtime.Internal;
 using Amazon.S3;
 using Amazon.S3.Model;
 using DotNext.Buffers;
 using EventStore.Common.Exceptions;
 using FluentStorage;
 using FluentStorage.AWS.Blobs;
+using Serilog.Events;
 
 namespace EventStore.Core.Services.Archive.Storage.S3;
 
@@ -20,7 +22,14 @@ public class S3BlobStorage : IBlobStorage {
 	private readonly IAwsS3BlobStorage _awsBlobStorage;
 
 	static S3BlobStorage() {
-		AWSConfigs.AddTraceListener("Amazon", new AmazonTraceSerilogger());
+		AWSConfigs.AddTraceListener("Amazon", new AmazonTraceSerilogger(adjustLevel: (level, ex) =>
+			ex is AmazonS3Exception { ErrorCode: "NoSuchKey" or "InvalidRange" }
+				or HttpErrorResponseException
+				? LogEventLevel.Verbose
+				: level == LogEventLevel.Error
+					? LogEventLevel.Warning
+					: level
+		));
 		AWSConfigs.LoggingConfig.LogTo = LoggingOptions.SystemDiagnostics;
 		AWSConfigs.LoggingConfig.LogResponses = ResponseLoggingOption.OnError;
 		AWSConfigs.LoggingConfig.LogMetrics = false;

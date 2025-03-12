@@ -8,7 +8,7 @@ using Serilog.Events;
 
 namespace EventStore.Core.Services.Archive.Storage.S3;
 
-public class AmazonTraceSerilogger : TraceListener {
+public class AmazonTraceSerilogger(Func<LogEventLevel, Exception, LogEventLevel> adjustLevel) : TraceListener {
 	private static readonly Serilog.ILogger Logger = Serilog.Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, "Amazon");
 
 	public override void TraceData(TraceEventCache eventCache, string source, TraceEventType eventType, int id,
@@ -49,7 +49,7 @@ public class AmazonTraceSerilogger : TraceListener {
 			Log(TraceEventType.Information, message);
 	}
 
-	private static void Log(TraceEventType eventType, params object[] data) {
+	private void Log(TraceEventType eventType, params object[] data) {
 		if (data.Length is 0)
 			return;
 
@@ -58,7 +58,7 @@ public class AmazonTraceSerilogger : TraceListener {
 		if (data[0] is not LogMessage logMessage)
 			return;
 
-		var logLevel = GetLogLevel(eventType);
+		var logLevel = adjustLevel(GetLogLevel(eventType), exception);
 		Logger.Write(logLevel, exception, logMessage.Format, logMessage.Args);
 	}
 
