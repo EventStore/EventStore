@@ -2,7 +2,7 @@ name: Build Production Site
 
 on:
   push:
-    branches: [release/v24.10,release/oss-v24.6,release/oss-v23.10,release/oss-v22.10,release/oss-v5]
+    branches: [release/*]
     paths:
       - '**.md'
 
