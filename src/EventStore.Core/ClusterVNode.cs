@@ -384,28 +384,29 @@ public class ClusterVNode<TStreamId> :
 				streamExistenceFilterChk = new InMemoryCheckpoint(Checkpoint.StreamExistenceFilter, initValue: -1);
 			} else {
 				try {
-					if (!Directory.Exists(dbPath)) // mono crashes without this check
-						Directory.CreateDirectory(dbPath);
+					Directory.CreateDirectory(dbPath);
+					// Ensure that we have write access to the dbPath
+					using var _ = File.Create(Path.Combine(dbPath, $"write-attempt-{Guid.NewGuid()}.tmp"),
+						bufferSize: 1, FileOptions.DeleteOnClose);
 				} catch (UnauthorizedAccessException) {
-					if (dbPath == Locations.DefaultDataDirectory) {
+					// Only use the fallback default directory if we are using a default directory
+					if (dbPath == Locations.DefaultDataDirectory || dbPath == Locations.LegacyDataDirectory) {
 						Log.Information(
 							"Access to path {dbPath} denied. The KurrentDB database will be created in {fallbackDefaultDataDirectory}",
 							dbPath, Locations.FallbackDefaultDataDirectory);
 						dbPath = Locations.FallbackDefaultDataDirectory;
 						Log.Information("Defaulting DB Path to {dbPath}", dbPath);
-
-						if (!Directory.Exists(dbPath)) // mono crashes without this check
-							Directory.CreateDirectory(dbPath);
+						Directory.CreateDirectory(dbPath);
 					} else {
 						throw;
 					}
 				}
 
 				var indexPath = options.Database.Index ?? Path.Combine(dbPath, ESConsts.DefaultIndexDirectoryName);
+				Log.Information("Index Path set to {indexPath}", indexPath);
+
 				var streamExistencePath = Path.Combine(indexPath, ESConsts.StreamExistenceFilterDirectoryName);
-				if (!Directory.Exists(streamExistencePath)) {
-					Directory.CreateDirectory(streamExistencePath);
-				}
+				Directory.CreateDirectory(streamExistencePath);
 
 				var writerCheckFilename = Path.Combine(dbPath, Checkpoint.Writer + ".chk");
 				var chaserCheckFilename = Path.Combine(dbPath, Checkpoint.Chaser + ".chk");
