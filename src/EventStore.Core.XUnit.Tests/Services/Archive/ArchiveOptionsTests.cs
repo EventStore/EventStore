@@ -31,7 +31,7 @@ public class ArchiveOptionsTests {
 				Days = 5,
 				 LogicalBytes = 500,
 			},
-			StorageType = StorageType.FileSystem,
+			StorageType = StorageType.FileSystemDevelopmentOnly,
 			FileSystem = new() {
 				Path = "c:/archive",
 			},
@@ -60,7 +60,7 @@ public class ArchiveOptionsTests {
 	public void file_system_options_require_path() {
 		var sut = new ArchiveOptions {
 			Enabled = true,
-			StorageType = StorageType.FileSystem,
+			StorageType = StorageType.FileSystemDevelopmentOnly,
 		};
 		var ex = Assert.Throws<InvalidConfigurationException>(sut.Validate);
 		Assert.Contains("Path", ex.Message);
@@ -96,7 +96,7 @@ public class ArchiveOptionsTests {
 	public void retention_options_require_days() {
 		var sut = new ArchiveOptions {
 			Enabled = true,
-			StorageType = StorageType.FileSystem,
+			StorageType = StorageType.FileSystemDevelopmentOnly,
 			FileSystem = new() {
 				Path = "c:/archive",
 			},
@@ -112,7 +112,7 @@ public class ArchiveOptionsTests {
 	public void retention_options_require_logical_bytes() {
 		var sut = new ArchiveOptions {
 			Enabled = true,
-			StorageType = StorageType.FileSystem,
+			StorageType = StorageType.FileSystemDevelopmentOnly,
 			FileSystem = new() {
 				Path = "c:/archive",
 			},

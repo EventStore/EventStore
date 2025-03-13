@@ -55,7 +55,7 @@ public static class StorageData {
 	}
 
 	public sealed class FileSystemAttribute(params object[] args) : RemoteStorageDataAttribute(
-		StorageType.FileSystem,
+		StorageType.FileSystemDevelopmentOnly,
 		args,
 		string.Empty,
 		static (ref bool isSet) => isSet = true) {
