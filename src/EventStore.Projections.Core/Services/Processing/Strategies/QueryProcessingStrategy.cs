@@ -18,10 +18,10 @@ public class QueryProcessingStrategy : DefaultProjectionProcessingStrategy {
 	public QueryProcessingStrategy(
 		string name, ProjectionVersion projectionVersion, IProjectionStateHandler stateHandler,
 		ProjectionConfig projectionConfig, IQuerySources sourceDefinition, ILogger logger,
-		ReaderSubscriptionDispatcher subscriptionDispatcher, bool enableContentTypeValidation)
+		ReaderSubscriptionDispatcher subscriptionDispatcher, bool enableContentTypeValidation, int maxProjectionStateSize)
 		: base(
 			name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, logger,
-			subscriptionDispatcher, enableContentTypeValidation) {
+			subscriptionDispatcher, enableContentTypeValidation, maxProjectionStateSize) {
 	}
 
 	public override bool GetStopOnEof() {
@@ -47,7 +47,7 @@ public class QueryProcessingStrategy : DefaultProjectionProcessingStrategy {
 		var checkpointManager2 = new DefaultCheckpointManager(
 			publisher, projectionCorrelationId, _projectionVersion, SystemAccounts.System, ioDispatcher,
 			_projectionConfig, _name, new PhasePositionTagger(1), namingBuilder, GetUseCheckpoints(), false,
-			_sourceDefinition.DefinesFold, coreProjectionCheckpointWriter);
+			_sourceDefinition.DefinesFold, coreProjectionCheckpointWriter, _maxProjectionStateSize);
 
 		IProjectionProcessingPhase writeResultsPhase;
 		if (GetProducesRunningResults())

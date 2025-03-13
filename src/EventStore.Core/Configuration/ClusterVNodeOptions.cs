@@ -151,8 +151,12 @@ public partial record ClusterVNodeOptions {
 		             "to stop reading duplicates.")]
 		public bool SkipIndexScanOnReads { get; init; } = false;
 
-		[Description("The maximum size of appends, in bytes. May not exceed 16MB.")]
+		[Description("The maximum size of appends, in bytes. This is the total size of all events in the append request. " +
+		             "May not exceed 16MB.")]
 		public int MaxAppendSize { get; init; } = 1_024 * 1_024;
+
+		[Description("The maximum size of an individual event in an append request received over gRPC or HTTP, in bytes.")]
+		public int MaxAppendEventSize { get; init; } = int.MaxValue;
 
 		[Description("Disable Authentication, Authorization and TLS on all TCP/HTTP interfaces.")]
 		public bool Insecure { get; init; } = false;
@@ -585,6 +589,9 @@ public partial record ClusterVNodeOptions {
 		[Description("The maximum execution time in milliseconds for executing a handler in a user projection. It can be overridden for a specific projection by setting ProjectionExecutionTimeout config for that projection"),
 		 Unit("ms")]
 		public int ProjectionExecutionTimeout { get; set; } = DefaultProjectionExecutionTimeout;
+
+		[Description("The maximum size, in bytes, of a projection's state and result. A projection will fault if its state size exceeds this value. May not exceed 16mb.")]
+		public int MaxProjectionStateSize { get; set; } = Opts.MaxProjectionStateSizeDefault;
 	}
 
 	public record UnknownOptions(IReadOnlyList<(string, string)> Options) {

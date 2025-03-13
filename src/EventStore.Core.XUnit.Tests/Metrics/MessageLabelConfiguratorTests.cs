@@ -29,6 +29,7 @@ partial class ReadStreamForward : ReadMessage { }
 [DerivedMessage(TestGroup.Reads)]
 partial class ReadStreamBackward : ReadMessage { }
 
+[Collection("MetricsLabelTests")] // labels are static
 public class MessageLabelConfiguratorTests {
 	private readonly Type[] _messageTypes;
 

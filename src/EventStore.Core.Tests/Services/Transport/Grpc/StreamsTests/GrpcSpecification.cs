@@ -19,6 +19,7 @@ using Convert = System.Convert;
 using Streams = EventStore.Client.Streams.Streams;
 using GrpcMetadata = EventStore.Core.Services.Transport.Grpc.Constants.Metadata;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests;
 
@@ -28,10 +29,12 @@ public abstract class GrpcSpecification<TLogFormat, TStreamId> {
 	internal Streams.StreamsClient StreamsClient { get; set; }
 	private BatchAppender _batchAppender;
 
-	protected GrpcSpecification(IExpiryStrategy expiryStrategy = null) {
+	protected GrpcSpecification(IExpiryStrategy expiryStrategy = null,
+		int maxAppendEventSize = TFConsts.EffectiveMaxLogRecordSize) {
 		_node = new MiniNode<TLogFormat, TStreamId>(GetType().FullName,
 			inMemDb: true,
-			expiryStrategy: expiryStrategy);
+			expiryStrategy: expiryStrategy,
+			maxAppendEventSize: maxAppendEventSize);
 	}
 
 	protected abstract Task Given();
@@ -99,17 +102,24 @@ public abstract class GrpcSpecification<TLogFormat, TStreamId> {
 	internal static IEnumerable<BatchAppendReq.Types.ProposedMessage> CreateEvents(int count) =>
 		Enumerable.Range(0, count).Select(_ => CreateEvent());
 
-	internal static BatchAppendReq.Types.ProposedMessage CreateEvent(string type="-") =>
-		new BatchAppendReq.Types.ProposedMessage {
-			Data = ByteString.Empty,
+	internal static BatchAppendReq.Types.ProposedMessage CreateEvent(string type = "-", int? dataSize = null, int? metadataSize = null) {
+		var data = dataSize is null
+			? ByteString.Empty
+			: ByteString.CopyFrom(Encoding.UTF8.GetBytes(new string('*', dataSize.Value)));
+		var metadata = metadataSize is null
+			? ByteString.Empty
+			: ByteString.CopyFrom(Encoding.UTF8.GetBytes(new string('*', metadataSize.Value)));
+		return new BatchAppendReq.Types.ProposedMessage {
+			Data = data,
 			Id = Uuid.NewUuid().ToDto(),
-			CustomMetadata = ByteString.Empty,
+			CustomMetadata = metadata,
 			Metadata = {
-				{GrpcMetadata.ContentType, GrpcMetadata.ContentTypes.ApplicationOctetStream},
-				{GrpcMetadata.Type, type}
+				{ GrpcMetadata.ContentType, GrpcMetadata.ContentTypes.ApplicationOctetStream },
+				{ GrpcMetadata.Type, type }
 			}
 		};
-	
+	}
+
 	private class BatchAppender : IAsyncDisposable {
 		private readonly Lazy<AsyncDuplexStreamingCall<BatchAppendReq, BatchAppendResp>> _batchAppendLazy;
 		private AsyncDuplexStreamingCall<BatchAppendReq, BatchAppendResp> BatchAppend => _batchAppendLazy.Value;

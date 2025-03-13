@@ -253,6 +253,7 @@ public class ClusterVNode<TStreamId> :
 			.Get<T>() ?? new();
 
 		var experimentalOptions = GetOptions<ExperimentalOptions>("Experimental");
+		OptionsFormatter.LogConfig("Experimental", experimentalOptions);
 		ChunkFileHandle.AsynchronousByDefault = experimentalOptions.AsyncIO;
 
 		var isRunningInContainer = ContainerizedEnvironment.IsRunningInContainer();
@@ -441,7 +442,7 @@ public class ClusterVNode<TStreamId> :
 			}
 
 			var cache = options.Database.CachedChunks >= 0
-				? options.Database.CachedChunks * (long)(TFConsts.ChunkSize + ChunkHeader.Size + ChunkFooter.Size)
+				? options.Database.CachedChunks * (long)(options.Database.ChunkSize + ChunkHeader.Size + ChunkFooter.Size)
 				: options.Database.ChunksCacheSize;
 
 			// Calculate automatic configuration changes
@@ -1057,7 +1058,7 @@ public class ClusterVNode<TStreamId> :
 		var statController = new StatController(monitoringQueue, _workersHandler);
 		var metricsController = new MetricsController();
 		var atomController = new AtomController(_mainQueue, _workersHandler,
-			options.Application.DisableHttpCaching, TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs));
+			options.Application.DisableHttpCaching, options.Application.MaxAppendEventSize, TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs));
 		var gossipController = new GossipController(_mainQueue, _workersHandler,
 			trackers.GossipTrackers.ProcessingRequestFromHttpClient);
 		var persistentSubscriptionController =
@@ -1248,7 +1249,7 @@ public class ClusterVNode<TStreamId> :
 
 		scavengerFactory = new ScavengerFactory((message, scavengerLogger, logger) => {
 			// currently on the main queue
-			var optionsCalculator = new ScavengeOptionsCalculator(options, message);
+			var optionsCalculator = new ScavengeOptionsCalculator(options, archiveOptions, message);
 
 			var throttle = new Throttle(
 				logger: logger,
@@ -1303,14 +1304,14 @@ public class ClusterVNode<TStreamId> :
 
 			var accumulator = new Accumulator<TStreamId>(
 				logger: logger,
-				chunkSize: TFConsts.ChunkSize,
+				chunkSize: options.Database.ChunkSize,
 				metastreamLookup: logFormat.Metastreams,
 				chunkReader: new ChunkReaderForAccumulator<TStreamId>(
 					Db.Manager,
 					logFormat.Metastreams,
 					logFormat.StreamIdConverter,
 					Db.Config.ReplicationCheckpoint.AsReadOnly(),
-					TFConsts.ChunkSize),
+					options.Database.ChunkSize),
 				index: new IndexReaderForAccumulator<TStreamId>(readIndex),
 				cancellationCheckPeriod: cancellationCheckPeriod,
 				throttle: throttle);
@@ -1321,7 +1322,7 @@ public class ClusterVNode<TStreamId> :
 					readIndex,
 					() => new TFReaderLease(readerPool),
 					state.LookupUniqueHashUser),
-				chunkSize: TFConsts.ChunkSize,
+				chunkSize: options.Database.ChunkSize,
 				cancellationCheckPeriod: cancellationCheckPeriod,
 				buffer: calculatorBuffer,
 				throttle: throttle);
@@ -1346,6 +1347,7 @@ public class ClusterVNode<TStreamId> :
 				unsafeIgnoreHardDeletes: options.Database.UnsafeIgnoreHardDelete,
 				cancellationCheckPeriod: cancellationCheckPeriod,
 				threads: message.Threads,
+				isArchiver: options.Cluster.Archiver,
 				throttle: throttle);
 
 			var chunkMerger = new ChunkMerger(

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
@@ -38,7 +39,7 @@ abstract class specification_with_multi_phase_core_projection<TLogFormat, TStrea
 		public FakeProjectionProcessingStrategy(
 			string name, ProjectionVersion projectionVersion, ILogger logger, FakeProjectionProcessingPhase phase1,
 			FakeProjectionProcessingPhase phase2)
-			: base(name, projectionVersion, logger) {
+			: base(name, projectionVersion, logger, Opts.MaxProjectionStateSizeDefault) {
 			_phase1 = phase1;
 			_phase2 = phase2;
 		}
