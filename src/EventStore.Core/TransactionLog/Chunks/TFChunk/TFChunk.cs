@@ -61,6 +61,10 @@ public partial class TFChunk : IChunkBlob {
 		get { return _cacheStatus is CacheStatus.Cached; }
 	}
 
+	public bool IsUncached {
+		get { return _cacheStatus is CacheStatus.Uncached; }
+	}
+
 	public bool IsRemote { get; }
 
 	// the logical size of (untransformed) data (could be > PhysicalDataSize if scavenged chunk)
@@ -1392,20 +1396,22 @@ public partial class TFChunk : IChunkBlob {
 			return false;
 		}
 
+		if (raw && !_cachedDataTransformed) {
+			// we want a raw reader for a cached chunk (which should return transformed data)
+			// but the cached data is not transformed so we can't use it directly.
+			// (likely this chunk was cached before it was completed)
+			reader = null;
+			return false;
+		}
+
 		if (_cachedData is 0)
 			throw new Exception("Unexpected error: a cached chunk had no cached data");
 
+		// After incrementing the count we must return true
 		Interlocked.Increment(ref _memStreamCount);
 		var stream = CreateMemoryStream(_cachedLength);
 
 		if (raw) {
-			if (!_cachedDataTransformed) {
-				// we want a raw reader for a cached chunk (which should return transformed data)
-				// but the cached data is not transformed so we can't use it directly.
-				// (likely this chunk was cached before it was completed)
-				reader = null;
-				return false;
-			}
 			reader = new TFChunkBulkRawReader(chunk: this, streamToUse: stream, isMemory: true);
 			return true;
 		}
