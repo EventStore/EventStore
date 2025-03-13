@@ -113,7 +113,7 @@ public class
 
 	[Test]
 	public void should_set_max_chunk_size_to_the_size_of_the_number_of_cached_chunks() {
-		var chunkSizeResult = _cachedChunks * (long)(TFConsts.ChunkSize + ChunkHeader.Size + ChunkFooter.Size);
+		var chunkSizeResult = _cachedChunks * (long)(_node.Db.Config.ChunkSize + ChunkHeader.Size + ChunkFooter.Size);
 		Assert.AreEqual(chunkSizeResult, _node.Db.Config.MaxChunksCacheSize);
 	}
 }
