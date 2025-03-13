@@ -21,6 +21,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Plugins;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Builder;
@@ -42,6 +43,7 @@ using ClusterGossip = EventStore.Core.Services.Transport.Grpc.Cluster.Gossip;
 using ClientGossip = EventStore.Core.Services.Transport.Grpc.Gossip;
 using ServerFeatures = EventStore.Core.Services.Transport.Grpc.ServerFeatures;
 using Serilog;
+using AuthenticationMiddleware = EventStore.Core.Services.Transport.Http.AuthenticationMiddleware;
 using HttpMethod = EventStore.Transport.Http.HttpMethod;
 
 #nullable enable
@@ -215,10 +217,9 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 					o.TokenValidationParameters.NameClaimType = JwtRegisteredClaimNames.Name;
 					o.TokenValidationParameters.RoleClaimType = "roles";
 					o.Events.OnUserInformationReceived = async ctx => {
-						var authService = ctx.HttpContext.RequestServices.GetRequiredService<IAuthService>();
-						await authService.Login(ctx.Principal, false);
-						Log.Logger.Information("User logged in: {User} {IsAuth}", ctx.Principal?.Identity?.Name, ctx.Principal?.Identity?.IsAuthenticated);
-						// return Task.CompletedTask;
+						if (ctx.Principal != null) {
+							await ctx.HttpContext.SignInAsync(ctx.Principal, ctx.Properties);
+						}
 					};
 				});
 		} else {

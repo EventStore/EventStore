@@ -54,6 +54,9 @@
 		<None Remove="certs\**\*" />
 		<Content Include="certs\**\*" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
+	<ItemGroup>
+	  <_ContentIncludedByDefault Remove="Components\Layout\CheckAuthorization.razor" />
+	</ItemGroup>
 	<!-- TODO(jen20): Investigate which of these are correct -->
 	<PropertyGroup>
 		<IsMac>false</IsMac>

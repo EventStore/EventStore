@@ -16,7 +16,6 @@ using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core;
-using EventStore.Core.Authentication;
 using EventStore.Core.Certificates;
 using EventStore.Core.Configuration;
 using EventStore.Core.Configuration.Sources;
@@ -27,7 +26,6 @@ using KurrentDB.Services;
 using KurrentDB.Tools;
 using KurrentDB.UI.Services;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
@@ -88,7 +86,7 @@ try {
 		GCSettings.IsServerGC,
 		GCSettings.LatencyMode);
 	Log.Information("{description,-25} {logsDirectory}", "LOGS:", options.Logging.Log);
-	Log.Information(options.DumpOptions());
+	Log.Information(options.DumpOptions()!);
 
 	var level = options.Application.AllowUnknownOptions
 		? LogEventLevel.Warning
@@ -257,9 +255,6 @@ try {
 			builder.Services.AddSingleton(monitoringService);
 			builder.Services.AddSingleton(metricsObserver);
 			builder.Services.AddBlazoredLocalStorage();
-			builder.Services.AddSingleton<JwtTokenService>();
-			builder.Services.AddScoped<IAuthService, AuthService>();
-			builder.Services.AddScoped<AuthenticationStateProvider, AuthStateProvider>();
 
 			Log.Information("Environment Name: {0}", builder.Environment.EnvironmentName);
 			Log.Information("ContentRoot Path: {0}", builder.Environment.ContentRootPath);
