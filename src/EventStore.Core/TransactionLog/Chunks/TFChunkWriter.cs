@@ -51,9 +51,9 @@ public class TFChunkWriter : ITransactionFileWriter {
 		if (_db.Manager.ChunksCount == 0) {
 			// new database
 			_currentChunk = null;
-		} else if (!_db.Manager.TryGetChunkFor(_nextRecordPosition, out _currentChunk)) {
+		} else if ((_currentChunk = _db.Manager.TryGetChunkFor(_nextRecordPosition)) is null) {
 			// we may have been at a chunk boundary and the new chunk wasn't yet created
-			if (!_db.Manager.TryGetChunkFor(_nextRecordPosition - 1, out _currentChunk))
+			if ((_currentChunk = _db.Manager.TryGetChunkFor(_nextRecordPosition - 1)) is null)
 				throw new Exception($"Failed to get chunk for log position: {_nextRecordPosition}");
 		}
 	}
@@ -171,7 +171,7 @@ public class TFChunkWriter : ITransactionFileWriter {
 
 	public async ValueTask Flush(CancellationToken token) {
 		Debug.Assert(HasOpenTransaction() is false);
-		
+
 		if (_currentChunk is null) // the last chunk allocation failed
 			return;
 
