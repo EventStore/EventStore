@@ -204,6 +204,7 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 					o.ClientId = oidcConfig["ClientId"];
 					o.ClientSecret = oidcConfig["ClientSecret"];
 					o.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+					o.SignOutScheme = OpenIdConnectDefaults.AuthenticationScheme;
 					o.ResponseType = OpenIdConnectResponseType.Code;
 					if (insecure) {
 						o.BackchannelHttpHandler = new HttpClientHandler {

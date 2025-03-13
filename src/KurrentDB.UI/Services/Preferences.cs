@@ -4,9 +4,7 @@
 namespace KurrentDB.UI.Services;
 
 public class Preferences {
-    public void ToggleTheme() {
-        SetTheme(!DarkMode);
-    }
+    public void ToggleTheme() => SetTheme(!DarkMode);
 
     public void SetTheme(bool darkMode) {
         DarkMode = darkMode;

@@ -12,10 +12,10 @@
 @using MudBlazor.StaticInput
 
 <PageTitle>Log in</PageTitle>
+<MudSnackbarProvider/>
 
 <MudGrid>
 	<MudItem md="6">
-		@* <StatusMessage Message="@errorMessage"/> *@
 		<EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
 			<DataAnnotationsValidator/>
 
@@ -51,8 +51,6 @@
 	[SupplyParameterFromQuery] string ReturnUrl { get; set; }
 	[CascadingParameter] HttpContext HttpContext { get; set; } = default!;
 
-	// private string errorMessage;
-
 	protected override async Task OnAfterRenderAsync(bool firstRender) {
 		var authenticated = HttpContext.User.Identity?.IsAuthenticated == true;
 		Console.WriteLine(authenticated);
@@ -75,7 +73,6 @@
 		}
 		await HttpContext.SignInAsync(principal);
 
-		// await AuthService.Login(principal);
 		Redirect();
 	}
 

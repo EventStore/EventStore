@@ -3,15 +3,26 @@
 
 @page "/ui/logout"
 @using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using Microsoft.AspNetCore.Authentication.OpenIdConnect
 @using Microsoft.AspNetCore.Http
+@using Microsoft.Extensions.Options
 @attribute [ExcludeFromInteractiveRouting]
+@rendermode InteractiveServer
+@inject IOptions<AuthenticationOptions> AuthOptions
+
+<p>Log out</p>
 
 @code {
 	[Inject] private NavigationManager NavigationManager { get; set; }
 	[CascadingParameter] HttpContext HttpContext { get; set; } = default!;
 
-	protected override async Task OnAfterRenderAsync(bool firstRender) {
-		await HttpContext.SignOutAsync();
-		NavigationManager.NavigateTo("/ui/login", true);
+	protected override async Task OnInitializedAsync() {
+		await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+		if (AuthOptions.Value.DefaultChallengeScheme == OpenIdConnectDefaults.AuthenticationScheme) {
+			await HttpContext.SignOutAsync(OpenIdConnectDefaults.AuthenticationScheme);
+		}
+
+		NavigationManager.NavigateTo("/ui/cluster", true);
 	}
 }

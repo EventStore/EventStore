@@ -1,7 +1,6 @@
 ﻿@* Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements. *@
 @* Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md). *@
 
-@using System.Security.Claims
 @using KurrentDB.UI.Services
 @inherits LayoutComponentBase
 @inject Preferences Preferences
@@ -9,18 +8,19 @@
 <MudThemeProvider @ref="@_mudThemeProvider" Theme="@_theme" IsDarkMode="Preferences.DarkMode"/>
 <MudLayout>
 	<MudAppBar Elevation="1">
-		<MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
-		               OnClick="@(_ => DrawerToggle())"/>
+		<MudStaticNavDrawerToggle DrawerId="nav-drawer" Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" />
 		<img alt="Kurrent logo" src="@(Preferences.DarkMode ? "logo_white.svg" : "logo_plum.svg")" height="32"/>
 		@* <MudText Typo="Typo.h5" Class="ml-3">KurrentDB @VersionInfo.Version</MudText> *@
 		<MudText Typo="Typo.h5" Class="ml-3">KurrentDB</MudText>
 		<MudSpacer/>
-		@if (_showLogout) {
-			<MudIconButton Icon="@(Icons.Material.Filled.Logout)" Color="Color.Inherit" OnClick="@Logout"/>
-		}
-		<MudIconButton Icon="@(DarkLightModeButtonIcon)" Color="Color.Inherit" OnClick="@DarkModeToggle"/>
+		<AuthorizeView>
+			<Authorized>
+				<MudIconButton Icon="@(Icons.Material.Filled.Logout)" Color="Color.Inherit" Href="/ui/logout"/>
+			</Authorized>
+		</AuthorizeView>
+		@* <MudIconButton Icon="@(DarkLightModeButtonIcon)" Color="Color.Inherit" OnClick="@DarkModeToggle"/> *@
 	</MudAppBar>
-	<MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2" Width="200px">
+	<MudDrawer id="nav-drawer" @bind-Open="_drawerOpen" Elevation="1" Variant="@DrawerVariant.Responsive" Breakpoint="@Breakpoint.Md" ClipMode="DrawerClipMode.Always">
 		<NavMenu/>
 	</MudDrawer>
 	<MudMainContent Class="mt-16 pa-4">
@@ -36,7 +36,6 @@
 
 @code {
 	bool _drawerOpen = true;
-	bool _showLogout;
 	MudTheme _theme = null!;
 
 	[Inject] private NavigationManager NavigationManager { get; set; } = null!;
@@ -46,10 +45,6 @@
 
 		Preferences.SetTheme(await _mudThemeProvider.GetSystemPreference());
 		StateHasChanged();
-	}
-
-	void HandleUserChange(ClaimsPrincipal principal) {
-		_showLogout = principal.Identity?.IsAuthenticated ?? false;
 	}
 
 	protected override void OnInitialized() {
@@ -77,10 +72,6 @@
 				},
 			}
 		};
-	}
-
-	private void DrawerToggle() {
-		_drawerOpen = !_drawerOpen;
 	}
 
 	private void DarkModeToggle() {

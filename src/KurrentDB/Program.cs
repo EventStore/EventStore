@@ -10,7 +10,6 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-using Blazored.LocalStorage;
 using EventStore.Common.DevCertificates;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
@@ -252,9 +251,9 @@ try {
 			builder.Services.AddMudMarkdownServices();
 			builder.Services.AddSingleton(options);
 			builder.Services.AddScoped<LogObserver>();
+			builder.Services.AddScoped<IdentityRedirectManager>();
 			builder.Services.AddSingleton(monitoringService);
 			builder.Services.AddSingleton(metricsObserver);
-			builder.Services.AddBlazoredLocalStorage();
 
 			Log.Information("Environment Name: {0}", builder.Environment.EnvironmentName);
 			Log.Information("ContentRoot Path: {0}", builder.Environment.ContentRootPath);
