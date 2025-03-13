@@ -244,7 +244,9 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 		services
 			.AddSingleton<ISubscriber>(_mainBus)
 			.AddSingleton<IPublisher>(_mainQueue)
-			.AddSingleton(new Streams<TStreamId>(_mainQueue, _options.Application.MaxAppendSize,
+			.AddSingleton(new Streams<TStreamId>(_mainQueue,
+				Ensure.Positive(_options.Application.MaxAppendSize),
+				Ensure.Positive(_options.Application.MaxAppendEventSize),
 				TimeSpan.FromMilliseconds(_options.Database.WriteTimeoutMs),
 				_expiryStrategy, _trackers.GrpcTrackers, _authorizationProvider))
 			.AddSingleton(new PersistentSubscriptions(_mainQueue, _authorizationProvider))
