@@ -194,10 +194,6 @@ try {
 		exitCodeSource.SetResult(code);
 	});
 
-	Console.CancelKeyPress += delegate {
-		Application.Exit(0, "Cancelled.");
-	};
-
 	using (var hostedService = new ClusterVNodeHostedService(options, certificateProvider, configuration)) {
 		// Synchronous Wait() because ClusterVNodeHostedService must be disposed on the same thread
 		// that it was constructed on, because it makes use of ExclusiveDbLock which uses a Mutex.
@@ -270,7 +266,7 @@ try {
 
 			exitCodeSource.TrySetResult(0);
 		} catch (OperationCanceledException) {
-			// no op
+			exitCodeSource.TrySetResult(0);
 		} catch (Exception ex) {
 			Log.Fatal(ex, "Exiting");
 			exitCodeSource.TrySetResult(1);
