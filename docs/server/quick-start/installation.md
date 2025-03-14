@@ -234,10 +234,10 @@ Pull the container with:
 docker pull docker.kurrent.io/kurrent/kurrentdb:latest
 ```
 
-The following command will start the KurrentDB node using the default HTTP port, without security. You can then connect to it using one of the clients and the `esdb://localhost:2113?tls=false` connection string. You can also access the Admin UI by opening http://localhost:2113 in your browser.
+The following command will start the KurrentDB node using the default HTTP port, without security. You can then connect to it using one of the clients and the `kurrentdb://localhost:2113?tls=false` connection string. You can also access the Admin UI by opening http://localhost:2113 in your browser.
 
 ```bash
-docker run --name esdb-node -it -p 2113:2113 \
+docker run --name kurrentdb-node -it -p 2113:2113 \
     docker.kurrent.io/kurrent/kurrentdb --insecure --run-projections=All
     --enable-atom-pub-over-http
 ```
@@ -313,7 +313,7 @@ You have to tell your client to use secure connection.
 
 | Protocol | Connection string                                                                  |
 |:---------|:-----------------------------------------------------------------------------------|
-| gRPC     | `esdb://localhost:2111,localhost:2112,localhost:2113?tls=true&tlsVerifyCert=false` |
+| gRPC     | `kurrentdb://localhost:2111,localhost:2112,localhost:2113?tls=true&tlsVerifyCert=false` |
 
 As you might've noticed, the connection string has a setting to disable the certificate validation (`tlsVerifyCert=false`). It would prevent the invalid certificate error since the cluster uses a private, auto-generated CA.
 
