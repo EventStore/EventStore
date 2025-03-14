@@ -238,7 +238,7 @@ public partial class TFChunk : IChunkBlob {
 			false,
 			reduceFileCachePressure,
 			fileSystem,
-			getTransformFactory) { _initialized = false };
+			getTransformFactory) { _initialized = false, IsReadOnly = true };
 
 		return chunk.IsRemote
 			? chunk
