@@ -1667,6 +1667,7 @@ public class ClusterVNode<TStreamId> :
 			perSubscrQueue.Start();
 			redactionQueue.Start();
 			dynamicCacheManager.Start();
+			_mainQueue.Publish(new SystemMessage.SystemInit());
 		}
 		_start = StartNode;
 
@@ -1878,7 +1879,6 @@ public class ClusterVNode<TStreamId> :
 		}
 
 		await _start(token);
-		_mainQueue.Publish(new SystemMessage.SystemInit());
 
 		if (IsShutdown)
 			tcs.TrySetResult(this);
