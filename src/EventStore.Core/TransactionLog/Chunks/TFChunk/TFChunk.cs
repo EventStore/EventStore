@@ -54,7 +54,7 @@ public partial class TFChunk : IChunkBlob {
 
 	public bool IsReadOnly {
 		get { return Interlocked.CompareExchange(ref _isReadOnly, 0, 0) == 1; }
-		set { Interlocked.Exchange(ref _isReadOnly, value ? 1 : 0); }
+		private set { Interlocked.Exchange(ref _isReadOnly, value ? 1 : 0); }
 	}
 
 	public bool IsCached {
@@ -66,6 +66,8 @@ public partial class TFChunk : IChunkBlob {
 	}
 
 	public bool IsRemote { get; }
+
+	public bool Initialized => _initialized;
 
 	// the logical size of (untransformed) data (could be > PhysicalDataSize if scavenged chunk)
 	public long LogicalDataSize {
@@ -174,11 +176,12 @@ public partial class TFChunk : IChunkBlob {
 		Uncaching,
 	}
 
-	private readonly ManualResetEventSlim _destroyEvent = new ManualResetEventSlim(false);
+	private readonly ManualResetEventSlim _destroyEvent = new(false);
 	private volatile bool _selfdestructin54321;
 	private volatile bool _deleteFile;
 	private readonly bool _unbuffered;
 	private readonly bool _writeThrough;
+	private volatile bool _initialized;
 
 	// https://learn.microsoft.com/en-US/troubleshoot/windows-server/application-management/operating-system-performance-degrades
 	private readonly bool _reduceFileCachePressure;
@@ -213,6 +216,7 @@ public partial class TFChunk : IChunkBlob {
 		_getTransformFactory = getTransformFactory;
 
 		IsRemote = !_inMem && _fileSystem.IsRemote(ChunkLocator);
+		_initialized = true;
 
 		// Workaround: the lock is used by the finalizer. When the finalizer is called by .NET,
 		// the lock is already finalized (and Dispose is called) and cannot be used. To avoid that situation,
@@ -222,6 +226,23 @@ public partial class TFChunk : IChunkBlob {
 
 	~TFChunk() {
 		FreeCachedData();
+	}
+
+	public static TFChunk CreateLazyRemote(IChunkFileSystem fileSystem, string filename, bool unbufferedRead,
+		IGetChunkTransformFactory getTransformFactory, bool reduceFileCachePressure = false) {
+		var chunk = new TFChunk(
+			filename,
+			TFConsts.MidpointsDepth,
+			false,
+			unbufferedRead,
+			false,
+			reduceFileCachePressure,
+			fileSystem,
+			getTransformFactory) { _initialized = false };
+
+		return chunk.IsRemote
+			? chunk
+			: throw new InvalidOperationException($"Chunk '{filename}' must be a remote chunk.");
 	}
 
 	// local or remote
@@ -338,6 +359,39 @@ public partial class TFChunk : IChunkBlob {
 		}
 
 		return chunk;
+	}
+
+	public ValueTask EnsureInitAsCompleted(bool verifyHash, ITransactionFileTracker tracker,
+		CancellationToken token)
+		=> _initialized ? ValueTask.CompletedTask : EnsureInitAsCompletedCore(verifyHash, tracker, token);
+
+	private async ValueTask EnsureInitAsCompletedCore(bool verifyHash, ITransactionFileTracker tracker,
+		CancellationToken token) {
+		// lazy init is based on the double check pattern implemented on top of existing lock
+		await _cachedDataLock.AcquireAsync(token);
+		try {
+			if (!_initialized) {
+				await InitCompleted(verifyHash, tracker, token);
+
+				// cannot be reordered, so we know that this flag is set to 'true' when all fields initialized properly
+				_initialized = true;
+			}
+		} catch {
+			// revert internal state
+			if (_handle is not null) {
+				_handle.Dispose();
+				_handle = null;
+			}
+
+			_transform = null;
+			_transformHeader = ReadOnlyMemory<byte>.Empty;
+			_chunkFooter = null;
+			_chunkHeader = null;
+
+			throw;
+		} finally {
+			_cachedDataLock.Release();
+		}
 	}
 
 	private async ValueTask InitCompleted(bool verifyHash, ITransactionFileTracker tracker, CancellationToken token) {
