@@ -1,3 +1,9 @@
+---
+dir:
+  order: 6
+  text: Features
+---
+
 # Archiving
 
 ## Introducing Archiving

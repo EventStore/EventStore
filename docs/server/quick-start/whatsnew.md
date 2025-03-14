@@ -20,7 +20,7 @@ KurrentDB 25.0 introduces the initial release of Archiving: a new major feature 
 
 With the new Archiving feature, data is uploaded to cheaper storage such as Amazon S3 and then can be removed from the volumes attached to the cluster nodes. The volumes can be correspondingly smaller and cheaper. The nodes are all able to read the archive, and when a read request from a client requires data that is stored in the archive, the node retrieves that data from the archive transparently to the client.
 
-Refer to [the documentation](../features/archiving.md) for more information about archiving and instructions on how to set it up.
+Refer to [the documentation](../features/README.md) for more information about archiving and instructions on how to set it up.
 
 ### KurrentDB rebranding
 
