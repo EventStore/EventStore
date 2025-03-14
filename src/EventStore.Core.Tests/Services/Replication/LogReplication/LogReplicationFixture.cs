@@ -474,7 +474,7 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 		Assert.AreEqual(leaderCheckpoints[..replicaCheckpoints.Length], replicaCheckpoints);
 	}
 
-	protected void VerifyDB(int expectedLogicalChunks) {
+	protected async ValueTask VerifyDB(int expectedLogicalChunks, CancellationToken token) {
 		var numChunksOnLeader = _leaderInfo.Db.Manager.ChunksCount;
 		var numChunksOnReplica = _replicaInfo.Db.Manager.ChunksCount;
 		var atChunkBoundary = _leaderInfo.Db.Config.WriterCheckpoint.Read() % _leaderInfo.Db.Config.ChunkSize == 0;
@@ -487,13 +487,13 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 		Assert.AreEqual(expectedLogicalChunks, numChunksOnReplica);
 
 		for (var chunkNum = 0; chunkNum < expectedLogicalChunks;) {
-			var leaderChunk = _leaderInfo.Db.Manager.GetChunk(chunkNum);
-			var replicaChunk = _replicaInfo.Db.Manager.GetChunk(chunkNum);
+			var leaderChunk = await _leaderInfo.Db.Manager.GetInitializedChunk(chunkNum, token);
+			var replicaChunk = await _replicaInfo.Db.Manager.GetInitializedChunk(chunkNum, token);
 
 			VerifyHeader(leaderChunk.ChunkHeader, replicaChunk.ChunkHeader);
 			var leaderData = ReadChunkData(leaderChunk.LocalFileName, excludeChecksum: leaderChunk.ChunkFooter != null);
 			var replicaData = ReadChunkData(replicaChunk.LocalFileName, excludeChecksum: replicaChunk.ChunkFooter != null);
-			Assert.True(leaderData.SequenceEqual(replicaData));
+			Assert.True(leaderData.Span.SequenceEqual(replicaData.Span));
 
 			chunkNum = leaderChunk.ChunkHeader.ChunkEndNumber + 1;
 		}
@@ -502,7 +502,7 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 			// verify that the chunk data is empty on the leader
 			var leaderChunk = _leaderInfo.Db.Manager.GetChunk(expectedLogicalChunks);
 			var leaderData = ReadChunkData(leaderChunk.LocalFileName, excludeChecksum: false);
-			Assert.True(leaderData.SequenceEqual(new byte[leaderData.Length]));
+			Assert.True(leaderData.Span.SequenceEqual(new byte[leaderData.Length]));
 		}
 	}
 
@@ -510,13 +510,13 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 		Assert.True(header1.AsByteArray().SequenceEqual(header2.AsByteArray()));
 	}
 
-	private static ReadOnlySpan<byte> ReadChunkData(string fileName, bool excludeChecksum) {
+	private static ReadOnlyMemory<byte> ReadChunkData(string fileName, bool excludeChecksum) {
 		using var fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, FileOptions.SequentialScan);
 		var fi = new FileInfo(fileName);
-		var data = new byte[fi.Length].AsSpan();
+		var data = new byte[fi.Length].AsMemory();
 
 		int pos = 0; int read;
-		while ((read = fs.Read(data[pos..])) > 0)
+		while ((read = fs.Read(data.Span[pos..])) > 0)
 			pos += read;
 
 		return excludeChecksum ? data[TFConsts.ChunkHeaderSize..^ChunkFooter.ChecksumSize] : data[TFConsts.ChunkHeaderSize..];

@@ -243,8 +243,8 @@ public sealed class TFChunkDb : IAsyncDisposable {
 			_log.Information("Done cleaning up temp files.");
 		}
 
-		if (verifyHash && lastChunkNum > 0 && Manager.GetChunk(lastChunkNum - 1) is
-			    { Initialized: true } preLastChunk) {
+		if (verifyHash && lastChunkNum > 0) {
+			var preLastChunk = await Manager.GetInitializedChunk(lastChunkNum - 1, token);
 			var lastBgChunkNum = preLastChunk.ChunkHeader.ChunkStartNumber;
 			ThreadPool.UnsafeQueueUserWorkItem(async token => {
 				for (int chunkNum = lastBgChunkNum; chunkNum >= 0;) {
