@@ -248,7 +248,7 @@ public sealed class TFChunkDb : IAsyncDisposable {
 			var lastBgChunkNum = preLastChunk.ChunkHeader.ChunkStartNumber;
 			ThreadPool.UnsafeQueueUserWorkItem(async token => {
 				for (int chunkNum = lastBgChunkNum; chunkNum >= 0;) {
-					var chunk = Manager.GetChunk(chunkNum);
+					var chunk = Manager.UnsafeGetChunk(chunkNum);
 					try {
 						await chunk.VerifyFileHash(token);
 					} catch (FileBeingDeletedException exc) {

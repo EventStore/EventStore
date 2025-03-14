@@ -360,12 +360,12 @@ public partial class TFChunk : IChunkBlob {
 		return chunk;
 	}
 
-	public ValueTask<TFChunk> EnsureInitialized(CancellationToken token) => _lazyInitArgs switch {
+	public ValueTask EnsureInitialized(CancellationToken token) => _lazyInitArgs switch {
 		(ITransactionFileTracker tracker, bool verifyHash) => EnsureInitAsCompletedCore(verifyHash, tracker, token),
-		_ => ValueTask.FromResult(this),
+		_ => ValueTask.CompletedTask,
 	};
 
-	private async ValueTask<TFChunk> EnsureInitAsCompletedCore(bool verifyHash, ITransactionFileTracker tracker,
+	private async ValueTask EnsureInitAsCompletedCore(bool verifyHash, ITransactionFileTracker tracker,
 		CancellationToken token) {
 		// lazy init is based on the double check pattern implemented on top of existing lock
 		await _cachedDataLock.AcquireAsync(token);
@@ -392,8 +392,6 @@ public partial class TFChunk : IChunkBlob {
 		} finally {
 			_cachedDataLock.Release();
 		}
-
-		return this;
 	}
 
 	private async ValueTask InitCompleted(bool verifyHash, ITransactionFileTracker tracker, CancellationToken token) {

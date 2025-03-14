@@ -91,7 +91,8 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 			// work backwards through the history until we have found enough chunks
 			// to cache according to the chunk cache size. determines lastChunkToCache.
 			for (int chunkNum = _chunksCount - 1; chunkNum >= 0;) {
-				var chunk = await _chunks[chunkNum].EnsureInitialized(token);
+				var chunk = _chunks[chunkNum];
+				await chunk.EnsureInitialized(token);
 				var chunkSize = chunk.IsReadOnly
 					? chunk.ChunkFooter.PhysicalDataSize + chunk.ChunkFooter.MapSize + ChunkHeader.Size +
 					  ChunkFooter.Size
@@ -503,15 +504,15 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 		else if (chunk.Initialized) {
 			task = new(chunk);
 		} else {
-			task = chunk.EnsureInitialized(token);
+			task = EnsureInitialized(chunk, token);
 		}
 
 		return task;
 	}
 
-	TFChunk.TFChunk IChunkRegistry<TFChunk.TFChunk>.TryGetChunkFor(long logPosition) {
+	TFChunk.TFChunk IChunkRegistry<TFChunk.TFChunk>.UnsafeTryGetChunkFor(long logPosition) {
 		var chunkNum = (int)(logPosition / _config.ChunkSize);
-		return chunkNum >= 0 && chunkNum < _chunksCount ? _chunks[chunkNum] : null;
+		return (uint)chunkNum >= (uint)_chunksCount ? _chunks[chunkNum] : null;
 	}
 
 	public ValueTask<TFChunk.TFChunk> TryGetInitializedChunkFor(long logPosition, CancellationToken token) {
@@ -523,20 +524,19 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 		} else if (chunk.Initialized) {
 			task = new(chunk);
 		} else {
-			task = chunk.EnsureInitialized(token);
+			task = EnsureInitialized(chunk, token);
 		}
 
 		return task;
 	}
 
-	public TFChunk.TFChunk GetChunk(int chunkNum) {
-		if (chunkNum < 0 || chunkNum >= _chunksCount)
-			throw new ArgumentOutOfRangeException("chunkNum",
-				string.Format("Chunk #{0} is not present in DB.", chunkNum));
+	public TFChunk.TFChunk UnsafeGetChunk(int chunkNum) {
+		if ((uint)chunkNum >= (uint)_chunksCount)
+			throw new ArgumentOutOfRangeException(nameof(chunkNum),
+				$"Chunk #{chunkNum} is not present in DB.");
 
 		if (_chunks[chunkNum] is not { } chunk)
-			throw new Exception(string.Format("Requested chunk #{0}, which is not present in TFChunkManager.",
-				chunkNum));
+			throw new Exception($"Requested chunk #{chunkNum}, which is not present in TFChunkManager.");
 
 		return chunk;
 	}
@@ -554,10 +554,15 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 		else if (chunk.Initialized) {
 			task = new(chunk);
 		} else {
-			task = chunk.EnsureInitialized(token);
+			task = EnsureInitialized(chunk, token);
 		}
 
 		return task;
+	}
+
+	private static async ValueTask<TFChunk.TFChunk> EnsureInitialized(TFChunk.TFChunk chunk, CancellationToken token) {
+		await chunk.EnsureInitialized(token);
+		return chunk;
 	}
 
 	public async ValueTask<bool> TryClose(CancellationToken token) {
