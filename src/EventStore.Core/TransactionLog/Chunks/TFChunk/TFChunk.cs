@@ -240,7 +240,7 @@ public partial class TFChunk : IChunkBlob {
 			getTransformFactory);
 
 		try {
-			await chunk.InitCompleted(verifyHash, tracker, getTransformFactory, token);
+			await chunk.InitCompleted(verifyHash, tracker, token);
 		} catch {
 			chunk.Dispose();
 			throw;
@@ -340,8 +340,7 @@ public partial class TFChunk : IChunkBlob {
 		return chunk;
 	}
 
-	private async ValueTask InitCompleted(bool verifyHash, ITransactionFileTracker tracker,
-		IGetChunkTransformFactory getTransformFactory, CancellationToken token) {
+	private async ValueTask InitCompleted(bool verifyHash, ITransactionFileTracker tracker, CancellationToken token) {
 		_handle = await _fileSystem.OpenForReadAsync(
 			ChunkLocator,
 			_reduceFileCachePressure
@@ -361,7 +360,7 @@ public partial class TFChunk : IChunkBlob {
 				throw new CorruptDatabaseException(new UnsupportedFileVersionException(ChunkLocator, _chunkHeader.MinCompatibleVersion,
 					CurrentChunkVersion));
 
-			var transformFactory = getTransformFactory.ForExistingChunk(_chunkHeader.TransformType);
+			var transformFactory = _getTransformFactory.ForExistingChunk(_chunkHeader.TransformType);
 
 			var transformHeader = transformFactory.TransformHeaderLength > 0
 				? new byte[transformFactory.TransformHeaderLength]
