@@ -47,13 +47,13 @@ public class TFChunkWriter : ITransactionFileWriter {
 		_nextRecordPosition = _writerCheckpoint.Read();
 	}
 
-	public void Open() {
-		if (_db.Manager.ChunksCount == 0) {
+	public async ValueTask Open(CancellationToken token) {
+		if (_db.Manager.ChunksCount is 0) {
 			// new database
 			_currentChunk = null;
-		} else if ((_currentChunk = _db.Manager.TryGetChunkFor(_nextRecordPosition)) is null) {
+		} else if ((_currentChunk = await _db.Manager.TryGetInitializedChunkFor(_nextRecordPosition, token)) is null) {
 			// we may have been at a chunk boundary and the new chunk wasn't yet created
-			if ((_currentChunk = _db.Manager.TryGetChunkFor(_nextRecordPosition - 1)) is null)
+			if ((_currentChunk = await _db.Manager.TryGetInitializedChunkFor(_nextRecordPosition - 1, token)) is null)
 				throw new Exception($"Failed to get chunk for log position: {_nextRecordPosition}");
 		}
 	}

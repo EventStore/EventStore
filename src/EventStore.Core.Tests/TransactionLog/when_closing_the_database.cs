@@ -77,7 +77,7 @@ public class when_closing_the_database<TLogFormat, TStreamId> : SpecificationWit
 		}
 
 		var writer = new TFChunkWriter(_db);
-		writer.Open();
+		await writer.Open(CancellationToken.None);
 		Assert.IsTrue(await writer.Write(CreateRecord(), CancellationToken.None) is (true, _));
 
 		_db.Config.ChaserCheckpoint.Write(1); // any non-zero value just to test if the checkpoint is flushed

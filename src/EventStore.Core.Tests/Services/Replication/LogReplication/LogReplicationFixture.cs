@@ -97,8 +97,6 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 			flushDurationTracker: new ZeroDurationTracker(), // to force a flush on each write to easily detect when a write is complete
 			getLastIndexedPosition: () => -1);
 
-		storageWriterService.Start();
-
 		return storageWriterService;
 	}
 
@@ -113,6 +111,8 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 			db: db,
 			inputBus: subscribeBus,
 			outputBus: publishBus);
+
+		await writer.Start(token);
 
 		var port = PortsHelper.GetAvailablePort(IPAddress.Loopback);
 		var networkSendBus = new SynchronousScheduler("networkSendBus");
@@ -204,6 +204,8 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 			db: db,
 			inputBus: replicationInterceptor.Bus,
 			outputBus: publishBus);
+
+		await writer.Start(token);
 
 		var epochManager = new FakeEpochManager();
 		var networkSendBus = new SynchronousScheduler("networkSendBus");

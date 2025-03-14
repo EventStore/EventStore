@@ -65,6 +65,8 @@ public partial class TFChunk : IChunkBlob {
 		get { return _cacheStatus is CacheStatus.Uncached; }
 	}
 
+	public bool Initialized => _lazyInitArgs is null;
+
 	public bool IsRemote { get; }
 
 	// the logical size of (untransformed) data (could be > PhysicalDataSize if scavenged chunk)
@@ -358,12 +360,12 @@ public partial class TFChunk : IChunkBlob {
 		return chunk;
 	}
 
-	public ValueTask EnsureInitialized(CancellationToken token) => _lazyInitArgs switch {
+	public ValueTask<TFChunk> EnsureInitialized(CancellationToken token) => _lazyInitArgs switch {
 		(ITransactionFileTracker tracker, bool verifyHash) => EnsureInitAsCompletedCore(verifyHash, tracker, token),
-		_ => ValueTask.CompletedTask
+		_ => ValueTask.FromResult(this),
 	};
 
-	private async ValueTask EnsureInitAsCompletedCore(bool verifyHash, ITransactionFileTracker tracker,
+	private async ValueTask<TFChunk> EnsureInitAsCompletedCore(bool verifyHash, ITransactionFileTracker tracker,
 		CancellationToken token) {
 		// lazy init is based on the double check pattern implemented on top of existing lock
 		await _cachedDataLock.AcquireAsync(token);
@@ -390,6 +392,8 @@ public partial class TFChunk : IChunkBlob {
 		} finally {
 			_cachedDataLock.Release();
 		}
+
+		return this;
 	}
 
 	private async ValueTask InitCompleted(bool verifyHash, ITransactionFileTracker tracker, CancellationToken token) {

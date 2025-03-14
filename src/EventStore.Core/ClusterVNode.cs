@@ -1658,7 +1658,7 @@ public class ClusterVNode<TStreamId> :
 
 			await epochManager.Init(token);
 
-			storageWriter.Start();
+			await storageWriter.Start(token);
 
 			_workersHandler.Start();
 			monitoringQueue.Start();
