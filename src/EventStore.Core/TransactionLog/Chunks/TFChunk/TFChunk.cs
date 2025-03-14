@@ -67,8 +67,6 @@ public partial class TFChunk : IChunkBlob {
 
 	public bool IsRemote { get; }
 
-	public bool Initialized => _initialized;
-
 	// the logical size of (untransformed) data (could be > PhysicalDataSize if scavenged chunk)
 	public long LogicalDataSize {
 		get { return Interlocked.Read(ref _logicalDataSize); }
@@ -181,7 +179,7 @@ public partial class TFChunk : IChunkBlob {
 	private volatile bool _deleteFile;
 	private readonly bool _unbuffered;
 	private readonly bool _writeThrough;
-	private volatile bool _initialized;
+	private volatile ITuple _lazyInitArgs; // null if initialized
 
 	// https://learn.microsoft.com/en-US/troubleshoot/windows-server/application-management/operating-system-performance-degrades
 	private readonly bool _reduceFileCachePressure;
@@ -216,7 +214,6 @@ public partial class TFChunk : IChunkBlob {
 		_getTransformFactory = getTransformFactory;
 
 		IsRemote = !_inMem && _fileSystem.IsRemote(ChunkLocator);
-		_initialized = true;
 
 		// Workaround: the lock is used by the finalizer. When the finalizer is called by .NET,
 		// the lock is already finalized (and Dispose is called) and cannot be used. To avoid that situation,
@@ -228,8 +225,8 @@ public partial class TFChunk : IChunkBlob {
 		FreeCachedData();
 	}
 
-	public static TFChunk CreateLazyRemote(IChunkFileSystem fileSystem, string filename, bool unbufferedRead,
-		IGetChunkTransformFactory getTransformFactory, bool reduceFileCachePressure = false) {
+	public static TFChunk CreateLazyRemoteCompleted(IChunkFileSystem fileSystem, string filename, bool verifyHash, bool unbufferedRead,
+		ITransactionFileTracker tracker, IGetChunkTransformFactory getTransformFactory, bool reduceFileCachePressure) {
 		var chunk = new TFChunk(
 			filename,
 			TFConsts.MidpointsDepth,
@@ -238,7 +235,7 @@ public partial class TFChunk : IChunkBlob {
 			false,
 			reduceFileCachePressure,
 			fileSystem,
-			getTransformFactory) { _initialized = false, IsReadOnly = true };
+			getTransformFactory) { _lazyInitArgs = (tracker, verifyHash), IsReadOnly = true };
 
 		return chunk.IsRemote
 			? chunk
@@ -361,20 +358,21 @@ public partial class TFChunk : IChunkBlob {
 		return chunk;
 	}
 
-	public ValueTask EnsureInitAsCompleted(bool verifyHash, ITransactionFileTracker tracker,
-		CancellationToken token)
-		=> _initialized ? ValueTask.CompletedTask : EnsureInitAsCompletedCore(verifyHash, tracker, token);
+	public ValueTask EnsureInitialized(CancellationToken token) => _lazyInitArgs switch {
+		(ITransactionFileTracker tracker, bool verifyHash) => EnsureInitAsCompletedCore(verifyHash, tracker, token),
+		_ => ValueTask.CompletedTask
+	};
 
 	private async ValueTask EnsureInitAsCompletedCore(bool verifyHash, ITransactionFileTracker tracker,
 		CancellationToken token) {
 		// lazy init is based on the double check pattern implemented on top of existing lock
 		await _cachedDataLock.AcquireAsync(token);
 		try {
-			if (!_initialized) {
+			if (_lazyInitArgs is not null) {
 				await InitCompleted(verifyHash, tracker, token);
 
 				// cannot be reordered, so we know that this flag is set to 'true' when all fields initialized properly
-				_initialized = true;
+				_lazyInitArgs = null;
 			}
 		} catch {
 			// revert internal state
