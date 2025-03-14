@@ -1,3 +1,9 @@
+---
+dir:
+  text: "Release schedule"
+  order: 7
+---
+
 # Release schedule
 
 ## KurrentDB versioning and release schedule
