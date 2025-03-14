@@ -74,9 +74,10 @@
 		};
 	}
 
-	private void DarkModeToggle() {
-		Preferences.ToggleTheme();
-	}
+	// Remove it until we figure out how to make SSR work with dynamic actions
+	// private void DarkModeToggle() {
+	// 	Preferences.ToggleTheme();
+	// }
 
 	private readonly PaletteLight _lightPalette = new() {
 		Black = "#110e2d",
@@ -117,14 +118,10 @@
 
 	MudThemeProvider _mudThemeProvider = null!;
 
-	string DarkLightModeButtonIcon => Preferences.DarkMode switch {
-		true => Icons.Material.Rounded.AutoMode,
-		false => Icons.Material.Outlined.DarkMode,
-	};
-
-	void Logout() {
-		NavigationManager.NavigateTo("/ui/logout", true);
-	}
+	// string DarkLightModeButtonIcon => Preferences.DarkMode switch {
+	// 	true => Icons.Material.Rounded.AutoMode,
+	// 	false => Icons.Material.Outlined.DarkMode,
+	// };
 }
 
 

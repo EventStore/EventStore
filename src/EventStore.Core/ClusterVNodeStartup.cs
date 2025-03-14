@@ -9,7 +9,6 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using EventStore.Common.Configuration;
 using EventStore.Common.Utils;
-using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Metrics;
