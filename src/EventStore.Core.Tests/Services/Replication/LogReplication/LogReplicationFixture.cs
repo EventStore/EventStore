@@ -500,7 +500,7 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 
 		if (atChunkBoundary) {
 			// verify that the chunk data is empty on the leader
-			var leaderChunk = _leaderInfo.Db.Manager.GetChunk(expectedLogicalChunks);
+			var leaderChunk = await _leaderInfo.Db.Manager.GetInitializedChunk(expectedLogicalChunks, token);
 			var leaderData = ReadChunkData(leaderChunk.LocalFileName, excludeChecksum: false);
 			Assert.True(leaderData.Span.SequenceEqual(new byte[leaderData.Length]));
 		}

@@ -91,7 +91,7 @@ public class when_having_scavenged_tfchunk_with_all_records_removed<TLogFormat, 
 			_logFormat.Metastreams);
 		await scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false);
 
-		_scavengedChunk = _db.Manager.GetChunk(0);
+		_scavengedChunk = await _db.Manager.GetInitializedChunk(0, CancellationToken.None);
 	}
 
 	public override async Task TestFixtureTearDown() {
