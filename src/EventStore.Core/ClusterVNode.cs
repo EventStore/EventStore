@@ -1829,7 +1829,8 @@ public class ClusterVNode<TStreamId> :
 			tcs.TrySetResult(this);
 		}
 
-		Start();
+		if (!IsShutdown)
+			Start();
 
 		if (IsShutdown)
 			tcs.TrySetResult(this);
