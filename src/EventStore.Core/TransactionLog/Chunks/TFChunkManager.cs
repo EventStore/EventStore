@@ -512,7 +512,7 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 
 	TFChunk.TFChunk IChunkRegistry<TFChunk.TFChunk>.UnsafeTryGetChunkFor(long logPosition) {
 		var chunkNum = (int)(logPosition / _config.ChunkSize);
-		return (uint)chunkNum >= (uint)_chunksCount ? _chunks[chunkNum] : null;
+		return (uint)chunkNum < (uint)_chunksCount ? _chunks[chunkNum] : null;
 	}
 
 	public ValueTask<TFChunk.TFChunk> TryGetInitializedChunkFor(long logPosition, CancellationToken token) {
