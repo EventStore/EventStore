@@ -58,7 +58,7 @@ To install packages, you can quickly set up the repository automatically (recomm
 
 ```bash
 curl -1sLf \
-  'https://packages.eventstore.com/public/eventstore/setup.deb.sh' \
+  'https://packages.kurrent.io/public/kurrent/setup.deb.sh' \
   | sudo -E bash
 ```
 
@@ -66,7 +66,7 @@ If you need to force a specific distribution, release/version, architecture, or 
 
 ```bash
 curl -1sLf \
-  'https://packages.eventstore.com/public/eventstore/setup.deb.sh' \
+  'https://packages.kurrent.io/public/kurrent/setup.deb.sh' \
   | sudo -E distro=DISTRO codename=CODENAME arch=ARCH component=COMPONENT bash
 ```
 
@@ -77,19 +77,19 @@ apt-get install -y debian-keyring  # debian only
 apt-get install -y debian-archive-keyring  # debian only
 apt-get install -y apt-transport-https
 # For Debian Stretch, Ubuntu 16.04 and later
-keyring_location=/usr/share/keyrings/eventstore-eventstore-archive-keyring.gpg
+keyring_location=/usr/share/keyrings/eventstore-kurrent-archive-keyring.gpg
 # For Debian Jessie, Ubuntu 15.10 and earlier
-keyring_location=/etc/apt/trusted.gpg.d/eventstore-eventstore.gpg
-curl -1sLf 'https://packages.eventstore.com/public/eventstore/gpg.D008FDA5E151E345.key' |  gpg --dearmor >> ${keyring_location}
-curl -1sLf 'https://packages.eventstore.com/public/eventstore/config.deb.txt?distro=ubuntu&codename=zorin&component=main' > /etc/apt/sources.list.d/eventstore-eventstore.list
+keyring_location=/etc/apt/trusted.gpg.d/eventstore-kurrent.gpg
+curl -1sLf 'https://packages.kurrent.io/public/kurrent/gpg.094442D90AD50BCD.key' |  gpg --dearmor >> ${keyring_location}
+curl -1sLf 'https://packages.kurrent.io/public/kurrent/config.deb.txt?distro=ubuntu&codename=xenial&component=main' > /etc/apt/sources.list.d/eventstore-kurrent.list
 sudo chmod 644 ${keyring_location}
-sudo chmod 644 /etc/apt/sources.list.d/eventstore-eventstore.list
+sudo chmod 644 /etc/apt/sources.list.d/eventstore-kurrent.list
 apt-get update
 ```
 
 #### Install with apt-get
 
-Add the repository to your system according to the [instructions on Cloudsmith](https://cloudsmith.io/~eventstore/repos/eventstore-preview/setup/#formats-deb).
+Add the repository to your system according to the [instructions on Cloudsmith](https://cloudsmith.io/~eventstore/repos/kurrent/setup/#formats-deb).
 
 Then, install the package:
 
@@ -119,7 +119,7 @@ To install packages, you can quickly set up the repository automatically (recomm
 
 ```bash
 curl -1sLf \
-  'https://packages.eventstore.com/public/eventstore/setup.rpm.sh' \
+  'https://packages.kurrent.io/public/kurrent/setup.rpm.sh' \
   | sudo -E bash
 ```
 
@@ -127,7 +127,7 @@ If you need to force a specific distribution, release/version, or architecture, 
 
 ```bash
 curl -1sLf \
-  'https://packages.eventstore.com/public/eventstore/setup.rpm.sh' \
+  'https://packages.kurrent.io/public/kurrent/setup.rpm.sh' \
   | sudo -E distro=DISTRO codename=CODENAME arch=ARCH bash
 ```
 
@@ -135,10 +135,10 @@ Alternatively, you can manually configure it yourself before installing packages
 
 ```bash
 yum install yum-utils pygpgme
-rpm --import 'https://packages.eventstore.com/public/eventstore/gpg.D008FDA5E151E345.key'
-curl -1sLf 'https://packages.eventstore.com/public/eventstore/config.rpm.txt?distro=el&codename=9' > /tmp/eventstore-eventstore.repo
-yum-config-manager --add-repo '/tmp/eventstore-eventstore.repo'
-yum -q makecache -y --disablerepo='*' --enablerepo='eventstore-eventstore'
+rpm --import 'https://packages.kurrent.io/public/kurrent/gpg.094442D90AD50BCD.key'
+curl -1sLf 'https://packages.kurrent.io/public/kurrent/config.rpm.txt?distro=el&codename=7' > /tmp/eventstore-kurrent.repo
+yum-config-manager --add-repo '/tmp/eventstore-kurrent.repo'
+yum -q makecache -y --disablerepo='*' --enablerepo='eventstore-kurrent'
 ```
 
 ::: note
@@ -147,7 +147,7 @@ Please replace el and 7 above with your actual distribution and version and use 
 
 #### Install with yum
 
-Add the repository to your system according to the [instructions on Cloudsmith](https://cloudsmith.io/~eventstore/repos/eventstore/setup/#formats-rpm).
+Add the repository to your system according to the [instructions on Cloudsmith](https://cloudsmith.io/~eventstore/repos/kurrent/setup/#formats-rpm).
 
 Then, install the package:
 
@@ -171,7 +171,7 @@ Once installed, the server is registered as a service. Therefore, you can start 
 systemctl start kurrentdb
 ```
 
-When you install the KurrentDB package, the service doesn't start by default. This allows you to change the configuration located at `etc/kurrentdb/kurrentdb.conf` and to prevent creating database and index files in the default location.
+When you install the KurrentDB package, the service doesn't start by default. This allows you to change the configuration located at `/etc/kurrentdb/kurrentdb.conf` and to prevent creating database and index files in the default location.
 
 ::: warning
 We recommend that when using Linux you set the 'open file limit' to a high number. The precise value depends on your use case, but at least between `30,000` and `60,000`.
@@ -191,7 +191,7 @@ KurrentDB has NuGet packages available on Cloudsmith, which replaces the previou
 Add a new package source to your Chocolatey configuration:
 
 ```powershell
-choco source add -n eventstore-eventstore -s https://nuget.eventstore.com/eventstore/v2/
+choco source add -n eventstore-kurrent -s https://nuget.kurrent.io/kurrent/v2/
 ```
 
 #### Install with Chocolatey
@@ -199,7 +199,7 @@ choco source add -n eventstore-eventstore -s https://nuget.eventstore.com/events
 You can install KurrentDB through Chocolatey:
 
 ```powershell
-choco install kurrentdb -s eventstore-eventstore --version 25.0.0
+choco install kurrentdb -s eventstore-kurrent --version 25.0.0
 ```
 
 KurrentDB can then be run with `KurrentDB.exe`:
@@ -226,19 +226,19 @@ closer to what you'd run in production.
 
 ### Run with Docker
 
-KurrentDB Docker images are now hosted in the registry `docker.eventstore.com/eventstore`.
+KurrentDB Docker images are now hosted in the registry `docker.kurrent.io/kurrent`.
 
 Pull the container with:
 
 ```bash
-docker pull docker.eventstore.com/eventstore/kurrentdb:latest
+docker pull docker.kurrent.io/kurrent/kurrentdb:latest
 ```
 
 The following command will start the KurrentDB node using the default HTTP port, without security. You can then connect to it using one of the clients and the `esdb://localhost:2113?tls=false` connection string. You can also access the Admin UI by opening http://localhost:2113 in your browser.
 
 ```bash
 docker run --name esdb-node -it -p 2113:2113 \
-    docker.eventstore.com/eventstore/kurrentdb --insecure --run-projections=All
+    docker.kurrent.io/kurrent/kurrentdb --insecure --run-projections=All
     --enable-atom-pub-over-http
 ```
 
@@ -321,7 +321,7 @@ However, **we do not recommend using this setting in production**. Instead, you 
 
 ## Building from source
 
-You can also build [KurrentDB from source](https://github.com/EventStore/EventStore?tab=readme-ov-file#building-eventstoredb). Before doing that, you need to install the .NET 8 SDK. KurrentDB packages have the .NET Runtime embedded, so you don't need to install anything except the KurrentDB package.
+You can also build [KurrentDB from source](https://github.com/EventStore/EventStore?tab=readme-ov-file#building-kurrentdb). Before doing that, you need to install the .NET 8 SDK. KurrentDB packages have the .NET Runtime embedded, so you don't need to install anything except the KurrentDB package.
 
 ## Compatibility notes
 
