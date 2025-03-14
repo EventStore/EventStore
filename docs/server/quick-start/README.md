@@ -35,7 +35,7 @@ Users of KurrentDB can use the [community forum](https://www.kurrent.io/communit
 
 ### Enterprise customers
 
-Customers with a paid subscription can open tickets using the [support portal](https://eventstore.freshdesk.com). For additional information on supported versions, users can access KurrentDB's [release and support schedule](https://www.kurrent.io/eventstoredb-long-term-support-and-release-schedule). <!--TODO: Where should we put the description of the new release schedule? -->
+Customers with a paid subscription can open tickets using the [support portal](https://eventstore.freshdesk.com). For additional information on supported versions, users can access KurrentDB's [release and support schedule](../release-schedule.md).
 
 ### Issues
 

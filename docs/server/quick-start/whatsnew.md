@@ -37,7 +37,7 @@ The KurrentDB packages are still hosted on [Cloudsmith](https://cloudsmith.io/~e
 We are changing the version scheme with the first official release of KurrentDB.
 
 As before, there will be two categories of release:
-* Long term support (LTS) releases which are supported for a minimum of two years, with a 2 month grace period.
+* Long term support (LTS) releases which are supported for a minimum of two years, with a two month grace period.
 * Feature releases which are supported until the next major or minor release.
 
 The version number will now reflect whether a release is an LTS or feature release, rather than being based on the year. LTS releases will have even major numbers, and feature releases will have odd major numbers.
@@ -61,13 +61,13 @@ As an example, the future releases of KurrentDB may look like this:
 | `25.1.0` | Feature | A new feature added to KurrentDB. |
 | `26.0.0` | LTS     | The first LTS release of KurrentDB. |
 | `26.0.1` | LTS     | A patch to 26.0.0. |
-| `27.0.0` | Feature | The next feature release, with new features |
+| `27.0.0` | Feature | The next feature release, with new features. |
 
 #### New release schedule
 
 The release schedule will be changing with the versioning scheme, given that the version numbers are no longer tied to the year and month:
 
-* LTS: At least 1 LTS release per year.
+* LTS: At least one LTS release per year.
 * Feature: Published as necessary when new features are ready.
 * Patch (LTS and feature): Published as necessary with bugfixes and/or security patches.
 
