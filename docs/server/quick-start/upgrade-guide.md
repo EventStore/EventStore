@@ -84,7 +84,7 @@ If you are running KurrentDB as a service, you will need to grant the `kurrent` 
 
 ## Breaking changes
 
-### From EventStoreDB version 24.10 and earlier
+### From v24.10 and earlier
 
 #### Metrics name changes
 
@@ -169,7 +169,7 @@ The following deprecated options were removed as they had no effect:
 - `DisableInternalTcpTls`
 - `OptimizeIndexMerge`
 
-### From EventStoreDB version 24.6 and earlier
+### From v24.6 and earlier
 
 #### Histograms endpoint has been removed
 
@@ -262,7 +262,7 @@ UserCertificates:
   Enabled: true
 ```
 
-### From EventStoreDB version 23.10 and earlier
+### From v23.10 and earlier
 
 #### External TCP API removed
 
@@ -287,7 +287,7 @@ A number of configuration options have been removed as part of this. KurrentDB w
 - `NodeTcpPort`
 - `NodeTcpPortAdvertiseAs`
 
-### From EventStoreDB version 22.10 and earlier
+### From v22.10 and earlier
 
 The updates to anonymous access described in the [release notes](https://www.eventstore.com/blog/23.10.0-release-notes) have introduced some breaking changes. We have also removed, renamed, and deprecated some options in KurrentDB.
 
