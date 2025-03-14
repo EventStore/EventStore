@@ -91,7 +91,7 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 			// work backwards through the history until we have found enough chunks
 			// to cache according to the chunk cache size. determines lastChunkToCache.
 			for (int chunkNum = _chunksCount - 1; chunkNum >= 0;) {
-				var chunk = _chunks[chunkNum];
+				var chunk = await _chunks[chunkNum].EnsureInitialized(token);
 				var chunkSize = chunk.IsReadOnly
 					? chunk.ChunkFooter.PhysicalDataSize + chunk.ChunkFooter.MapSize + ChunkHeader.Size +
 					  ChunkFooter.Size
