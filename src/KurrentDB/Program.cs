@@ -10,7 +10,6 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-using Blazored.LocalStorage;
 using EventStore.Common.DevCertificates;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
@@ -24,8 +23,8 @@ using KurrentDB;
 using KurrentDB.Components;
 using KurrentDB.Services;
 using KurrentDB.Tools;
+using KurrentDB.UI.Services;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
@@ -90,7 +89,7 @@ try {
 	var gcSettings = string.Join($"{Environment.NewLine}    ", GC.GetConfigurationVariables().Select(kvp => $"{kvp.Key}: {kvp.Value}"));
 	Log.Information($"GC Configuration settings:{Environment.NewLine}    {{settings}}", gcSettings);
 
-	Log.Information(options.DumpOptions());
+	Log.Information(options.DumpOptions()!);
 
 	var level = options.Application.AllowUnknownOptions
 		? LogEventLevel.Warning
@@ -243,25 +242,33 @@ try {
 			// Later it may be possible to use constructor injection instead if it fits with the bootstrapping strategy.
 			builder.Services.AddSingleton<IHostedService>(hostedService);
 			builder.Services.AddSingleton<Preferences>();
-			builder.Services.AddRazorComponents().AddInteractiveServerComponents();
+			builder.Services
+				.AddRazorComponents()
+				.AddInteractiveServerComponents()
+				.AddInteractiveWebAssemblyComponents();
 			builder.Services.AddCascadingAuthenticationState();
 			builder.Services.AddMudServices();
 			builder.Services.AddMudMarkdownServices();
 			builder.Services.AddSingleton(options);
 			builder.Services.AddScoped<LogObserver>();
+			builder.Services.AddScoped<IdentityRedirectManager>();
 			builder.Services.AddSingleton(monitoringService);
 			builder.Services.AddSingleton(metricsObserver);
-			builder.Services.AddBlazoredLocalStorage();
-			builder.Services.AddSingleton<JwtTokenService>();
-			builder.Services.AddScoped<AuthService>();
-			builder.Services.AddScoped<AuthenticationStateProvider, AuthStateProvider>();
 
 			Log.Information("Environment Name: {0}", builder.Environment.EnvironmentName);
 			Log.Information("ContentRoot Path: {0}", builder.Environment.ContentRootPath);
 
 			var app = builder.Build();
+			if (app.Environment.IsDevelopment()) {
+				app.UseWebAssemblyDebugging();
+			}
+
 			hostedService.Node.Startup.Configure(app);
-			app.MapRazorComponents<App>().DisableAntiforgery().AddInteractiveServerRenderMode();
+			app.MapRazorComponents<App>()
+				.DisableAntiforgery()
+				.AddInteractiveServerRenderMode()
+				.AddInteractiveWebAssemblyRenderMode()
+				.AddAdditionalAssemblies(typeof(KurrentDB.UI._Imports).Assembly);
 			await app.RunAsync(token);
 
 			exitCodeSource.TrySetResult(0);
