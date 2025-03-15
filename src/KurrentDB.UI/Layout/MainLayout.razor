@@ -3,13 +3,12 @@
 
 @using KurrentDB.UI.Services
 @inherits LayoutComponentBase
-@inject Preferences Preferences
 
-<MudThemeProvider @ref="@_mudThemeProvider" Theme="@_theme" IsDarkMode="Preferences.DarkMode"/>
+<MudThemeProvider @ref="@_mudThemeProvider" Theme="@_theme" IsDarkMode="_darkMode"/>
 <MudLayout>
 	<MudAppBar Elevation="1">
 		<MudStaticNavDrawerToggle DrawerId="nav-drawer" Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" />
-		<img alt="Kurrent logo" src="@(Preferences.DarkMode ? "logo_white.svg" : "logo_plum.svg")" height="32"/>
+		<img alt="Kurrent logo" src="@(_darkMode ? "logo_white.svg" : "logo_plum.svg")" height="32"/>
 		@* <MudText Typo="Typo.h5" Class="ml-3">KurrentDB @VersionInfo.Version</MudText> *@
 		<MudText Typo="Typo.h5" Class="ml-3">KurrentDB</MudText>
 		<MudSpacer/>
@@ -36,16 +35,17 @@
 
 @code {
 	bool _drawerOpen = true;
+	bool _darkMode = true;
 	MudTheme _theme = null!;
 
 	[Inject] private NavigationManager NavigationManager { get; set; } = null!;
 
-	protected override async Task OnAfterRenderAsync(bool firstRender) {
-		if (!firstRender) return;
-
-		Preferences.SetTheme(await _mudThemeProvider.GetSystemPreference());
-		StateHasChanged();
-	}
+	// protected override async Task OnAfterRenderAsync(bool firstRender) {
+	// 	if (!firstRender) return;
+	//
+	// 	Preferences.SetTheme(await _mudThemeProvider.GetSystemPreference());
+	// 	StateHasChanged();
+	// }
 
 	protected override void OnInitialized() {
 		base.OnInitialized();
