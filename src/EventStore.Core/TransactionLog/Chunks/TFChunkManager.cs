@@ -254,9 +254,10 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 	// Atomically switches them in if the range precisely overlaps one or more chunks in _chunks
 	public async ValueTask<bool> SwitchInCompletedChunks(IReadOnlyList<string> locators, CancellationToken token) {
 		var newChunks = new TFChunk.TFChunk[locators.Count];
+		var i = 0;
 		try {
-			for (var i = 0; i < locators.Count; i++) {
-				newChunks[i] = await TFChunk.TFChunk.FromCompletedFile(
+			for (; i < locators.Count; i++) {
+				var chunk = await TFChunk.TFChunk.FromCompletedFile(
 					fileSystem: FileSystem,
 					filename: locators[i],
 					verifyHash: false,
@@ -265,11 +266,15 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 					getTransformFactory: _transformManager,
 					reduceFileCachePressure: _config.ReduceFileCachePressure,
 					token: token);
+
+				await chunk.EnsureInitialized(token);
+				newChunks[i] = chunk;
 			}
 		} catch {
-			for (var i = 0; i < newChunks.Length; i++) {
-				newChunks[i]?.Dispose();
+			for (var j = 0; j < i; j++) {
+				newChunks[i].Dispose();
 			}
+
 			throw;
 		}
 
