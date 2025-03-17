@@ -227,23 +227,6 @@ public partial class TFChunk : IChunkBlob {
 		FreeCachedData();
 	}
 
-	public static TFChunk CreateLazyRemoteCompleted(IChunkFileSystem fileSystem, string filename, bool verifyHash, bool unbufferedRead,
-		ITransactionFileTracker tracker, IGetChunkTransformFactory getTransformFactory, bool reduceFileCachePressure) {
-		var chunk = new TFChunk(
-			filename,
-			TFConsts.MidpointsDepth,
-			false,
-			unbufferedRead,
-			false,
-			reduceFileCachePressure,
-			fileSystem,
-			getTransformFactory) { _lazyInitArgs = (tracker, verifyHash), IsReadOnly = true };
-
-		return chunk.IsRemote
-			? chunk
-			: throw new InvalidOperationException($"Chunk '{filename}' must be a remote chunk.");
-	}
-
 	// local or remote
 	public static async ValueTask<TFChunk> FromCompletedFile(IChunkFileSystem fileSystem, string filename, bool verifyHash, bool unbufferedRead,
 		ITransactionFileTracker tracker, IGetChunkTransformFactory getTransformFactory,
@@ -259,11 +242,16 @@ public partial class TFChunk : IChunkBlob {
 			fileSystem,
 			getTransformFactory);
 
-		try {
-			await chunk.InitCompleted(verifyHash, tracker, header, footer, token);
-		} catch {
-			chunk.Dispose();
-			throw;
+		if (chunk.IsRemote) {
+			chunk.IsReadOnly = true;
+			chunk._lazyInitArgs = (tracker, verifyHash);
+		} else {
+			try {
+				await chunk.InitCompleted(verifyHash, tracker, header, footer, token);
+			} catch {
+				chunk.Dispose();
+				throw;
+			}
 		}
 
 		return chunk;
