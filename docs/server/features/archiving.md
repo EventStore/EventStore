@@ -51,8 +51,6 @@ Read requests that read the archive will have comparatively high latency and at 
   - This prevents the cluster from ever diverging from the content of the archive, even if multiple nodes are restored from backup simultaneously.
   - When restoring an old backup there may be a lot of data to download and store locally. In such cases it is preferable to create a new backup from another node and use that to restore (but, as described above, do not restore the Archiver Node from a backup of another node).
 
-
-
 ## Configuration
 
 Sample configuration:
@@ -89,7 +87,7 @@ Archiver: true
 
 The Archiver Node is a read-only replica and does not participate in quorum activities. It must be a separate node to the main cluster nodes. e.g. If you have a three node cluster, you will need a fourth node to be the archiver. If you already have a read-only replica as a forth node then it is possible to use it as the Archiver Node.
 
-`RetainAtLeast` is the retention policy for what to retain in the local volume for each node. It does not affect which chunks are uploaded to the archive by the Archiver Node (which will upload all completed committed chunks). If a chunk contains any data less than `RetainAtLeast:Days` old, then it will not be removed locally. If a chunk contains any data that is within `RetainAtLeast:LogicalBytes` of the tail of the log (strictly: the `scavenge point` of the current scavenge) then it will not be removed locally.
+`RetainAtLeast` is the retention policy for what to retain in the local volume for each node. It does not affect which chunks are uploaded to the archive by the Archiver Node (which will upload all completed committed chunks). If a chunk contains any data less than `RetainAtLeast:Days` old, then it will not be removed locally. If a chunk contains any data that is within `RetainAtLeast:LogicalBytes` of the tail of the log (strictly: the `scavenge point` of the current scavenge) then it will not be removed locally. The metrics described below can be useful to determine sensible values for the retention policy.
 
 On startup, up to `MaxMemTableSize` events can be read from the log. It is recommended to keep at least this much data locally for faster startup.
 
