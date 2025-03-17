@@ -506,9 +506,9 @@ You need to configure the following:
 			"AllowedScopes": [
 				"streams",
 				"openid",
-				"profile",
+				"profile"
 			],
-			"RedirectUris": ["https://localhost:2113/oauth/callback","https://127.0.0.1:2113/oauth/callback"],
+			"RedirectUris": ["https://localhost:2113/signin-oidc","https://127.0.0.1:2113/signin-oidc","https://localhost:2113/oauth/callback","https://127.0.0.1:2113/oauth/callback"],
 			"AlwaysIncludeUserClaimsInIdToken": true,
 			"RequireConsent": false,
 			"AlwaysSendClientClaims": true,
