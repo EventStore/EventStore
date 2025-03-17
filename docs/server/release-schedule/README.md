@@ -10,46 +10,47 @@ dir:
 
 There are two categories of release for KurrentDB:
 * Long term support (LTS) releases.
-* Feature releases.
+* Short term support (STS) releases.
 
-The version number reflects whether a release is an LTS or feature release. LTS releases have even major numbers, and feature releases have odd major numbers.
+The version number reflects whether a release is an LTS or STS release. LTS releases have _even_ major numbers, and STS releases have _odd_ major numbers.
 
 ### Versioning scheme
 
 The version scheme for KurrentDB is `Major.Minor.Patch` where:
+
 * `Major`
-    * Is odd for feature releases.
-    * Is even for LTS releases.
+    * Is _even_ for LTS releases.
+    * Is _odd_ for STS releases.
 * `Minor`
     * Increments with scope changes or new features.
     * Is typically `0` for LTS releases, but may be incremented in rare cases.
-* `Patch` for bug/security fixes.
+* `Patch` for bug fixes.
 
 As an example, the future releases of KurrentDB may look like this:
 
 | Version  | Type    | Description |
 |----------|---------|-------------|
-| `25.0.0` | Feature | The first feature release of KurrentDB. |
-| `25.1.0` | Feature | A new feature added to KurrentDB. |
+| `25.0.0` | STS     | The first release of KurrentDB. |
+| `25.1.0` | STS     | New features added. |
 | `26.0.0` | LTS     | The first LTS release of KurrentDB. |
 | `26.0.1` | LTS     | A patch to 26.0.0. |
-| `27.0.0` | Feature | The next feature release, with new features. |
+| `27.0.0` | STS     | New features added. |
 
 ### Long term support releases
 
-We aim to release one LTS version of KurrentDB per year.
+There will be approximately one LTS release of KurrentDB per year.
 
 These versions will be supported for a minimum of two years, with a two month grace period for organizing upgrades when the LTS goes out of support.
 
 LTS versions of KurrentDB start with an even major number.
 
-### Feature releases
+### Short term support releases
 
-Feature releases will be published when new features are added to KurrentDB.
+STS releases will be published as new features are added to KurrentDB.
 
-These versions will be supported until the next major or minor version of KurrentDB.
+These versions will be supported until the next STS or LTS release of KurrentDB.
 
-Feature versions of KurrentDB start with an odd major number.
+STS versions of KurrentDB start with an odd major number.
 
 ## Supported EventStoreDB versions
 
