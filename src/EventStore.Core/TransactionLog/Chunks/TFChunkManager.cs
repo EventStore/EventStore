@@ -226,11 +226,12 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 		Debug.Assert(chunk is not null);
 		Debug.Assert(_chunksLocker.IsLockHeld);
 
-		for (int i = chunk.ChunkHeader.ChunkStartNumber; i <= chunk.ChunkHeader.ChunkEndNumber; ++i) {
+		var info = chunk.ChunkInfo;
+		for (int i = info.ChunkStartNumber; i <= info.ChunkEndNumber; ++i) {
 			_chunks[i] = chunk;
 		}
 
-		_chunksCount = Math.Max(chunk.ChunkHeader.ChunkEndNumber + 1, _chunksCount);
+		_chunksCount = Math.Max(info.ChunkEndNumber + 1, _chunksCount);
 	}
 
 	public async ValueTask AddChunk(TFChunk.TFChunk chunk, CancellationToken token) {

@@ -102,6 +102,7 @@ public partial class TFChunk : IChunkBlob {
 
 	public ChunkInfo ChunkInfo {
 		get => new() {
+			ChunkStartNumber = _chunkHeader.ChunkStartNumber,
 			ChunkEndNumber = _chunkHeader.ChunkEndNumber,
 			ChunkEndPosition = _chunkHeader.ChunkEndPosition,
 			IsRemote = IsRemote,
@@ -227,31 +228,26 @@ public partial class TFChunk : IChunkBlob {
 		FreeCachedData();
 	}
 
-	// local or remote
-	public static async ValueTask<TFChunk> FromCompletedFile(IChunkFileSystem fileSystem, string filename, bool verifyHash, bool unbufferedRead,
-		ITransactionFileTracker tracker, IGetChunkTransformFactory getTransformFactory,
-		bool reduceFileCachePressure = false, ChunkHeader header = null, ChunkFooter footer = null, CancellationToken token = default) {
-
-		var chunk = new TFChunk(
-			filename,
-			TFConsts.MidpointsDepth,
-			false,
-			unbufferedRead,
-			false,
-			reduceFileCachePressure,
-			fileSystem,
+	private static TFChunk FromCompletedFile(IChunkFileSystem fileSystem, string filename, bool unbufferedRead,
+		IGetChunkTransformFactory getTransformFactory, bool reduceFileCachePressure)
+		=> new(filename, TFConsts.MidpointsDepth, false, unbufferedRead, false, reduceFileCachePressure, fileSystem,
 			getTransformFactory);
 
-		if (chunk.IsRemote) {
-			chunk.IsReadOnly = true;
-			chunk._lazyInitArgs = (tracker, verifyHash);
-		} else {
-			try {
-				await chunk.InitCompleted(verifyHash, tracker, header, footer, token);
-			} catch {
-				chunk.Dispose();
-				throw;
-			}
+	// local or remote
+	public static async ValueTask<TFChunk> FromCompletedFile(IChunkFileSystem fileSystem, string filename,
+		bool verifyHash, bool unbufferedRead,
+		ITransactionFileTracker tracker, IGetChunkTransformFactory getTransformFactory,
+		bool reduceFileCachePressure, ChunkHeader header = null, ChunkFooter footer = null,
+		CancellationToken token = default) {
+
+		var chunk = FromCompletedFile(fileSystem, filename, unbufferedRead, getTransformFactory,
+			reduceFileCachePressure);
+
+		try {
+			await chunk.InitCompleted(verifyHash, tracker, header, footer, token);
+		} catch {
+			chunk.Dispose();
+			throw;
 		}
 
 		return chunk;
