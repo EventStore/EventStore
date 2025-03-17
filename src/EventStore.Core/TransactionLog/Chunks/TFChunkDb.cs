@@ -151,6 +151,7 @@ public sealed class TFChunkDb : IAsyncDisposable {
 						reduceFileCachePressure: Config.ReduceFileCachePressure,
 						tracker: _tracker,
 						getTransformFactory: TransformManager,
+						startNumber: chunkInfo.ChunkStartNumber,
 						token: token);
 				}
 

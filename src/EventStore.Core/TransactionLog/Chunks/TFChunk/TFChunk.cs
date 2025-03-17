@@ -101,12 +101,25 @@ public partial class TFChunk : IChunkBlob {
 	}
 
 	public ChunkInfo ChunkInfo {
-		get => new() {
-			ChunkStartNumber = _chunkHeader.ChunkStartNumber,
-			ChunkEndNumber = _chunkHeader.ChunkEndNumber,
-			ChunkEndPosition = _chunkHeader.ChunkEndPosition,
-			IsRemote = IsRemote,
-		};
+		get {
+			if (_chunkHeader is not null)
+				return new() {
+				ChunkStartNumber = _chunkHeader.ChunkStartNumber,
+				ChunkEndNumber = _chunkHeader.ChunkEndNumber,
+				ChunkEndPosition = _chunkHeader.ChunkEndPosition,
+				IsRemote = IsRemote,
+			};
+
+			if (_lazyInitArgs is (ITransactionFileTracker, int startNumber))
+				return new() {
+					ChunkStartNumber = startNumber,
+					ChunkEndNumber = startNumber,
+					IsRemote = true,
+					ChunkEndPosition = long.MinValue,
+				};
+
+			throw new InvalidOperationException();
+		}
 	}
 
 	public ReadOnlyMemory<byte> TransformHeader {
@@ -253,6 +266,30 @@ public partial class TFChunk : IChunkBlob {
 		return chunk;
 	}
 
+	// local or remote
+	public static async ValueTask<TFChunk> FromCompletedFile(IChunkFileSystem fileSystem, string filename,
+		bool verifyHash, bool unbufferedRead,
+		ITransactionFileTracker tracker, IGetChunkTransformFactory getTransformFactory,
+		bool reduceFileCachePressure, int startNumber, CancellationToken token = default) {
+
+		var chunk = FromCompletedFile(fileSystem, filename, unbufferedRead, getTransformFactory,
+			reduceFileCachePressure);
+
+		if (chunk.IsRemote) {
+			chunk.IsReadOnly = true;
+			chunk._lazyInitArgs = (tracker, startNumber);
+		} else {
+			try {
+				await chunk.InitCompleted(verifyHash, tracker, header: null, footer: null, token);
+			} catch {
+				chunk.Dispose();
+				throw;
+			}
+		}
+
+		return chunk;
+	}
+
 	// always local
 	public static async ValueTask<TFChunk> FromOngoingFile(IChunkFileSystem fileSystem, string filename, int writePosition, bool unbuffered,
 		bool writethrough, bool reduceFileCachePressure, ITransactionFileTracker tracker,
@@ -345,17 +382,17 @@ public partial class TFChunk : IChunkBlob {
 	}
 
 	public ValueTask EnsureInitialized(CancellationToken token) => _lazyInitArgs switch {
-		(ITransactionFileTracker tracker, bool verifyHash) => EnsureInitAsCompletedCore(verifyHash, tracker, token),
+		(ITransactionFileTracker tracker, int) => EnsureInitAsCompletedCore(tracker, token),
 		_ => ValueTask.CompletedTask,
 	};
 
-	private async ValueTask EnsureInitAsCompletedCore(bool verifyHash, ITransactionFileTracker tracker,
+	private async ValueTask EnsureInitAsCompletedCore(ITransactionFileTracker tracker,
 		CancellationToken token) {
 		// lazy init is based on the double check pattern implemented on top of existing lock
 		await _cachedDataLock.AcquireAsync(token);
 		try {
 			if (_lazyInitArgs is not null) {
-				await InitCompleted(verifyHash, tracker, null, null, token);
+				await InitCompleted(verifyHash: false, tracker, null, null, token);
 
 				// cannot be reordered, so we know that this flag is set to 'true' when all fields initialized properly
 				_lazyInitArgs = null;
