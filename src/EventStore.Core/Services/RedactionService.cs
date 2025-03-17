@@ -256,6 +256,8 @@ public class RedactionService<TStreamId> :
 				reduceFileCachePressure: true,
 				tracker: new TFChunkTracker.NoOp(),
 				getTransformFactory: _db.TransformManager,
+				header: newChunkHeader,
+				footer: newChunkFooter,
 				token: token);
 		} catch (HashValidationException) {
 			return new(SwitchChunkResult.NewChunkHashInvalid);
