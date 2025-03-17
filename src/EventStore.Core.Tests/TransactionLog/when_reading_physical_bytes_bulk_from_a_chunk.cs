@@ -42,9 +42,14 @@ public class when_reading_physical_bytes_bulk_from_a_chunk : SpecificationWithDi
 	[TestCase(true)]
 	public async Task a_raw_read_on_newly_completed_file_can_be_performed(bool cached) {
 		var chunk = await TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 2000);
-		if (cached)
-			await chunk.CacheInMemory(CancellationToken.None);
 		await chunk.Complete(CancellationToken.None);
+
+		Assert.True(chunk.IsCached);
+		if (!cached) {
+			await chunk.UnCacheFromMemory(CancellationToken.None);
+			Assert.True(chunk.IsUncached);
+		}
+
 		using (var reader = await chunk.AcquireRawReader(CancellationToken.None)) {
 			var buffer = new byte[1024];
 			var result = await reader.ReadNextBytes(buffer, CancellationToken.None);
@@ -54,6 +59,9 @@ public class when_reading_physical_bytes_bulk_from_a_chunk : SpecificationWithDi
 			var header = new ChunkHeader(buffer);
 			Assert.AreEqual(2000, header.ChunkSize);
 		}
+
+		await chunk.UnCacheFromMemory(CancellationToken.None);
+		Assert.True(chunk.IsUncached);
 
 		chunk.MarkForDeletion();
 		chunk.WaitForDestroy(5000);

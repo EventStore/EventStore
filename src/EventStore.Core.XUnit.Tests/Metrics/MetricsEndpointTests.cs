@@ -13,6 +13,7 @@ using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.Metrics;
 
+[Collection("MetricsLabelTests")]
 public class MetricsEndpointTests : DirectoryPerTest<MetricsEndpointTests> {
 	[Fact]
 	public async Task can_produce_kurrent_metrics() {

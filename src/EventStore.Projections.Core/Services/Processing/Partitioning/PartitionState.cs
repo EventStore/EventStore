@@ -51,7 +51,7 @@ public class PartitionState {
 	private readonly string _state;
 	private readonly string _result;
 	private readonly CheckpointTag _causedBy;
-	private int _size;
+	private readonly int _size;
 
 	public PartitionState(string state, string result, CheckpointTag causedBy) {
 		if (state == null) throw new ArgumentNullException("state");
@@ -60,7 +60,7 @@ public class PartitionState {
 		_state = state;
 		_result = result;
 		_causedBy = causedBy;
-		_size = _state.Length + _result?.Length ?? 0;
+		_size = _state.Length + (_result?.Length ?? 0);
 	}
 
 	public string State {

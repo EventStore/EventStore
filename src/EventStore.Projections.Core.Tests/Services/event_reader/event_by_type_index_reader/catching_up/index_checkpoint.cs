@@ -99,7 +99,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
 					new ReaderSubscriptionManagement.Subscribe(
 						_subscriptionId, fromZeroPosition, _readerStrategy, _readerSubscriptionOptions);
 				//DisableTimer();
-				yield return CreateWriteEvent("test-stream", "type1", "{Data: 3}", "{}");
+				yield return CreateWriteEvent("test-stream", "type1", """{"Data": 3}""", "{}");
 				_tfPos3 = _all.Last(v => v.Value.EventStreamId == "test-stream").Key;
 
 				yield return

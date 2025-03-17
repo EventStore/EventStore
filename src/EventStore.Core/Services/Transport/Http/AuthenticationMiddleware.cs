@@ -48,11 +48,15 @@ public class AuthenticationMiddleware : IMiddleware {
 				context.User = principal;
 				await next(context);
 				if (context.Response.StatusCode == 302 && principal.Identity?.IsAuthenticated == false) {
-					if (!context.Request.Path.StartsWithSegments("/ui") && !context.Request.Path.StartsWithSegments("/web")) {
-						context.Response.StatusCode = 401;
+					// Unless the call is made from a browser, return 401 instead of redirecting to the login page
+					var userAgent = context.Request.Headers.UserAgent.FirstOrDefault();
+					if (userAgent == null || userAgent.StartsWith("Mozilla") == false){
+						// Avoid setting the status code if the response has already started
+						if (!context.Response.HasStarted) {
+							context.Response.StatusCode = 401;
+						}
 					}
 				}
-
 				break;
 			case HttpAuthenticationRequestStatus.Error:
 				context.Response.StatusCode = HttpStatusCode.InternalServerError;

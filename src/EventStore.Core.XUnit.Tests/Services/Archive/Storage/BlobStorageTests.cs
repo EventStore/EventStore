@@ -29,7 +29,7 @@ public class BlobStorageTests : DirectoryPerTest<BlobStorageTests> {
 	}
 
 	IBlobStorage CreateSut(StorageType storageType) => storageType switch {
-		StorageType.FileSystem =>
+		StorageType.FileSystemDevelopmentOnly =>
 			new FileSystemBlobStorage(new() {
 				Path = ArchivePath
 			}),

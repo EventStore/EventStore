@@ -26,10 +26,11 @@ public static class ResiliencePipelines {
 						: Log.Logger;
 
 					logger.Warning(
-						"Retrying {Operation}. Attempt {Attempt}. Duration {Duration}. Delay {Delay}. " +
+						"Retrying {Operation}. Attempt {Attempt}/{MaxAttempts}. Duration {Duration}. Delay {Delay}. " +
 						"Error: {ExceptionMessage} ({ExceptionType})",
 						args.Context.OperationKey,
 						args.AttemptNumber,
+						maxRetryAttempts == int.MaxValue ? "Infinite" : maxRetryAttempts,
 						args.Duration,
 						args.RetryDelay,
 						args.Outcome.Exception?.Message,

@@ -141,6 +141,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Toolkit.Testing.
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Connectors", "Connectors", "{D2BE5D0C-84BB-4255-A8ED-F0798D6B9E36}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KurrentDB.UI", "KurrentDB.UI\KurrentDB.UI.csproj", "{B375CE7A-AF32-4A62-9443-B21100C1227B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -871,6 +873,18 @@ Global
 		{E017430E-3DC7-440B-9919-326AD0E328E5}.Release|ARM64.Build.0 = Release|ARM64
 		{E017430E-3DC7-440B-9919-326AD0E328E5}.Release|x64.ActiveCfg = Release|x64
 		{E017430E-3DC7-440B-9919-326AD0E328E5}.Release|x64.Build.0 = Release|x64
+		{B375CE7A-AF32-4A62-9443-B21100C1227B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B375CE7A-AF32-4A62-9443-B21100C1227B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B375CE7A-AF32-4A62-9443-B21100C1227B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B375CE7A-AF32-4A62-9443-B21100C1227B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B375CE7A-AF32-4A62-9443-B21100C1227B}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{B375CE7A-AF32-4A62-9443-B21100C1227B}.Debug|ARM64.Build.0 = Debug|Any CPU
+		{B375CE7A-AF32-4A62-9443-B21100C1227B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B375CE7A-AF32-4A62-9443-B21100C1227B}.Debug|x64.Build.0 = Debug|Any CPU
+		{B375CE7A-AF32-4A62-9443-B21100C1227B}.Release|ARM64.ActiveCfg = Release|Any CPU
+		{B375CE7A-AF32-4A62-9443-B21100C1227B}.Release|ARM64.Build.0 = Release|Any CPU
+		{B375CE7A-AF32-4A62-9443-B21100C1227B}.Release|x64.ActiveCfg = Release|Any CPU
+		{B375CE7A-AF32-4A62-9443-B21100C1227B}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

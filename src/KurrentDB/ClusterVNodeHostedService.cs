@@ -92,7 +92,8 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 					TimeSpan.FromMinutes(options.Projection.ProjectionsQueryExpiry),
 					options.Projection.FaultOutOfOrderProjections,
 					options.Projection.ProjectionCompilationTimeout,
-					options.Projection.ProjectionExecutionTimeout)))
+					options.Projection.ProjectionExecutionTimeout,
+					options.Projection.MaxProjectionStateSize)))
 			: options;
 
 		if (!_options.Database.MemDb) {

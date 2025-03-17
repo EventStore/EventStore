@@ -197,3 +197,6 @@ If your event has a partition key, you can use it as the document ID. The `Parti
 ```
 
 This uses the record's partition key as a unique document ID.
+
+## Tutorial
+[Learn how to set up and use a MongoDB Sink connector in KurrentDB through a tutorial.](/tutorials/MongoDB_Sink.md)

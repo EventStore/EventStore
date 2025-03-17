@@ -61,6 +61,10 @@ public partial class TFChunk : IChunkBlob {
 		get { return _cacheStatus is CacheStatus.Cached; }
 	}
 
+	public bool IsUncached {
+		get { return _cacheStatus is CacheStatus.Uncached; }
+	}
+
 	public bool IsRemote { get; }
 
 	// the logical size of (untransformed) data (could be > PhysicalDataSize if scavenged chunk)
@@ -381,9 +385,6 @@ public partial class TFChunk : IChunkBlob {
 		_readSide = _chunkHeader.IsScavenged
 			? new TFChunkReadSideScavenged(this, tracker)
 			: new TFChunkReadSideUnscavenged(this, tracker);
-
-		// do not actually cache now because it is too slow when opening the database
-		_readSide.RequestCaching();
 
 		if (verifyHash)
 			await VerifyFileHash(token);
@@ -775,8 +776,6 @@ public partial class TFChunk : IChunkBlob {
 				writerWorkItem.SetMemStream(memStream);
 			}
 
-			_readSide.Uncache();
-
 			Log.Debug("CACHED TFChunk {chunk} in {elapsed}.", this, sw.Elapsed);
 
 			if (_selfdestructin54321)
@@ -828,9 +827,6 @@ public partial class TFChunk : IChunkBlob {
 				return;
 			if (_cacheStatus is CacheStatus.Cached) {
 				// we won the right to un-cache and chunk was cached
-				// possibly we could use a mem reader work item and do the actual midpoint caching now
-				_readSide.RequestCaching();
-
 				_writerWorkItem?.DisposeMemStream();
 
 				Log.Debug("UNCACHING TFChunk {chunk}.", this);
@@ -1400,20 +1396,22 @@ public partial class TFChunk : IChunkBlob {
 			return false;
 		}
 
+		if (raw && !_cachedDataTransformed) {
+			// we want a raw reader for a cached chunk (which should return transformed data)
+			// but the cached data is not transformed so we can't use it directly.
+			// (likely this chunk was cached before it was completed)
+			reader = null;
+			return false;
+		}
+
 		if (_cachedData is 0)
 			throw new Exception("Unexpected error: a cached chunk had no cached data");
 
+		// After incrementing the count we must return true
 		Interlocked.Increment(ref _memStreamCount);
 		var stream = CreateMemoryStream(_cachedLength);
 
 		if (raw) {
-			if (!_cachedDataTransformed) {
-				// we want a raw reader for a cached chunk (which should return transformed data)
-				// but the cached data is not transformed so we can't use it directly.
-				// (likely this chunk was cached before it was completed)
-				reader = null;
-				return false;
-			}
 			reader = new TFChunkBulkRawReader(chunk: this, streamToUse: stream, isMemory: true);
 			return true;
 		}

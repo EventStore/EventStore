@@ -34,7 +34,8 @@ public record ProjectionSubsystemOptions(
 	TimeSpan ProjectionQueryExpiry,
 	bool FaultOutOfOrderProjections,
 	int CompilationTimeout,
-	int ExecutionTimeout);
+	int ExecutionTimeout,
+	int MaxProjectionStateSize);
 
 public sealed class ProjectionsSubsystem : ISubsystem,
 	IHandle<SystemMessage.SystemCoreReady>,
@@ -71,6 +72,7 @@ public sealed class ProjectionsSubsystem : ISubsystem,
 
 	private readonly int _compilationTimeout;
 	private readonly int _executionTimeout;
+	private readonly int _maxProjectionStateSize;
 
 	private readonly int _componentCount;
 	private readonly int _dispatcherCount;
@@ -116,6 +118,7 @@ public sealed class ProjectionsSubsystem : ISubsystem,
 		_subsystemInitialized = new();
 		_executionTimeout = projectionSubsystemOptions.ExecutionTimeout;
 		_compilationTimeout = projectionSubsystemOptions.CompilationTimeout;
+		_maxProjectionStateSize = projectionSubsystemOptions.MaxProjectionStateSize;
 	}
 
 	public IPublisher LeaderOutputQueue => _leaderOutputQueue;
@@ -162,7 +165,8 @@ public sealed class ProjectionsSubsystem : ISubsystem,
 			leaderInputQueue: _leaderInputQueue,
 			_faultOutOfOrderProjections,
 			_compilationTimeout,
-			_executionTimeout);
+			_executionTimeout,
+			_maxProjectionStateSize);
 
 		CreateAwakerService(standardComponents);
 		_coreWorkers = ProjectionCoreWorkersNode.CreateCoreWorkers(standardComponents, projectionsStandardComponents);

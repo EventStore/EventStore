@@ -1,6 +1,7 @@
 // Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
 // Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
+using EventStore.Core.Util;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Services.Processing.Checkpointing;
 using EventStore.Projections.Core.Services.Processing.MultiStream;
@@ -20,6 +21,6 @@ public abstract class TestFixtureWithMultiStreamCheckpointManager<TLogFormat, TS
 		return new MultiStreamMultiOutputCheckpointManager(
 			_bus, _projectionCorrelationId, _projectionVersion, null, _ioDispatcher, _config, _projectionName,
 			new MultiStreamPositionTagger(0, _streams), _namingBuilder, _checkpointsEnabled, true, true,
-			_checkpointWriter);
+			_checkpointWriter, Opts.MaxProjectionStateSizeDefault);
 	}
 }

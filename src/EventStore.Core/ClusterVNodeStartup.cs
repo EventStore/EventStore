@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using EventStore.Common.Configuration;
 using EventStore.Common.Utils;
@@ -19,13 +20,16 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Plugins;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using EventStore.Transport.Http;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.JsonWebTokens;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using MidFunc = System.Func<
@@ -38,19 +42,20 @@ using ClusterGossip = EventStore.Core.Services.Transport.Grpc.Cluster.Gossip;
 using ClientGossip = EventStore.Core.Services.Transport.Grpc.Gossip;
 using ServerFeatures = EventStore.Core.Services.Transport.Grpc.ServerFeatures;
 using Serilog;
+using AuthenticationMiddleware = EventStore.Core.Services.Transport.Http.AuthenticationMiddleware;
+using HttpMethod = EventStore.Transport.Http.HttpMethod;
 
 #nullable enable
 namespace EventStore.Core;
 
 public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMessage.SystemReady>,
 	IHandle<SystemMessage.BecomeShuttingDown> {
+	readonly ClusterVNodeOptions _options;
 	private readonly IReadOnlyList<IPlugableComponent> _plugableComponents;
 	private readonly IPublisher _mainQueue;
 	private readonly IPublisher _monitoringQueue;
 	private readonly ISubscriber _mainBus;
 	private readonly IAuthenticationProvider _authenticationProvider;
-	private readonly int _maxAppendSize;
-	private readonly TimeSpan _writeTimeout;
 	private readonly IExpiryStrategy _expiryStrategy;
 	private readonly KestrelHttpService _httpService;
 	private readonly IConfiguration _configuration;
@@ -63,9 +68,10 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 	private bool _ready;
 	private readonly IAuthorizationProvider _authorizationProvider;
 	private readonly MultiQueuedHandler _httpMessageHandler;
-	private readonly string _clusterDns;
+	private readonly string? _clusterDns;
 
 	public ClusterVNodeStartup(
+		ClusterVNodeOptions options,
 		IReadOnlyList<IPlugableComponent> plugableComponents,
 		IPublisher mainQueue,
 		IPublisher monitoringQueue,
@@ -73,15 +79,13 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 		MultiQueuedHandler httpMessageHandler,
 		IAuthenticationProvider authenticationProvider,
 		IAuthorizationProvider authorizationProvider,
-		int maxAppendSize,
-		TimeSpan writeTimeout,
 		IExpiryStrategy expiryStrategy,
 		KestrelHttpService httpService,
 		IConfiguration configuration,
 		Trackers trackers,
-		string clusterDns,
 		Func<IServiceCollection, IServiceCollection> configureNodeServices,
 		Action<IApplicationBuilder> configureNode) {
+		_options = options;
 		_plugableComponents = plugableComponents;
 		_mainQueue = mainQueue;
 		_monitoringQueue = monitoringQueue ?? throw new ArgumentNullException(nameof(monitoringQueue));
@@ -89,14 +93,12 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 		_httpMessageHandler = httpMessageHandler;
 		_authenticationProvider = authenticationProvider;
 		_authorizationProvider = authorizationProvider ?? throw new ArgumentNullException(nameof(authorizationProvider));
-		_maxAppendSize = Ensure.Positive(maxAppendSize);
-		_writeTimeout = writeTimeout;
 		_expiryStrategy = expiryStrategy;
 		_httpService = Ensure.NotNull(httpService);
 		_configuration = Ensure.NotNull(configuration);
 		_metricsConfiguration = MetricsConfiguration.Get(_configuration);
 		_trackers = trackers;
-		_clusterDns = clusterDns;
+		_clusterDns = options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null;
 		_configureNodeServices = configureNodeServices ?? throw new ArgumentNullException(nameof(configureNodeServices));
 		_configureNode = configureNode ?? throw new ArgumentNullException(nameof(configureNode));
 		_statusCheck = new StatusCheck(this);
@@ -113,6 +115,8 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 		_mainBus.Subscribe(internalDispatcher);
 
 		app.Map("/health", _statusCheck.Configure);
+		app.UseCors("default");
+
 		// AuthenticationMiddleware uses _httpAuthenticationProviders and assigns
 		// the resulting ClaimsPrinciple to HttpContext.User
 		app.UseMiddleware<AuthenticationMiddleware>();
@@ -123,7 +127,6 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 		// is driven by the HttpContext.User established above
 		app.UseAuthentication();
 		app.UseRouting();
-		app.UseCors("default");
 		app.UseAuthorization();
 		app.UseAntiforgery();
 
@@ -182,10 +185,47 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 	public void ConfigureServices(IServiceCollection services) {
 		// Web-related registrations
 		services.AddRouting();
-		services.AddAuthentication(o => {
+		var authBuilder = services.AddAuthentication(o => {
 			o.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+			if (OAuthEnabled) {
+				o.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+			}
+
 			o.AddScheme<EventStoreAuthenticationHandler>("es auth", displayName: null);
-		}).AddCookie(x => x.LoginPath = "/ui/login");
+		});
+		if (OAuthEnabled) {
+			var oidcConfig = _configuration.GetSection("KurrentDB:OAuth");
+			authBuilder
+				.AddCookie()
+				.AddOpenIdConnect(o => {
+					var insecure = bool.TryParse(oidcConfig["Insecure"], out var insecureValue) && insecureValue;
+					o.Authority = oidcConfig["Issuer"];
+					o.ClientId = oidcConfig["ClientId"];
+					o.ClientSecret = oidcConfig["ClientSecret"];
+					o.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+					o.SignOutScheme = OpenIdConnectDefaults.AuthenticationScheme;
+					o.ResponseType = OpenIdConnectResponseType.Code;
+					if (insecure) {
+						o.BackchannelHttpHandler = new HttpClientHandler {
+							ServerCertificateCustomValidationCallback = (_, _, _, _) => true
+						};
+						o.RequireHttpsMetadata = false;
+					}
+					o.SaveTokens = true;
+					o.GetClaimsFromUserInfoEndpoint = true;
+					o.MapInboundClaims = false;
+					o.TokenValidationParameters.NameClaimType = JwtRegisteredClaimNames.Name;
+					o.TokenValidationParameters.RoleClaimType = "roles";
+					o.Events.OnUserInformationReceived = async ctx => {
+						if (ctx.Principal != null) {
+							await ctx.HttpContext.SignInAsync(ctx.Principal, ctx.Properties);
+						}
+					};
+				});
+		} else {
+			authBuilder.AddCookie(x => x.LoginPath = "/ui/login");
+		}
+
 		services.AddAuthorization();
 		services.AddAntiforgery(s => s.Cookie.Expiration = TimeSpan.Zero);
 		services
@@ -203,10 +243,11 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 		services
 			.AddSingleton<ISubscriber>(_mainBus)
 			.AddSingleton<IPublisher>(_mainQueue)
-			.AddSingleton(new Streams<TStreamId>(_mainQueue, _maxAppendSize,
-				_writeTimeout, _expiryStrategy,
-				_trackers.GrpcTrackers,
-				_authorizationProvider))
+			.AddSingleton(new Streams<TStreamId>(_mainQueue,
+				Ensure.Positive(_options.Application.MaxAppendSize),
+				Ensure.Positive(_options.Application.MaxAppendEventSize),
+				TimeSpan.FromMilliseconds(_options.Database.WriteTimeoutMs),
+				_expiryStrategy, _trackers.GrpcTrackers, _authorizationProvider))
 			.AddSingleton(new PersistentSubscriptions(_mainQueue, _authorizationProvider))
 			.AddSingleton(new Users(_mainQueue, _authorizationProvider))
 			.AddSingleton(new Operations(_mainQueue, _authorizationProvider))
@@ -326,4 +367,6 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 			}
 		};
 	}
+
+	bool OAuthEnabled => _plugableComponents.Any(x => x is { Enabled: true, Name: "OAuthAuthentication" });
 }

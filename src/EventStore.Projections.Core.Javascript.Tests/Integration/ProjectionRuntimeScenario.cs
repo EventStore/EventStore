@@ -11,6 +11,7 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.Util;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,7 +26,7 @@ public abstract class ProjectionRuntimeScenario: SubsystemScenario {
 	}
 
 	static (Func<ValueTask>, IPublisher) CreateRuntime(SynchronousScheduler mainBus, IQueuedHandler mainQueue, ICheckpoint writerCheckpoint) {
-		var options = new ProjectionSubsystemOptions(3, ProjectionType.All, true, TimeSpan.FromMinutes(5), false, 500, 500);
+		var options = new ProjectionSubsystemOptions(3, ProjectionType.All, true, TimeSpan.FromMinutes(5), false, 500, 500, Opts.MaxProjectionStateSizeDefault);
 		var config = new TFChunkDbConfig("mem", 10000, 0, writerCheckpoint, new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), true);
 		var db = new TFChunkDb(config);
 		var qs = new QueueStatsManager();

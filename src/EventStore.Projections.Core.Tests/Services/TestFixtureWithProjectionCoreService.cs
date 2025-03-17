@@ -12,6 +12,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
@@ -96,7 +97,7 @@ public class TestFixtureWithProjectionCoreService {
 		_workerId = Guid.NewGuid();
 		var guardBus = new GuardBusToTriggerFixingIfUsed();
 		var configuration = new ProjectionsStandardComponents(1, ProjectionType.All, guardBus, guardBus, guardBus, guardBus, true,
-			 500, 250);
+			 500, 250, Opts.MaxProjectionStateSizeDefault);
 		_service = new ProjectionCoreService(
 			_workerId, _bus, _bus, _subscriptionDispatcher, new RealTimeProvider(), ioDispatcher, configuration);
 		_bus.Subscribe(
