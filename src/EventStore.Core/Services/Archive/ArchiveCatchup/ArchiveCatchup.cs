@@ -140,12 +140,12 @@ public class ArchiveCatchup : IClusterVNodeStartupTask {
 		_epochCheckpoint.Flush();
 		Log.Debug("Reset {checkpoint} checkpoint to: 0x{position:X}", _epochCheckpoint.Name, -1);
 
-		_chaserCheckpoint.Write(header.ChunkEndPosition);
-		_chaserCheckpoint.Flush();
-		Log.Debug("Moved {checkpoint} checkpoint forward to: 0x{position:X}", _chaserCheckpoint.Name, header.ChunkEndPosition);
-
 		_writerCheckpoint.Write(header.ChunkEndPosition);
 		_writerCheckpoint.Flush();
 		Log.Debug("Moved {checkpoint} checkpoint forward to: 0x{position:X}", _writerCheckpoint.Name, header.ChunkEndPosition);
+
+		_chaserCheckpoint.Write(header.ChunkEndPosition);
+		_chaserCheckpoint.Flush();
+		Log.Debug("Moved {checkpoint} checkpoint forward to: 0x{position:X}", _chaserCheckpoint.Name, header.ChunkEndPosition);
 	}
 }
