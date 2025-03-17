@@ -34,7 +34,7 @@ Read requests that read the archive will have comparatively high latency and at 
 - A designated _Archiver Node_ uploads complete chunk files to the archive once they are committed to the database. The contents of each chunk file are the same as they were locally, except that merged chunks are unmerged for upload.
 - The Archiver Node stores an archive checkpoint in the archive indicating how much of the log has been uploaded to the archive.
 - The Archiver Node is also a _Read-only Replica_ and does not participate in cluster elections/replication criteria. At the moment Read-only replicas can only be used in 3+ node clusters, and not single node deployments.
-- Only chunk files are uploaded. PTables, Scavenge.db etc remain local to each node.
+- Only chunk files are uploaded. PTables, scavenge.db, etc remain local to each node.
 
 ### Removal of data from node volumes
 
