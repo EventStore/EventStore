@@ -57,5 +57,5 @@ EventStoreDB had a different versioning scheme to KurrentDB, where the LTS relea
 
 The LTS versions of EventStoreDB will still be supported for two years from their release date. This means the following versions of EventStoreDB are still within Kurrent's support window:
 
-* [EventStoreDB 24.10](https://docs.kurrent.io/server/v24.10/quick-start/)
-* [EventStoreDB 23.10](https://docs.kurrent.io/server/v23.10/quick-start/)
+* [EventStoreDB 24.10](https://docs.kurrent.io/server/v24.10/quick-start/) supported until October 2026.
+* [EventStoreDB 23.10](https://docs.kurrent.io/server/v23.10/quick-start/) supported until October 2025.
