@@ -33,6 +33,22 @@
 	<a class="dismiss">🗙</a>
 </div>
 
+<script>
+window.openNavigator = (connectionString) => {
+	// Try to open navigator connected to this database
+	const appWindow = window.open(connectionString, '_self');
+
+	// Give it a second to open
+	setTimeout(() => {
+		// It opened
+		if (appWindow) return;
+
+		// It didn't open, so we'll go to the download page
+		window.open("https://navigator.kurrent.io", '_blank');
+	}, 1000);
+}
+</script>
+
 @code {
 	bool _drawerOpen = true;
 	bool _darkMode = true;

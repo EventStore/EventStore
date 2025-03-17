@@ -6,6 +6,13 @@
 	<MudNavLink Href="/ui/logs" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.ManageSearch">Logs</MudNavLink>
 	<MudNavLink Href="/ui/config" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Settings">Config</MudNavLink>
 	<MudNavLink Href="/ui/license" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Verified">License</MudNavLink>
-	<MudNavLink Href="/ui/navigator" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Stream">Navigator</MudNavLink>
+	<MudNavLink OnClick="@((e) => OpenNavigator(e))" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Stream">Navigator</MudNavLink>
 	<MudNavLink Href="/web" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Code">Legacy UI</MudNavLink>
 </MudNavMenu>
+
+@code {
+    private async Task OpenNavigator(MouseEventArgs e){
+
+		await JS.InvokeVoidAsync("openNavigator", connectionString);
+    }
+}
