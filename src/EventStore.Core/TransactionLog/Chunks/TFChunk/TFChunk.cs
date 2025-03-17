@@ -247,7 +247,7 @@ public partial class TFChunk : IChunkBlob {
 	// local or remote
 	public static async ValueTask<TFChunk> FromCompletedFile(IChunkFileSystem fileSystem, string filename, bool verifyHash, bool unbufferedRead,
 		ITransactionFileTracker tracker, IGetChunkTransformFactory getTransformFactory,
-		bool reduceFileCachePressure = false, CancellationToken token = default) {
+		bool reduceFileCachePressure = false, ChunkHeader header = null, ChunkFooter footer = null, CancellationToken token = default) {
 
 		var chunk = new TFChunk(
 			filename,
@@ -260,7 +260,7 @@ public partial class TFChunk : IChunkBlob {
 			getTransformFactory);
 
 		try {
-			await chunk.InitCompleted(verifyHash, tracker, token);
+			await chunk.InitCompleted(verifyHash, tracker, header, footer, token);
 		} catch {
 			chunk.Dispose();
 			throw;
@@ -371,7 +371,7 @@ public partial class TFChunk : IChunkBlob {
 		await _cachedDataLock.AcquireAsync(token);
 		try {
 			if (_lazyInitArgs is not null) {
-				await InitCompleted(verifyHash, tracker, token);
+				await InitCompleted(verifyHash, tracker, null, null, token);
 
 				// cannot be reordered, so we know that this flag is set to 'true' when all fields initialized properly
 				_lazyInitArgs = null;
@@ -394,7 +394,7 @@ public partial class TFChunk : IChunkBlob {
 		}
 	}
 
-	private async ValueTask InitCompleted(bool verifyHash, ITransactionFileTracker tracker, CancellationToken token) {
+	private async ValueTask InitCompleted(bool verifyHash, ITransactionFileTracker tracker, ChunkHeader header, ChunkFooter footer, CancellationToken token) {
 		_handle = await _fileSystem.OpenForReadAsync(
 			ChunkLocator,
 			_reduceFileCachePressure
@@ -407,7 +407,12 @@ public partial class TFChunk : IChunkBlob {
 		IsReadOnly = true;
 
 		await using (var stream = _handle.CreateStream()) {
-			_chunkHeader = await ReadHeader(stream, token);
+			if (header is null) {
+				_chunkHeader = await ReadHeader(stream, token);
+			} else {
+				_chunkHeader = header;
+				stream.Position = ChunkHeader.Size;
+			}
 			Log.Debug("Opened completed {chunk} as version {version} (min. compatible version: {minCompatibleVersion})", ChunkLocator, _chunkHeader.Version, _chunkHeader.MinCompatibleVersion);
 
 			if (_chunkHeader.MinCompatibleVersion > CurrentChunkVersion)
@@ -423,7 +428,7 @@ public partial class TFChunk : IChunkBlob {
 			_transformHeader = transformHeader;
 			_transform = transformFactory.CreateTransform(transformHeader);
 
-			_chunkFooter = await ReadFooter(stream, token);
+			_chunkFooter = footer ?? await ReadFooter(stream, token);
 			if (!_chunkFooter.IsCompleted) {
 				throw new CorruptDatabaseException(new BadChunkInDatabaseException(
 					$"Chunk file '{ChunkLocator}' should be completed, but is not."));

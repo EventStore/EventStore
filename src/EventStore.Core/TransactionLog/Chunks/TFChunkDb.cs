@@ -124,6 +124,7 @@ public sealed class TFChunkDb : IAsyncDisposable {
 							tracker: _tracker,
 							reduceFileCachePressure: Config.ReduceFileCachePressure,
 							getTransformFactory: TransformManager,
+							footer: footer,
 							token: token);
 					else {
 						chunk = await TFChunk.TFChunk.FromOngoingFile(
@@ -192,6 +193,7 @@ public sealed class TFChunkDb : IAsyncDisposable {
 					reduceFileCachePressure: Config.ReduceFileCachePressure,
 					tracker: _tracker,
 					getTransformFactory: TransformManager,
+					header: chunkHeader,
 					token: token);
 
 				lastChunkNum = lastChunk.ChunkHeader.ChunkEndNumber + 1;
