@@ -2,7 +2,7 @@
 
 /* Primary colors */
 $main-color: #631b3a;
-$secondary-color: #ded9ff;
+$secondary-color: #ffeded;
 
 /* Light Theme Colors */
 $color-background-light: #ffffff;
@@ -12,8 +12,8 @@ $color-title-light: $main-color;
 
 /* Dark Theme Colors */
 $color-background-dark: #080b0d;
-$color-foreground-dark: #9fbbc5;
-$color-title-dark: #9fbbc5;
+$color-foreground-dark: #f0f0f0;
+$color-title-dark: #f0f0f0;
 
 $theme-color-light: color.mix(black, $main-color, 10%); // Darken by 10%
 $theme-color-soft: #{color.scale(#631b3a, $lightness: 85%)};
@@ -89,8 +89,8 @@ $theme-color-mask: color.adjust( $secondary-color, $alpha: -0.85 ); // Reduce op
         --theme-shade: dark;
         --theme-contrast: low;
         --color-background: #080b0d;
-        --color-foreground: #9fbbc5;
-        --color-title: #9fbbc5;
+        --color-foreground: #f0f0f0;
+        --color-title: #f0f0f0;
         --color-title-contrast: #080b0d;
         --color-highlight: #64edbb;
         --color-highlight-contrast: #080b0d;
@@ -124,7 +124,7 @@ $theme-color-mask: color.adjust( $secondary-color, $alpha: -0.85 ); // Reduce op
         --color-overlay-alpha: 0.75;
         --color-disabled: #1e2528;
         --color-disabled-border: #1e2528;
-        --color-disabled-contrast: #9fbbc5;
+        --color-disabled-contrast: #f0f0f0;
         --code-fg: #d7dae0;
         --code-bg: #313440;
         --code-literal: #e5c07b;
@@ -173,7 +173,7 @@ $font-body: 15px;
 /* Override Code Block Background */
 $sidebar-width: 18rem;
 
-$vp-c-text: ( light: #000, dark: #9fbbc5, );
+$vp-c-text: ( light: #000, dark: #f0f0f0, );
 
 .hint-container.important a,
 .hint-container.info a,
