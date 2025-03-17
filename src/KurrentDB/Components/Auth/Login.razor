@@ -33,8 +33,9 @@
 					                    UserAttributes="@(new() { { "autocomplete", "current-password" }, { "aria-required", "true" } })"/>
 				</MudItem>
 				<MudItem md="12">
-					<MudStaticButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
-					                 FormAction="FormAction.Submit">Log in
+					<MudStaticButton Variant="Variant.Filled" Color="Color.Secondary" FullWidth="true"
+					                 FormAction="FormAction.Submit">
+						Log in
 					</MudStaticButton>
 				</MudItem>
 			</MudGrid>
@@ -71,6 +72,7 @@
 			Snackbar.Add("Invalid username or password", Severity.Error);
 			return;
 		}
+
 		await HttpContext.SignInAsync(principal);
 
 		Redirect();
