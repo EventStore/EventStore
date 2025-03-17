@@ -45,7 +45,7 @@ Read requests that read the archive will have comparatively high latency and at 
 
 ### Backup/restore considerations
 
-- A backup taken from one node can generally be restored to any other node, but this is not the case with the Archiver node. The Archiver node must be restored from a backup that was taken from the Archiver Node itself. Scavenging the archive is not yet implemented, but once it is then if the Archiver node were to be restored from a backup taken from a different node then there would be a risk that the Archiver Node will not completely scavenge the archive. A scavenge with `threshold = -1` would need to be run to restore normal operation.
+- A backup taken from one node can generally be restored to any other node, but this is not the case with the Archiver Node. The Archiver Node must be restored from a backup that was taken from the Archiver Node itself. Scavenging the archive is not yet implemented, but once it is then if the Archiver node were to be restored from a backup taken from a different node then there would be a risk that the Archiver Node will not completely scavenge the archive. A scavenge with `threshold = -1` would need to be run to restore normal operation.
 
 - When a node starts up, it checks to see if the archive has newer data than it has locally, and if so downloads that data from the archive.
   - This prevents the cluster from ever diverging from the content of the archive, even if multiple nodes are restored from backup simultaneously.
