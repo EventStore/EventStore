@@ -213,7 +213,6 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 					}
 					o.SaveTokens = true;
 					o.GetClaimsFromUserInfoEndpoint = true;
-					// o.MapInboundClaims = false;
 					o.TokenValidationParameters.NameClaimType = JwtRegisteredClaimNames.Name;
 					o.Events.OnUserInformationReceived = async ctx => {
 						if (ctx.Principal != null) {
