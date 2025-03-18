@@ -13,8 +13,8 @@ Read more about the rebrand in the [rebrand FAQ](https://www.kurrent.io/blog/kur
 
 Packages for KurrentDB are still hosted on [Cloudsmith](https://cloudsmith.io/~eventstore), in the following repositories:
 
-* [kurrent-lts](https://cloudsmith.io/~eventstore/repos/kurrent-lts) containing only production-ready LTS packages.
-* [kurrent-latest](https://cloudsmith.io/~eventstore/repos/kurrent-latest) containing production-ready LTS and STS packages.
+* [kurrent-lts](https://cloudsmith.io/~eventstore/repos/kurrent-lts) containing only production-ready [LTS](../release-schedule/#long-term-support-releases) packages.
+* [kurrent-latest](https://cloudsmith.io/~eventstore/repos/kurrent-latest) containing production-ready LTS and [STS](../release-schedule/#short-term-support-releases) packages.
 * [kurrent-preview](https://cloudsmith.io/~eventstore/repos/kurrent-preview) containing non-production preview packages.
 
 Packages are available for [Debian](./installation.md#debian-packages), [RedHat](./installation.md#redhat-packages), [Docker](./installation.md#docker), and [NuGet](./installation.md#nuget).

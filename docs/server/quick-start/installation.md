@@ -50,8 +50,8 @@ For most features that require a license, KurrentDB will not start if the featur
 
 Packages for KurrentDB are hosted on [Cloudsmith](https://cloudsmith.io/~eventstore), in the following repositories:
 
-* [kurrent-lts](https://cloudsmith.io/~eventstore/repos/kurrent-lts) containing only production-ready LTS packages.
-* [kurrent-latest](https://cloudsmith.io/~eventstore/repos/kurrent-latest) containing production-ready LTS and STS packages.
+* [kurrent-lts](https://cloudsmith.io/~eventstore/repos/kurrent-lts) containing only production-ready [LTS](../release-schedule/#long-term-support-releases) packages.
+* [kurrent-latest](https://cloudsmith.io/~eventstore/repos/kurrent-latest) containing production-ready LTS and [STS](../release-schedule/#short-term-support-releases) packages.
 * [kurrent-preview](https://cloudsmith.io/~eventstore/repos/kurrent-preview) containing non-production preview packages.
 
 ## Linux
@@ -63,8 +63,8 @@ The name of the KurrentDB package is `kurrentdb`.
 
 Debian packages can be found in the following repositories:
 
-* [kurrent-lts](https://cloudsmith.io/~eventstore/repos/kurrent-lts/packages/?q=format%3Adeb+name%3Akurrentdb) containing only production-ready LTS packages.
-* [kurrent-latest](https://cloudsmith.io/~eventstore/repos/kurrent-latest/packages/?q=format%3Adeb+name%3Akurrentdb) containing production-ready LTS and STS packages.
+* [kurrent-lts](https://cloudsmith.io/~eventstore/repos/kurrent-lts/packages/?q=format%3Adeb+name%3Akurrentdb) containing only production-ready [LTS](../release-schedule/#long-term-support-releases) packages.
+* [kurrent-latest](https://cloudsmith.io/~eventstore/repos/kurrent-latest/packages/?q=format%3Adeb+name%3Akurrentdb) containing production-ready LTS and [STS](../release-schedule/#short-term-support-releases) packages.
 * [kurrent-preview](https://cloudsmith.io/~eventstore/repos/kurrent-preview/packages/?q=format%3Adeb+name%3Akurrentdb) containing non-production preview packages.
 
 #### Distribution setup
@@ -196,8 +196,8 @@ apt-get purge kurrentdb
 
 RedHat packages can be found in the following repositories:
 
-* [kurrent-lts](https://cloudsmith.io/~eventstore/repos/kurrent-lts/packages/?q=format%3Arpm+name%3Akurrentdb) containing only production-ready LTS packages.
-* [kurrent-latest](https://cloudsmith.io/~eventstore/repos/kurrent-latest/packages/?q=format%3Arpm+name%3Akurrentdb) containing production-ready LTS and STS packages.
+* [kurrent-lts](https://cloudsmith.io/~eventstore/repos/kurrent-lts/packages/?q=format%3Arpm+name%3Akurrentdb) containing only production-ready [LTS](../release-schedule/#long-term-support-releases) packages.
+* [kurrent-latest](https://cloudsmith.io/~eventstore/repos/kurrent-latest/packages/?q=format%3Arpm+name%3Akurrentdb) containing production-ready LTS and [STS](../release-schedule/#short-term-support-releases) packages.
 * [kurrent-preview](https://cloudsmith.io/~eventstore/repos/kurrent-preview/packages/?q=format%3Arpm+name%3Akurrentdb) containing non-production preview packages.
 
 #### Distribution setup
@@ -330,8 +330,8 @@ KurrentDB has NuGet packages available on Cloudsmith, which replaces the previou
 
 Nuget packages can be found in the following repositories:
 
-* [kurrent-lts](https://cloudsmith.io/~eventstore/repos/kurrent-lts/packages/?q=format%3Anuget+name%3Akurrentdb) containing only production-ready LTS packages.
-* [kurrent-latest](https://cloudsmith.io/~eventstore/repos/kurrent-latest/packages/?q=format%3Anuget+name%3Akurrentdb) containing production-ready LTS and STS packages.
+* [kurrent-lts](https://cloudsmith.io/~eventstore/repos/kurrent-lts/packages/?q=format%3Anuget+name%3Akurrentdb) containing only production-ready [LTS](../release-schedule/#long-term-support-releases) packages.
+* [kurrent-latest](https://cloudsmith.io/~eventstore/repos/kurrent-latest/packages/?q=format%3Anuget+name%3Akurrentdb) containing production-ready LTS and [STS](../release-schedule/#short-term-support-releases) packages.
 * [kurrent-preview](https://cloudsmith.io/~eventstore/repos/kurrent-preview/packages/?q=format%3Anuget+name%3Akurrentdb) containing non-production preview packages.
 
 Add a new package source to your Chocolatey configuration:
@@ -394,8 +394,8 @@ closer to what you'd run in production.
 
 KurrentDB Docker images are hosted in the following registries:
 
-* [kurrent-lts](https://cloudsmith.io/~eventstore/repos/kurrent-lts/packages/?q=format%3Adocker+name%3Akurrentdb) containing only production-ready LTS containers.
-* [kurrent-latest](https://cloudsmith.io/~eventstore/repos/kurrent-latest/packages/?q=format%3Adocker+name%3Akurrentdb) containing production-ready LTS and STS containers.
+* [kurrent-lts](https://cloudsmith.io/~eventstore/repos/kurrent-lts/packages/?q=format%3Adocker+name%3Akurrentdb) containing only production-ready [LTS](../release-schedule/#long-term-support-releases) containers.
+* [kurrent-latest](https://cloudsmith.io/~eventstore/repos/kurrent-latest/packages/?q=format%3Adocker+name%3Akurrentdb) containing production-ready LTS and [STS](../release-schedule/#short-term-support-releases) containers.
 * [kurrent-preview](https://cloudsmith.io/~eventstore/repos/kurrent-preview/packages/?q=format%3Adocker+name%3Akurrentdb) containing non-production preview containers.
 
 ### Run with Docker

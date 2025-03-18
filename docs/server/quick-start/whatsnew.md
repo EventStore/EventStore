@@ -78,8 +78,8 @@ The release schedule will be changing with the versioning scheme, given that the
 
 Packages for KurrentDB will still be published to [Cloudsmith](https://cloudsmith.io/~eventstore), into the following repositories:
 
-- [kurrent-lts](https://cloudsmith.io/~eventstore/repos/kurrent-lts) containing only production-ready LTS packages.
-- [kurrent-latest](https://cloudsmith.io/~eventstore/repos/kurrent-latest) containing production-ready LTS and STS packages.
+- [kurrent-lts](https://cloudsmith.io/~eventstore/repos/kurrent-lts) containing only production-ready [LTS](../release-schedule/#long-term-support-releases) packages.
+- [kurrent-latest](https://cloudsmith.io/~eventstore/repos/kurrent-latest) containing production-ready LTS and [STS](../release-schedule/#short-term-support-releases) packages.
 - [kurrent-preview](https://cloudsmith.io/~eventstore/repos/kurrent-preview) containing non-production preview packages.
 
 [More information](../quick-start/installation.md)
