@@ -213,9 +213,7 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 					}
 					o.SaveTokens = true;
 					o.GetClaimsFromUserInfoEndpoint = true;
-					o.MapInboundClaims = false;
 					o.TokenValidationParameters.NameClaimType = JwtRegisteredClaimNames.Name;
-					o.TokenValidationParameters.RoleClaimType = "roles";
 					o.Events.OnUserInformationReceived = async ctx => {
 						if (ctx.Principal != null) {
 							await ctx.HttpContext.SignInAsync(ctx.Principal, ctx.Properties);
