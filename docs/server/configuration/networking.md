@@ -387,7 +387,7 @@ TcpPlugin:
 Once enabled, the server will log a message similar to the one below:
 
 ```
-[11212, 1,18:44:34.070,INF] "TcpApi" "24.6.0.0" plugin enabled.
+[11212, 1,18:44:34.070,INF] "TcpApi" "24.10.0.0" plugin enabled.
 ```
 
 #### Other setting
@@ -418,13 +418,13 @@ The plugin has to be configured to be enabled.
 If you see the following log it means the plugin was found but not started:
 
 ```
-[ 5104, 1,19:03:13.807,INF] "TcpApi" "24.6.0.0" plugin disabled. "Set 'EventStore:TcpPlugin:EnableExternalTcp' to 'true' to enable"
+[ 5104, 1,19:03:13.807,INF] "TcpApi" "24.10.0.0" plugin disabled. "Set 'EventStore:TcpPlugin:EnableExternalTcp' to 'true' to enable"
 ```
 
 When the plugin starts, you should see a log similar to the following:
 
 ```
-[11212, 1,18:44:34.070,INF] "TcpApi" "24.6.0.0" plugin enabled.
+[11212, 1,18:44:34.070,INF] "TcpApi" "24.10.0.0" plugin enabled.
 ```
 
 
