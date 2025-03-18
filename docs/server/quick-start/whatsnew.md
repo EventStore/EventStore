@@ -10,7 +10,7 @@ These are the new features in KurrentDB 25.0:
 
 * [Archiving](#archiving)
 * [KurrentDB rebranding](#kurrentdb-rebranding)
-* [New Web UI](#new-web-ui)
+* [New embedded Web UI](#new-embedded-web-ui)
 * [New versioning scheme and release schedule](#new-versioning-scheme-and-release-schedule)
 
 ### Archiving
@@ -33,9 +33,9 @@ Read more about the rebrand in the [rebrand FAQ](https://www.kurrent.io/blog/kur
 
 The KurrentDB packages are still hosted on [Cloudsmith](https://cloudsmith.io/~eventstore/repos/kurrent/packages/). Refer to [the upgrade guide](./upgrade-guide.md) to see what's changed between EventStoreDB and KurrentDB, or [the installation guide](./installation.md) for updated installation instructions.
 
-### New Web UI
+### New embedded Web UI
 
-In the new Web UI you can see at a glance:
+In the new embedded Web UI you can see at a glance:
 
 - A summary of the cluster status
 - A summary of resource utilization
