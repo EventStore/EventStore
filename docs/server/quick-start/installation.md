@@ -46,6 +46,14 @@ KURRENTDB_LICENSING__LICENSE_KEY
 
 For most features that require a license, KurrentDB will not start if the feature is enabled but the license key is not provided or is invalid.
 
+## Package repositories
+
+Packages for KurrentDB are hosted on [Cloudsmith](https://cloudsmith.io/~eventstore), in the following repositories:
+
+* [kurrent-lts](https://cloudsmith.io/~eventstore/repos/kurrent-lts) containing only production-ready LTS packages.
+* [kurrent-latest](https://cloudsmith.io/~eventstore/repos/kurrent-latest) containing production-ready LTS and STS packages.
+* [kurrent-preview](https://cloudsmith.io/~eventstore/repos/kurrent-preview) containing non-production preview packages.
+
 ## Linux
 
 KurrentDB has pre-built packages available on Cloudsmith for RedHat or Debian-based distributions.
@@ -53,43 +61,116 @@ The name of the KurrentDB package is `kurrentdb`.
 
 ### Debian packages
 
+Debian packages can be found in the following repositories:
+
+* [kurrent-lts](https://cloudsmith.io/~eventstore/repos/kurrent-lts/packages/?q=format%3Adeb+name%3Akurrentdb) containing only production-ready LTS packages.
+* [kurrent-latest](https://cloudsmith.io/~eventstore/repos/kurrent-latest/packages/?q=format%3Adeb+name%3Akurrentdb) containing production-ready LTS and STS packages.
+* [kurrent-preview](https://cloudsmith.io/~eventstore/repos/kurrent-preview/packages/?q=format%3Adeb+name%3Akurrentdb) containing non-production preview packages.
+
 #### Distribution setup
 To install packages, you can quickly set up the repository automatically (recommended):
 
+::: tabs
+@tab kurrent-latest
 ```bash
 curl -1sLf \
-  'https://packages.kurrent.io/public/kurrent/setup.deb.sh' \
+  'https://packages.kurrent.io/public/kurrent-latest/setup.deb.sh' \
   | sudo -E bash
 ```
+@tab kurrent-lts
+```bash
+curl -1sLf \
+  'https://packages.kurrent.io/public/kurrent-lts/setup.deb.sh' \
+  | sudo -E bash
+```
+@tab kurrent-preview
+```bash
+curl -1sLf \
+  'https://packages.kurrent.io/public/kurrent-preview/setup.deb.sh' \
+  | sudo -E bash
+```
+:::
 
 If you need to force a specific distribution, release/version, architecture, or component (if supported), you can also do that (e.g. if your system is compatible but not identical):
 
+::: tabs
+@tab kurrent-latest
 ```bash
 curl -1sLf \
-  'https://packages.kurrent.io/public/kurrent/setup.deb.sh' \
+  'https://packages.kurrent.io/public/kurrent-latest/setup.deb.sh' \
   | sudo -E distro=DISTRO codename=CODENAME arch=ARCH component=COMPONENT bash
 ```
+@tab kurrent-lts
+```bash
+curl -1sLf \
+  'https://packages.kurrent.io/public/kurrent-lts/setup.deb.sh' \
+  | sudo -E distro=DISTRO codename=CODENAME arch=ARCH component=COMPONENT bash
+```
+@tab kurrent-preview
+```bash
+curl -1sLf \
+  'https://packages.kurrent.io/public/kurrent-preview/setup.deb.sh' \
+  | sudo -E distro=DISTRO codename=CODENAME arch=ARCH component=COMPONENT bash
+```
+:::
 
 Alternatively, you can manually configure it yourself before installing packages:
 
+::: tabs
+@tab kurrent-latest
 ```bash
 apt-get install -y debian-keyring  # debian only
 apt-get install -y debian-archive-keyring  # debian only
 apt-get install -y apt-transport-https
 # For Debian Stretch, Ubuntu 16.04 and later
-keyring_location=/usr/share/keyrings/eventstore-kurrent-archive-keyring.gpg
+keyring_location=/usr/share/keyrings/eventstore-kurrent-latest-archive-keyring.gpg
 # For Debian Jessie, Ubuntu 15.10 and earlier
-keyring_location=/etc/apt/trusted.gpg.d/eventstore-kurrent.gpg
-curl -1sLf 'https://packages.kurrent.io/public/kurrent/gpg.094442D90AD50BCD.key' |  gpg --dearmor >> ${keyring_location}
-curl -1sLf 'https://packages.kurrent.io/public/kurrent/config.deb.txt?distro=ubuntu&codename=xenial&component=main' > /etc/apt/sources.list.d/eventstore-kurrent.list
+keyring_location=/etc/apt/trusted.gpg.d/eventstore-kurrent-latest.gpg
+curl -1sLf 'https://packages.eventstore.com/public/kurrent-latest/gpg.094442D90AD50BCD.key' |  gpg --dearmor >> ${keyring_location}
+curl -1sLf 'https://packages.eventstore.com/public/kurrent-latest/config.deb.txt?distro=ubuntu&codename=xenial&component=main' > /etc/apt/sources.list.d/eventstore-kurrent-latest.list
 sudo chmod 644 ${keyring_location}
-sudo chmod 644 /etc/apt/sources.list.d/eventstore-kurrent.list
+sudo chmod 644 /etc/apt/sources.list.d/eventstore-kurrent-latest.list
 apt-get update
 ```
+@tab kurrent-lts
+```bash
+apt-get install -y debian-keyring  # debian only
+apt-get install -y debian-archive-keyring  # debian only
+apt-get install -y apt-transport-https
+# For Debian Stretch, Ubuntu 16.04 and later
+keyring_location=/usr/share/keyrings/eventstore-kurrent-lts-archive-keyring.gpg
+# For Debian Jessie, Ubuntu 15.10 and earlier
+keyring_location=/etc/apt/trusted.gpg.d/eventstore-kurrent-lts.gpg
+curl -1sLf 'https://packages.eventstore.com/public/kurrent-lts/gpg.C39876BC6AE970D8.key' |  gpg --dearmor >> ${keyring_location}
+curl -1sLf 'https://packages.eventstore.com/public/kurrent-lts/config.deb.txt?distro=ubuntu&codename=xenial&component=main' > /etc/apt/sources.list.d/eventstore-kurrent-lts.list
+sudo chmod 644 ${keyring_location}
+sudo chmod 644 /etc/apt/sources.list.d/eventstore-kurrent-lts.list
+apt-get update
+```
+@tab kurrent-preview
+```bash
+apt-get install -y debian-keyring  # debian only
+apt-get install -y debian-archive-keyring  # debian only
+apt-get install -y apt-transport-https
+# For Debian Stretch, Ubuntu 16.04 and later
+keyring_location=/usr/share/keyrings/eventstore-kurrent-preview-archive-keyring.gpg
+# For Debian Jessie, Ubuntu 15.10 and earlier
+keyring_location=/etc/apt/trusted.gpg.d/eventstore-kurrent-preview.gpg
+curl -1sLf 'https://packages.eventstore.com/public/kurrent-preview/gpg.501C1F0DF3660D29.key' |  gpg --dearmor >> ${keyring_location}
+curl -1sLf 'https://packages.eventstore.com/public/kurrent-preview/config.deb.txt?distro=debian&codename=wheezy&component=main' > /etc/apt/sources.list.d/eventstore-kurrent-preview.list
+sudo chmod 644 ${keyring_location}
+sudo chmod 644 /etc/apt/sources.list.d/eventstore-kurrent-preview.list
+apt-get update
+```
+:::
 
 #### Install with apt-get
 
-Add the repository to your system according to the [instructions on Cloudsmith](https://cloudsmith.io/~eventstore/repos/kurrent/setup/#formats-deb).
+Add the repository to your system according to the instructions on Cloudsmith:
+
+* [kurrent-latest](https://cloudsmith.io/~eventstore/repos/kurrent-latest/setup/#formats-deb).
+* [kurrent-lts](https://cloudsmith.io/~eventstore/repos/kurrent-lts/setup/#formats-deb).
+* [kurrent-preview](https://cloudsmith.io/~eventstore/repos/kurrent-preview/setup/#formats-deb).
 
 Then, install the package:
 
@@ -113,33 +194,88 @@ apt-get purge kurrentdb
 
 ### RedHat packages
 
+RedHat packages can be found in the following repositories:
+
+* [kurrent-lts](https://cloudsmith.io/~eventstore/repos/kurrent-lts/packages/?q=format%3Arpm+name%3Akurrentdb) containing only production-ready LTS packages.
+* [kurrent-latest](https://cloudsmith.io/~eventstore/repos/kurrent-latest/packages/?q=format%3Arpm+name%3Akurrentdb) containing production-ready LTS and STS packages.
+* [kurrent-preview](https://cloudsmith.io/~eventstore/repos/kurrent-preview/packages/?q=format%3Arpm+name%3Akurrentdb) containing non-production preview packages.
+
 #### Distribution setup
 
 To install packages, you can quickly set up the repository automatically (recommended):
 
+::: tabs
+@tab kurrent-latest
 ```bash
 curl -1sLf \
-  'https://packages.kurrent.io/public/kurrent/setup.rpm.sh' \
+  'https://packages.kurrent.io/public/kurrent-latest/setup.rpm.sh' \
   | sudo -E bash
 ```
+@tab kurrent-lts
+```bash
+curl -1sLf \
+  'https://packages.kurrent.io/public/kurrent-lts/setup.rpm.sh' \
+  | sudo -E bash
+```
+@tab kurrent-preview
+```bash
+curl -1sLf \
+  'https://packages.kurrent.io/public/kurrent-preview/setup.rpm.sh' \
+  | sudo -E bash
+```
+:::
 
 If you need to force a specific distribution, release/version, or architecture, you can also do that (e.g. if your system is compatible but not identical):
 
+::: tabs
+@tab kurrent-latest
 ```bash
 curl -1sLf \
-  'https://packages.kurrent.io/public/kurrent/setup.rpm.sh' \
+  'https://packages.kurrent.io/public/kurrent-latest/setup.rpm.sh' \
   | sudo -E distro=DISTRO codename=CODENAME arch=ARCH bash
 ```
+@tab kurrent-lts
+```bash
+curl -1sLf \
+  'https://packages.kurrent.io/public/kurrent-lts/setup.rpm.sh' \
+  | sudo -E distro=DISTRO codename=CODENAME arch=ARCH bash
+```
+@tab kurrent-preview
+```bash
+curl -1sLf \
+  'https://packages.kurrent.io/public/kurrent-preview/setup.rpm.sh' \
+  | sudo -E distro=DISTRO codename=CODENAME arch=ARCH bash
+```
+:::
 
 Alternatively, you can manually configure it yourself before installing packages:
 
+::: tabs
+@tab kurrent-latest
 ```bash
 yum install yum-utils pygpgme
-rpm --import 'https://packages.kurrent.io/public/kurrent/gpg.094442D90AD50BCD.key'
-curl -1sLf 'https://packages.kurrent.io/public/kurrent/config.rpm.txt?distro=el&codename=7' > /tmp/eventstore-kurrent.repo
-yum-config-manager --add-repo '/tmp/eventstore-kurrent.repo'
-yum -q makecache -y --disablerepo='*' --enablerepo='eventstore-kurrent'
+rpm --import 'https://packages.eventstore.com/public/kurrent-latest/gpg.094442D90AD50BCD.key'
+curl -1sLf 'https://packages.eventstore.com/public/kurrent-latest/config.rpm.txt?distro=el&codename=7' > /tmp/eventstore-kurrent-latest.repo
+yum-config-manager --add-repo '/tmp/eventstore-kurrent-latest.repo'
+yum -q makecache -y --disablerepo='*' --enablerepo='eventstore-kurrent-latest'
 ```
+@tab kurrent-lts
+```bash
+yum install yum-utils pygpgme
+rpm --import 'https://packages.eventstore.com/public/kurrent-lts/gpg.C39876BC6AE970D8.key'
+curl -1sLf 'https://packages.eventstore.com/public/kurrent-lts/config.rpm.txt?distro=el&codename=7' > /tmp/eventstore-kurrent-lts.repo
+yum-config-manager --add-repo '/tmp/eventstore-kurrent-lts.repo'
+yum -q makecache -y --disablerepo='*' --enablerepo='eventstore-kurrent-lts'
+```
+@tab kurrent-preview
+```bash
+yum install yum-utils pygpgme
+rpm --import 'https://packages.eventstore.com/public/kurrent-preview/gpg.501C1F0DF3660D29.key'
+curl -1sLf 'https://packages.eventstore.com/public/kurrent-preview/config.rpm.txt?distro=el&codename=7' > /tmp/eventstore-kurrent-preview.repo
+yum-config-manager --add-repo '/tmp/eventstore-kurrent-preview.repo'
+yum -q makecache -y --disablerepo='*' --enablerepo='eventstore-kurrent-preview'
+```
+:::
 
 ::: note
 Please replace el and 7 above with your actual distribution and version and use wildcards when enabling multiple repos.
@@ -147,7 +283,11 @@ Please replace el and 7 above with your actual distribution and version and use 
 
 #### Install with yum
 
-Add the repository to your system according to the [instructions on Cloudsmith](https://cloudsmith.io/~eventstore/repos/kurrent/setup/#formats-rpm).
+Add the repository to your system according to the instructions on Cloudsmith:
+
+* [kurrent-latest](https://cloudsmith.io/~eventstore/repos/kurrent-latest/setup/#formats-rpm).
+* [kurrent-lts](https://cloudsmith.io/~eventstore/repos/kurrent-lts/setup/#formats-rpm).
+* [kurrent-preview](https://cloudsmith.io/~eventstore/repos/kurrent-preview/setup/#formats-rpm).
 
 Then, install the package:
 
@@ -188,19 +328,47 @@ starts automatically.
 
 KurrentDB has NuGet packages available on Cloudsmith, which replaces the previous Chocolatey packages.
 
+Nuget packages can be found in the following repositories:
+
+* [kurrent-lts](https://cloudsmith.io/~eventstore/repos/kurrent-lts/packages/?q=format%3Anuget+name%3Akurrentdb) containing only production-ready LTS packages.
+* [kurrent-latest](https://cloudsmith.io/~eventstore/repos/kurrent-latest/packages/?q=format%3Anuget+name%3Akurrentdb) containing production-ready LTS and STS packages.
+* [kurrent-preview](https://cloudsmith.io/~eventstore/repos/kurrent-preview/packages/?q=format%3Anuget+name%3Akurrentdb) containing non-production preview packages.
+
 Add a new package source to your Chocolatey configuration:
 
+::: tabs
+@tab kurrent-latest
 ```powershell
-choco source add -n eventstore-kurrent -s https://nuget.kurrent.io/kurrent/v2/
+choco source add -n eventstore-kurrent-latest -s https://nuget.eventstore.com/kurrent-latest/v2/
 ```
+@tab kurrent-lts
+```powershell
+choco source add -n eventstore-kurrent-lts -s https://nuget.eventstore.com/kurrent-lts/v2/
+```
+@tab kurrent-preview
+```powershell
+choco source add -n eventstore-kurrent-preview -s https://nuget.eventstore.com/kurrent-preview/v2/
+```
+:::
 
 #### Install with Chocolatey
 
 You can install KurrentDB through Chocolatey:
 
+::: tabs
+@tab kurrent-latest
 ```powershell
-choco install kurrentdb -s eventstore-kurrent --version 25.0.0
+choco install kurrentdb -s eventstore-kurrent-latest --version 25.0.0
 ```
+@tab kurrent-lts
+```powershell
+choco install kurrentdb -s eventstore-kurrent-lts --version 25.0.0
+```
+@tab kurrent-preview
+```powershell
+choco install kurrentdb -s eventstore-kurrent-preview --version 25.0.0
+```
+:::
 
 KurrentDB can then be run with `KurrentDB.exe`:
 
@@ -224,23 +392,53 @@ cases to try out the product and for local development purposes.
 It's also possible to run a three-node cluster with or without SSL using Docker Compose. Such a setup is
 closer to what you'd run in production.
 
-### Run with Docker
+KurrentDB Docker images are hosted in the following registries:
 
-KurrentDB Docker images are now hosted in the registry `docker.kurrent.io/kurrent`.
+* [kurrent-lts](https://cloudsmith.io/~eventstore/repos/kurrent-lts/packages/?q=format%3Adocker+name%3Akurrentdb) containing only production-ready LTS containers.
+* [kurrent-latest](https://cloudsmith.io/~eventstore/repos/kurrent-latest/packages/?q=format%3Adocker+name%3Akurrentdb) containing production-ready LTS and STS containers.
+* [kurrent-preview](https://cloudsmith.io/~eventstore/repos/kurrent-preview/packages/?q=format%3Adocker+name%3Akurrentdb) containing non-production preview containers.
+
+### Run with Docker
 
 Pull the container with:
 
+::: tabs
+@tab kurrent-latest
 ```bash
-docker pull docker.kurrent.io/kurrent/kurrentdb:latest
+docker pull docker.kurrent.io/kurrent-latest/kurrentdb:latest
 ```
+@tab kurrent-lts
+```bash
+docker pull docker.kurrent.io/kurrent-lts/kurrentdb:lts
+```
+@tab kurrent-preview
+```bash
+docker pull docker.kurrent.io/kurrent-preview/kurrentdb:latest
+```
+:::
 
 The following command will start the KurrentDB node using the default HTTP port, without security. You can then connect to it using one of the clients and the `kurrentdb://localhost:2113?tls=false` connection string. You can also access the Admin UI by opening http://localhost:2113 in your browser.
 
+::: tabs
+@tab kurrent-latest
 ```bash
 docker run --name kurrentdb-node -it -p 2113:2113 \
-    docker.kurrent.io/kurrent/kurrentdb --insecure --run-projections=All
+    docker.kurrent.io/kurrent-latest/kurrentdb --insecure --run-projections=All
     --enable-atom-pub-over-http
 ```
+@tab kurrent-lts
+```bash
+docker run --name kurrentdb-node -it -p 2113:2113 \
+    docker.kurrent.io/kurrent-lts/kurrentdb --insecure --run-projections=All
+    --enable-atom-pub-over-http
+```
+@tab kurrent-preview
+```bash
+docker run --name kurrentdb-node -it -p 2113:2113 \
+    docker.kurrent.io/kurrent-preview/kurrentdb --insecure --run-projections=All
+    --enable-atom-pub-over-http
+```
+:::
 
 Then, you'd be able to connect to KurrentDB with gRPC clients. Also, the Stream Browser will work
 in the Admin UI.

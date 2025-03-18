@@ -11,7 +11,13 @@ As part of this rebrand, EventStoreDB has been renamed to KurrentDB, with the fi
 
 Read more about the rebrand in the [rebrand FAQ](https://www.kurrent.io/blog/kurrent-re-brand-faq).
 
-The KurrentDB packages are still hosted on [Cloudsmith](https://cloudsmith.io/~eventstore/repos/kurrent/packages/). Packages are available for [Debian](https://cloudsmith.io/~eventstore/repos/kurrent/setup/#formats-deb), [RedHat](https://cloudsmith.io/~eventstore/repos/kurrent/setup/#formats-rpm), [Docker](https://cloudsmith.io/~eventstore/repos/kurrent/setup/#formats-docker), and [NuGet](https://cloudsmith.io/~eventstore/repos/kurrent/setup/#formats-nuget).
+Packages for KurrentDB are still hosted on [Cloudsmith](https://cloudsmith.io/~eventstore), in the following repositories:
+
+* [kurrent-lts](https://cloudsmith.io/~eventstore/repos/kurrent-lts) containing only production-ready LTS packages.
+* [kurrent-latest](https://cloudsmith.io/~eventstore/repos/kurrent-latest) containing production-ready LTS and STS packages.
+* [kurrent-preview](https://cloudsmith.io/~eventstore/repos/kurrent-preview) containing non-production preview packages.
+
+Packages are available for [Debian](./installation.md#debian-packages), [RedHat](./installation.md#redhat-packages), [Docker](./installation.md#docker), and [NuGet](./installation.md#nuget).
 
 If you have a previous version of EventStoreDB installed, please uninstall those versions before installing KurrentDB.
 
@@ -168,6 +174,32 @@ The following deprecated options were removed as they had no effect:
 - `GossipOnSingleNode`
 - `DisableInternalTcpTls`
 - `OptimizeIndexMerge`
+
+#### New OAuth redirect uri
+
+The new embedded web UI requires a new redirect uri in order to work with the OAuth plugin.
+
+If you use the OAuth plugin and the web UI, you will need to allow the `/signin-oidc` redirect uri in your identity server configuration in addition to the `/oauth/callback` uri.
+
+For example, if you had the following redirect uris configured in your identity server:
+
+```json
+"RedirectUris": [
+  "https://localhost:2113/oauth/callback",
+  "https://127.0.0.1:2113/oauth/callback"
+]
+```
+
+Then you would need to update it to this:
+
+```json
+"RedirectUris": [
+  "https://localhost:2113/signin-oidc",
+  "https://127.0.0.1:2113/signin-oidc",
+  "https://localhost:2113/oauth/callback",
+  "https://127.0.0.1:2113/oauth/callback"
+]
+```
 
 ### From v24.6 and earlier
 
