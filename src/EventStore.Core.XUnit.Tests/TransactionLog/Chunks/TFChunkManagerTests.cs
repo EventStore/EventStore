@@ -280,4 +280,25 @@ public  class TFChunkManagerTests : DirectoryPerTest<TFChunkManagerTests>{
 		Assert.Equal(expectedChunks, ActualChunks);
 		Assert.Equal(5, _onSwitched.Count);
 	}
+
+	[Fact]
+	public async Task ensure_lazy_chunk_initialized() {
+		const int chunkNumber = 0;
+		var expectedChunk = await FromCompletedFile(
+			_sut.FileSystem,
+			_locatorCodec.EncodeRemote(chunkNumber),
+			verifyHash: false,
+			unbufferedRead: false,
+			new TFChunkTracker.NoOp(),
+			DbTransformManager.Default,
+			reduceFileCachePressure: false,
+			chunkNumber);
+
+		await _sut.AddChunk(expectedChunk, CancellationToken.None);
+		Assert.False(expectedChunk.Initialized);
+
+		var actualChunk = await _sut.GetInitializedChunk(chunkNumber, CancellationToken.None);
+		Assert.Same(expectedChunk, actualChunk);
+		Assert.True(actualChunk.Initialized);
+	}
 }
