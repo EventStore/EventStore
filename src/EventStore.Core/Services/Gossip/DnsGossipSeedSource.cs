@@ -8,22 +8,14 @@ using EventStore.Common.Utils;
 
 namespace EventStore.Core.Services.Gossip;
 
-public class DnsGossipSeedSource : IGossipSeedSource {
-	private readonly string _hostname;
-	private readonly int _managerHttpPort;
-
-	public DnsGossipSeedSource(string hostname, int managerHttpPort) {
-		_hostname = hostname;
-		_managerHttpPort = managerHttpPort;
-	}
-
+public class DnsGossipSeedSource(string hostname, int managerHttpPort) : IGossipSeedSource {
 	public IAsyncResult BeginGetHostEndpoints(AsyncCallback requestCallback, object state) {
-		return Dns.BeginGetHostAddresses(_hostname, requestCallback, state);
+		return Dns.BeginGetHostAddresses(hostname, requestCallback, state);
 	}
 
 	public EndPoint[] EndGetHostEndpoints(IAsyncResult asyncResult) {
 		var addresses = Dns.EndGetHostAddresses(asyncResult);
 
-		return addresses.Select(address => new IPEndPoint(address, _managerHttpPort).WithClusterDns(_hostname)).ToArray();
+		return addresses.Select(address => new IPEndPoint(address, managerHttpPort).WithClusterDns(hostname)).ToArray();
 	}
 }

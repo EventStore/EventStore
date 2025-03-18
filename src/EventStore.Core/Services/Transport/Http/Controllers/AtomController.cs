@@ -122,7 +122,7 @@ public class AtomController : CommunicationController {
 
 		if (disableHTTPCaching) {
 			// ReSharper disable once RedundantNameQualifier
-			Transport.Http.Configure.DisableHTTPCaching = true;
+			Transport.Http.Configure.DisableHttpCaching = true;
 		}
 	}
 

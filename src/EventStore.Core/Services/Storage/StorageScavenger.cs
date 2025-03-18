@@ -14,26 +14,27 @@ using EventStore.Core.Synchronization;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 using Serilog;
+using static EventStore.Core.Messages.ClientMessage;
 
 namespace EventStore.Core.Services.Storage;
 
 // This tracks the current scavenge and starts/stops/creates it according to the client instructions
 // It works for both old and new scavenge, determined by ScavengerFactory
-public class StorageScavenger :
-	IHandle<ClientMessage.ScavengeDatabase>,
-	IHandle<ClientMessage.StopDatabaseScavenge>,
-	IHandle<ClientMessage.GetCurrentDatabaseScavenge>,
-	IHandle<ClientMessage.GetLastDatabaseScavenge>,
+public class StorageScavenger(ITFChunkScavengerLogManager logManager, ScavengerFactory scavengerFactory, SemaphoreSlimLock switchChunksLock) :
+	IHandle<ScavengeDatabase>,
+	IHandle<StopDatabaseScavenge>,
+	IHandle<GetCurrentDatabaseScavenge>,
+	IHandle<GetLastDatabaseScavenge>,
 	IHandle<SystemMessage.StateChangeMessage> {
-
 	protected static ILogger Log { get; } = Serilog.Log.ForContext<StorageScavenger>();
-	private readonly ITFChunkScavengerLogManager _logManager;
-	private readonly ScavengerFactory _scavengerFactory;
-	private readonly SemaphoreSlimLock _switchChunksLock;
+	private readonly ITFChunkScavengerLogManager _logManager = Ensure.NotNull(logManager);
+	private readonly ScavengerFactory _scavengerFactory = Ensure.NotNull(scavengerFactory);
+	private readonly SemaphoreSlimLock _switchChunksLock = Ensure.NotNull(switchChunksLock);
 	private Guid _switchChunksLockId = Guid.Empty;
 	private readonly object _lock = new object();
 
 	private IScavenger _currentScavenge;
+
 	// invariant: _currentScavenge is not null => _currentScavengeTask is the task of the current scavenge
 	private Task<ScavengeResult> _currentScavengeTask;
 	private CancellationTokenSource _cancellationTokenSource;
@@ -41,109 +42,99 @@ public class StorageScavenger :
 	private string _lastScavengeId;
 	private LastScavengeResult _lastScavengeResult = LastScavengeResult.Unknown;
 
-	public StorageScavenger(
-		ITFChunkScavengerLogManager logManager,
-		ScavengerFactory scavengerFactory,
-		SemaphoreSlimLock switchChunksLock) {
-
-		Ensure.NotNull(logManager, nameof(logManager));
-		Ensure.NotNull(scavengerFactory, nameof(scavengerFactory));
-		Ensure.NotNull(switchChunksLock, nameof(switchChunksLock));
-
-		_logManager = logManager;
-		_scavengerFactory = scavengerFactory;
-		_switchChunksLock = switchChunksLock;
-	}
-
 	public void Handle(SystemMessage.StateChangeMessage message) {
 		if (message.State == VNodeState.Leader || message.State == VNodeState.Follower) {
 			_logManager.Initialise();
 		}
 	}
 
-	public void Handle(ClientMessage.ScavengeDatabase message) {
-		if (IsAllowed(message.User, message.CorrelationId, message.Envelope)) {
-			lock (_lock) {
-				if (_currentScavenge != null) {
-					message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseInProgressResponse(
-						message.CorrelationId,
-						_currentScavenge.ScavengeId,
-						"Scavenge is already running"));
-				} else if (!_switchChunksLock.TryAcquire(out _switchChunksLockId)) {
-					Log.Information("SCAVENGING: Failed to acquire the chunks lock");
-					message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseInProgressResponse(
-						message.CorrelationId,
-						Guid.Empty.ToString(),
-						"Failed to acquire the chunk switch lock"));
-				} else {
-					Log.Information("SCAVENGING: Acquired the chunks lock");
-					var tfChunkScavengerLog = _logManager.CreateLog();
-					var logger = Log.ForContext("ScavengeId", tfChunkScavengerLog.ScavengeId);
-
-					_cancellationTokenSource = new CancellationTokenSource();
-
-					_currentScavenge = _scavengerFactory.Create(message, tfChunkScavengerLog, logger);
-					_currentScavengeTask = _currentScavenge.ScavengeAsync(_cancellationTokenSource.Token);
-					_lastScavengeId = _currentScavenge.ScavengeId;
-					_lastScavengeResult = LastScavengeResult.InProgress;
-
-					HandleCleanupWhenFinished(_currentScavengeTask, _currentScavenge, logger);
-
-					message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseStartedResponse(message.CorrelationId,
-						tfChunkScavengerLog.ScavengeId));
-				}
-			}
-		}
-	}
-
-	public void Handle(ClientMessage.StopDatabaseScavenge message) {
-		if (IsAllowed(message.User, message.CorrelationId, message.Envelope)) {
-			lock (_lock) {
-				if (_currentScavenge != null &&
-					(_currentScavenge.ScavengeId == message.ScavengeId || message.ScavengeId == "current")) {
-					_cancellationTokenSource.Cancel();
-
-					_currentScavengeTask.ContinueWith(_ => {
-						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseStoppedResponse(message.CorrelationId,
-							_currentScavenge.ScavengeId));
-					});
-				} else {
-					message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseNotFoundResponse(message.CorrelationId,
-						_currentScavenge?.ScavengeId, "Scavenge Id does not exist"));
-				}
-			}
-		}
-	}
-
-	public void Handle(ClientMessage.GetCurrentDatabaseScavenge message) {
-		if (IsAllowed(message.User, message.CorrelationId, message.Envelope)) {
-			lock (_lock) {
-				if (_currentScavenge != null) {
-					message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseGetCurrentResponse(
-						message.CorrelationId,
-						ClientMessage.ScavengeDatabaseGetCurrentResponse.ScavengeResult.InProgress,
-						_currentScavenge.ScavengeId));
-				} else {
-					message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseGetCurrentResponse(
-						message.CorrelationId, ClientMessage.ScavengeDatabaseGetCurrentResponse.ScavengeResult.Stopped, scavengeId: null));
-				}
-			}
-		}
-	}
-
-	public void Handle(ClientMessage.GetLastDatabaseScavenge message) {
-		if (!IsAllowed(message.User, message.CorrelationId, message.Envelope))
+	public void Handle(ScavengeDatabase message) {
+		if (!IsAllowed(message.User, message.CorrelationId, message.Envelope)) {
 			return;
+		}
 
 		lock (_lock) {
-			var response = new ClientMessage.ScavengeDatabaseGetLastResponse(
+			if (_currentScavenge != null) {
+				message.Envelope.ReplyWith(new ScavengeDatabaseInProgressResponse(
+					message.CorrelationId,
+					_currentScavenge.ScavengeId,
+					"Scavenge is already running"));
+			} else if (!_switchChunksLock.TryAcquire(out _switchChunksLockId)) {
+				Log.Information("SCAVENGING: Failed to acquire the chunks lock");
+				message.Envelope.ReplyWith(new ScavengeDatabaseInProgressResponse(
+					message.CorrelationId,
+					Guid.Empty.ToString(),
+					"Failed to acquire the chunk switch lock"));
+			} else {
+				Log.Information("SCAVENGING: Acquired the chunks lock");
+				var tfChunkScavengerLog = _logManager.CreateLog();
+				var logger = Log.ForContext("ScavengeId", tfChunkScavengerLog.ScavengeId);
+
+				_cancellationTokenSource = new();
+
+				_currentScavenge = _scavengerFactory.Create(message, tfChunkScavengerLog, logger);
+				_currentScavengeTask = _currentScavenge.ScavengeAsync(_cancellationTokenSource.Token);
+				_lastScavengeId = _currentScavenge.ScavengeId;
+				_lastScavengeResult = LastScavengeResult.InProgress;
+
+				HandleCleanupWhenFinished(_currentScavengeTask, _currentScavenge, logger);
+
+				message.Envelope.ReplyWith(new ScavengeDatabaseStartedResponse(message.CorrelationId, tfChunkScavengerLog.ScavengeId));
+			}
+		}
+	}
+
+	public void Handle(StopDatabaseScavenge message) {
+		if (!IsAllowed(message.User, message.CorrelationId, message.Envelope)) {
+			return;
+		}
+
+		lock (_lock) {
+			if (_currentScavenge != null &&
+			    (_currentScavenge.ScavengeId == message.ScavengeId || message.ScavengeId == "current")) {
+				_cancellationTokenSource.Cancel();
+
+				_currentScavengeTask.ContinueWith(_ => {
+					message.Envelope.ReplyWith(new ScavengeDatabaseStoppedResponse(message.CorrelationId, _currentScavenge.ScavengeId));
+				});
+			} else {
+				message.Envelope.ReplyWith(new ScavengeDatabaseNotFoundResponse(message.CorrelationId, _currentScavenge?.ScavengeId, "Scavenge Id does not exist"));
+			}
+		}
+	}
+
+	public void Handle(GetCurrentDatabaseScavenge message) {
+		if (!IsAllowed(message.User, message.CorrelationId, message.Envelope)) {
+			return;
+		}
+
+		lock (_lock) {
+			if (_currentScavenge != null) {
+				message.Envelope.ReplyWith(new ScavengeDatabaseGetCurrentResponse(
+					message.CorrelationId,
+					ScavengeDatabaseGetCurrentResponse.ScavengeResult.InProgress,
+					_currentScavenge.ScavengeId));
+			} else {
+				message.Envelope.ReplyWith(new ScavengeDatabaseGetCurrentResponse(
+					message.CorrelationId, ScavengeDatabaseGetCurrentResponse.ScavengeResult.Stopped, scavengeId: null));
+			}
+		}
+	}
+
+	public void Handle(GetLastDatabaseScavenge message) {
+		if (!IsAllowed(message.User, message.CorrelationId, message.Envelope)) {
+			return;
+		}
+
+		lock (_lock) {
+			var response = new ScavengeDatabaseGetLastResponse(
 				message.CorrelationId,
 				_lastScavengeResult switch {
-					LastScavengeResult.Unknown => ClientMessage.ScavengeDatabaseGetLastResponse.ScavengeResult.Unknown,
-					LastScavengeResult.Success => ClientMessage.ScavengeDatabaseGetLastResponse.ScavengeResult.Success,
-					LastScavengeResult.Errored => ClientMessage.ScavengeDatabaseGetLastResponse.ScavengeResult.Errored,
-					LastScavengeResult.Stopped => ClientMessage.ScavengeDatabaseGetLastResponse.ScavengeResult.Stopped,
-					LastScavengeResult.InProgress => ClientMessage.ScavengeDatabaseGetLastResponse.ScavengeResult.InProgress,
+					LastScavengeResult.Unknown => ScavengeDatabaseGetLastResponse.ScavengeResult.Unknown,
+					LastScavengeResult.Success => ScavengeDatabaseGetLastResponse.ScavengeResult.Success,
+					LastScavengeResult.Errored => ScavengeDatabaseGetLastResponse.ScavengeResult.Errored,
+					LastScavengeResult.Stopped => ScavengeDatabaseGetLastResponse.ScavengeResult.Stopped,
+					LastScavengeResult.InProgress => ScavengeDatabaseGetLastResponse.ScavengeResult.InProgress,
 					_ => throw new ArgumentOutOfRangeException(nameof(_lastScavengeResult))
 				},
 				_lastScavengeId);
@@ -185,11 +176,7 @@ public class StorageScavenger :
 		}
 
 		try {
-			if (_switchChunksLock.TryRelease(switchChunksLockId)) {
-				logger.Information("SCAVENGING: Released the chunks lock");
-			} else {
-				logger.Information("SCAVENGING: Failed to release the chunks lock");
-			}
+			logger.Information(_switchChunksLock.TryRelease(switchChunksLockId) ? "SCAVENGING: Released the chunks lock" : "SCAVENGING: Failed to release the chunks lock");
 		} catch (Exception ex) {
 			logger.Error(ex, "SCAVENGING: Unexpected error when releasing the chunks lock");
 		}
@@ -201,12 +188,12 @@ public class StorageScavenger :
 		}
 	}
 
-	private bool IsAllowed(ClaimsPrincipal user, Guid correlationId, IEnvelope envelope) {
-		if (user == null || (!user.LegacyRoleCheck(SystemRoles.Admins) && !user.LegacyRoleCheck(SystemRoles.Operations))) {
-			envelope.ReplyWith(new ClientMessage.ScavengeDatabaseUnauthorizedResponse(correlationId, null, "User not authorized"));
-			return false;
+	private static bool IsAllowed(ClaimsPrincipal user, Guid correlationId, IEnvelope envelope) {
+		if (user != null && (user.LegacyRoleCheck(SystemRoles.Admins) || user.LegacyRoleCheck(SystemRoles.Operations))) {
+			return true;
 		}
 
-		return true;
+		envelope.ReplyWith(new ScavengeDatabaseUnauthorizedResponse(correlationId, null, "User not authorized"));
+		return false;
 	}
 }

@@ -52,19 +52,19 @@ public class NodeGossipService : GossipServiceBase, IHandle<GossipMessage.Update
 
 	protected override MemberInfo GetInitialMe() {
 		var lastEpoch = _epochManager.GetLastEpoch();
-		var initialState = _memberInfo.IsReadOnlyReplica ? VNodeState.ReadOnlyLeaderless : VNodeState.Unknown;
-		return MemberInfo.ForVNode(_memberInfo.InstanceId,
+		var initialState = MemberInfo.IsReadOnlyReplica ? VNodeState.ReadOnlyLeaderless : VNodeState.Unknown;
+		return MemberInfo.ForVNode(MemberInfo.InstanceId,
 			_timeProvider.UtcNow,
 			initialState,
 			true,
-			_memberInfo.InternalTcpEndPoint,
-			_memberInfo.InternalSecureTcpEndPoint,
-			_memberInfo.ExternalTcpEndPoint,
-			_memberInfo.ExternalSecureTcpEndPoint,
-			_memberInfo.HttpEndPoint,
-			_memberInfo.AdvertiseHostToClientAs,
-			_memberInfo.AdvertiseHttpPortToClientAs,
-			_memberInfo.AdvertiseTcpPortToClientAs,
+			MemberInfo.InternalTcpEndPoint,
+			MemberInfo.InternalSecureTcpEndPoint,
+			MemberInfo.ExternalTcpEndPoint,
+			MemberInfo.ExternalSecureTcpEndPoint,
+			MemberInfo.HttpEndPoint,
+			MemberInfo.AdvertiseHostToClientAs,
+			MemberInfo.AdvertiseHttpPortToClientAs,
+			MemberInfo.AdvertiseTcpPortToClientAs,
 			_getLastCommitPosition(),
 			_writerCheckpoint.Read(),
 			_chaserCheckpoint.Read(),
@@ -72,7 +72,7 @@ public class NodeGossipService : GossipServiceBase, IHandle<GossipMessage.Update
 			lastEpoch == null ? -1 : lastEpoch.EpochNumber,
 			lastEpoch == null ? Guid.Empty : lastEpoch.EpochId,
 			_nodePriority,
-			_memberInfo.IsReadOnlyReplica, _memberInfo.ESVersion);
+			MemberInfo.IsReadOnlyReplica, MemberInfo.ESVersion);
 	}
 
 	protected override MemberInfo GetUpdatedMe(MemberInfo me) {

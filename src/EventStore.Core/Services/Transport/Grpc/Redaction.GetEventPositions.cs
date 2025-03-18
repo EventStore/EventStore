@@ -29,11 +29,11 @@ internal partial class Redaction {
 			var op = ReadOperation.WithParameter(
 				Plugins.Authorization.Operations.Streams.Parameters.StreamId(streamId));
 
-			if (!await _authorizationProvider.CheckAccessAsync(user, op, context.CancellationToken))
+			if (!await authorizationProvider.CheckAccessAsync(user, op, context.CancellationToken))
 				throw RpcExceptions.AccessDenied();
 
 			var tcsEnvelope = new TcsEnvelope<RedactionMessage.GetEventPositionCompleted>();
-			_bus.Publish(new RedactionMessage.GetEventPosition(tcsEnvelope, streamId, streamRevision.ToInt64()));
+			bus.Publish(new RedactionMessage.GetEventPosition(tcsEnvelope, streamId, streamRevision.ToInt64()));
 
 			var completionMsg = await tcsEnvelope.Task;
 			var result = completionMsg.Result;

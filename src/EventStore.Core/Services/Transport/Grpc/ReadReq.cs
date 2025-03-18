@@ -3,6 +3,7 @@
 
 using System;
 using EventStore.Core.Services.Transport.Common;
+using RecordPosition = EventStore.Core.Services.Transport.Common.Position;
 
 // ReSharper disable CheckNamespace
 namespace EventStore.Client.Streams;
@@ -29,19 +30,17 @@ partial class ReadReq {
 				}
 
 				partial class AllOptions {
-					internal Core.Services.Transport.Common.Position ToPosition() => AllOptionCase switch {
-						AllOptionOneofCase.End => Core.Services.Transport.Common.Position.End,
-						AllOptionOneofCase.Start => Core.Services.Transport.Common.Position.Start,
-						AllOptionOneofCase.Position => new Core.Services.Transport.Common.Position(Position.CommitPosition,
-							Position.PreparePosition),
+					internal RecordPosition ToPosition() => AllOptionCase switch {
+						AllOptionOneofCase.End => RecordPosition.End,
+						AllOptionOneofCase.Start => RecordPosition.Start,
+						AllOptionOneofCase.Position => new(Position.CommitPosition, Position.PreparePosition),
 						_ => throw new InvalidOperationException()
 					};
 
-					internal Core.Services.Transport.Common.Position? ToSubscriptionPosition() => AllOptionCase switch {
-						AllOptionOneofCase.End => Core.Services.Transport.Common.Position.End,
+					internal RecordPosition? ToSubscriptionPosition() => AllOptionCase switch {
+						AllOptionOneofCase.End => RecordPosition.End,
 						AllOptionOneofCase.Start => null,
-						AllOptionOneofCase.Position => new Core.Services.Transport.Common.Position(Position.CommitPosition,
-							Position.PreparePosition),
+						AllOptionOneofCase.Position => new RecordPosition(Position.CommitPosition, Position.PreparePosition),
 						_ => throw new InvalidOperationException()
 					};
 				}

@@ -4,24 +4,25 @@
 using System;
 using System.Threading.Tasks;
 using EventStore.Client.PersistentSubscriptions;
-using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Plugins.Authorization;
 using Grpc.Core;
+using static EventStore.Core.Messages.ClientMessage;
+using static EventStore.Core.Services.Transport.Grpc.RpcExceptions;
 
 namespace EventStore.Core.Services.Transport.Grpc;
 
 internal partial class PersistentSubscriptions {
-	private static readonly Operation ReplayParkedOperation = new Operation(Plugins.Authorization.Operations.Subscriptions.ReplayParked);
+	private static readonly Operation ReplayParkedOperation = new(Plugins.Authorization.Operations.Subscriptions.ReplayParked);
+
 	public override async Task<ReplayParkedResp> ReplayParked(ReplayParkedReq request, ServerCallContext context) {
 		var replayParkedMessagesSource = new TaskCompletionSource<ReplayParkedResp>();
 		var correlationId = Guid.NewGuid();
 
 		var user = context.GetHttpContext().User;
 
-		if (!await _authorizationProvider.CheckAccessAsync(user,
-			ReplayParkedOperation, context.CancellationToken)) {
-			throw RpcExceptions.AccessDenied();
+		if (!await _authorizationProvider.CheckAccessAsync(user, ReplayParkedOperation, context.CancellationToken)) {
+			throw AccessDenied();
 		}
 
 		string streamId = request.Options.StreamOptionCase switch {
@@ -36,7 +37,7 @@ internal partial class PersistentSubscriptions {
 			_ => throw new InvalidOperationException()
 		};
 
-		_publisher.Publish(new ClientMessage.ReplayParkedMessages(
+		_publisher.Publish(new ReplayParkedMessages(
 			correlationId,
 			correlationId,
 			new CallbackEnvelope(HandleReplayParkedMessagesCompleted),
@@ -47,40 +48,35 @@ internal partial class PersistentSubscriptions {
 		return await replayParkedMessagesSource.Task;
 
 		void HandleReplayParkedMessagesCompleted(Message message) {
-			if (message is ClientMessage.NotHandled notHandled && RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
-				replayParkedMessagesSource.TrySetException(ex);
-				return;
-			}
+			switch (message) {
+				case NotHandled notHandled when TryHandleNotHandled(notHandled, out var ex):
+					replayParkedMessagesSource.TrySetException(ex);
+					return;
+				case ReplayMessagesReceived completed:
+					switch (completed.Result) {
+						case ReplayMessagesReceived.ReplayMessagesReceivedResult.Success:
+							replayParkedMessagesSource.TrySetResult(new ReplayParkedResp());
+							return;
+						case ReplayMessagesReceived.ReplayMessagesReceivedResult.DoesNotExist:
+							replayParkedMessagesSource.TrySetException(
+								PersistentSubscriptionDoesNotExist(streamId, request.Options.GroupName));
+							return;
+						case ReplayMessagesReceived.ReplayMessagesReceivedResult.AccessDenied:
+							replayParkedMessagesSource.TrySetException(AccessDenied());
+							return;
+						case ReplayMessagesReceived.ReplayMessagesReceivedResult.Fail:
+							replayParkedMessagesSource.TrySetException(
+								PersistentSubscriptionFailed(streamId, request.Options.GroupName, completed.Reason));
+							return;
 
-			if (message is ClientMessage.ReplayMessagesReceived completed) {
-				switch (completed.Result) {
-					case ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.Success:
-						replayParkedMessagesSource.TrySetResult(new ReplayParkedResp());
-						return;
-					case ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.DoesNotExist:
-						replayParkedMessagesSource.TrySetException(
-							RpcExceptions.PersistentSubscriptionDoesNotExist(streamId,
-								request.Options.GroupName));
-						return;
-					case ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.AccessDenied:
-						replayParkedMessagesSource.TrySetException(
-							RpcExceptions.AccessDenied());
-						return;
-					case ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.Fail:
-						replayParkedMessagesSource.TrySetException(
-							RpcExceptions.PersistentSubscriptionFailed(streamId, request.Options.GroupName,
-								completed.Reason));
-						return;
-
-					default:
-						replayParkedMessagesSource.TrySetException(
-							RpcExceptions.UnknownError(completed.Result));
-						return;
-				}
+						default:
+							replayParkedMessagesSource.TrySetException(UnknownError(completed.Result));
+							return;
+					}
+				default:
+					replayParkedMessagesSource.TrySetException(UnknownMessage<ReplayMessagesReceived>(message));
+					break;
 			}
-			replayParkedMessagesSource.TrySetException(
-				RpcExceptions.UnknownMessage<ClientMessage.ReplayMessagesReceived>(
-					message));
 		}
 	}
 }

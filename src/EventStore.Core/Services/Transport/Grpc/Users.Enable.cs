@@ -11,7 +11,8 @@ using Grpc.Core;
 namespace EventStore.Core.Services.Transport.Grpc;
 
 internal partial class Users {
-	private static readonly Operation EnableOperation = new Operation(Plugins.Authorization.Operations.Users.Enable);
+	private static readonly Operation EnableOperation = new(Plugins.Authorization.Operations.Users.Enable);
+
 	public override async Task<EnableResp> Enable(EnableReq request, ServerCallContext context) {
 		var options = request.Options;
 
@@ -19,6 +20,7 @@ internal partial class Users {
 		if (!await _authorizationProvider.CheckAccessAsync(user, EnableOperation, context.CancellationToken)) {
 			throw RpcExceptions.AccessDenied();
 		}
+
 		var enableSource = new TaskCompletionSource<bool>();
 
 		var envelope = new CallbackEnvelope(OnMessage);

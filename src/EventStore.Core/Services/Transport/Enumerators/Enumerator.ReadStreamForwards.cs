@@ -7,10 +7,12 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
-using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Common;
+using static EventStore.Core.Messages.ClientMessage;
+using static EventStore.Core.Services.Transport.Enumerators.ReadResponse;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Services.Transport.Enumerators;
@@ -26,8 +28,8 @@ partial class Enumerator {
 		private readonly DateTime _deadline;
 		private readonly uint _compatibility;
 		private readonly CancellationToken _cancellationToken;
-		private readonly SemaphoreSlim _semaphore;
-		private readonly Channel<ReadResponse> _channel;
+		private readonly SemaphoreSlim _semaphore = new(1, 1);
+		private readonly Channel<ReadResponse> _channel = Channel.CreateBounded<ReadResponse>(BoundedChannelOptions);
 
 		private ReadResponse _current;
 
@@ -43,8 +45,8 @@ partial class Enumerator {
 			DateTime deadline,
 			uint compatibility,
 			CancellationToken cancellationToken) {
-			_bus = bus ?? throw new ArgumentNullException(nameof(bus));
-			_streamName = streamName ?? throw new ArgumentNullException(nameof(streamName));
+			_bus = Ensure.NotNull(bus);
+			_streamName = Ensure.NotNullOrEmpty(streamName);
 			_maxCount = maxCount;
 			_resolveLinks = resolveLinks;
 			_user = user;
@@ -52,8 +54,6 @@ partial class Enumerator {
 			_deadline = deadline;
 			_compatibility = compatibility;
 			_cancellationToken = cancellationToken;
-			_semaphore = new SemaphoreSlim(1, 1);
-			_channel = Channel.CreateBounded<ReadResponse>(BoundedChannelOptions);
 
 			ReadPage(startRevision);
 		}
@@ -76,22 +76,22 @@ partial class Enumerator {
 		private void ReadPage(StreamRevision startRevision, ulong readCount = 0) {
 			Guid correlationId = Guid.NewGuid();
 
-			_bus.Publish(new ClientMessage.ReadStreamEventsForward(
+			_bus.Publish(new ReadStreamEventsForward(
 				correlationId, correlationId, new ContinuationEnvelope(OnMessage, _semaphore, _cancellationToken),
 				_streamName, startRevision.ToInt64(), (int)Math.Min(ReadBatchSize, _maxCount), _resolveLinks,
 				_requiresLeader, null, _user, replyOnExpired: false, expires: _deadline,
-				cancellationToken: _cancellationToken));
+				cancellationToken: _cancellationToken)
+			);
 
 			async Task OnMessage(Message message, CancellationToken ct) {
-				if (message is ClientMessage.NotHandled notHandled &&
+				if (message is NotHandled notHandled &&
 				    TryHandleNotHandled(notHandled, out var ex)) {
 					_channel.Writer.TryComplete(ex);
 					return;
 				}
 
-				if (message is not ClientMessage.ReadStreamEventsForwardCompleted completed) {
-					_channel.Writer.TryComplete(
-						ReadResponseException.UnknownMessage.Create<ClientMessage.ReadStreamEventsForwardCompleted>(message));
+				if (message is not ReadStreamEventsForwardCompleted completed) {
+					_channel.Writer.TryComplete(ReadResponseException.UnknownMessage.Create<ReadStreamEventsForwardCompleted>(message));
 					return;
 				}
 
@@ -101,8 +101,7 @@ partial class Enumerator {
 							if (completed.Events is []) {
 								var firstStreamPosition = StreamRevision.FromInt64(completed.NextEventNumber);
 								if (startRevision != firstStreamPosition) {
-									await _channel.Writer
-										.WriteAsync(new ReadResponse.FirstStreamPositionReceived(firstStreamPosition), ct);
+									await _channel.Writer.WriteAsync(new FirstStreamPositionReceived(firstStreamPosition), ct);
 								}
 							}
 						}
@@ -111,7 +110,7 @@ partial class Enumerator {
 							if (readCount >= _maxCount) {
 								break;
 							}
-							await _channel.Writer.WriteAsync(new ReadResponse.EventReceived(@event), ct);
+							await _channel.Writer.WriteAsync(new EventReceived(@event), ct);
 							readCount++;
 						}
 
@@ -121,17 +120,14 @@ partial class Enumerator {
 						}
 
 						if (_compatibility >= 1) {
-							await _channel.Writer
-								.WriteAsync(
-									new ReadResponse.LastStreamPositionReceived(
-										StreamRevision.FromInt64(completed.LastEventNumber)), ct);
+							await _channel.Writer.WriteAsync(new LastStreamPositionReceived(StreamRevision.FromInt64(completed.LastEventNumber)), ct);
 						}
 
 						_channel.Writer.TryComplete();
 						return;
 
 					case ReadStreamResult.NoStream:
-						await _channel.Writer.WriteAsync(new ReadResponse.StreamNotFound(_streamName), ct);
+						await _channel.Writer.WriteAsync(new StreamNotFound(_streamName), ct);
 						_channel.Writer.TryComplete();
 						return;
 					case ReadStreamResult.StreamDeleted:

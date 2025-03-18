@@ -8,22 +8,11 @@ using EventStore.Core.DataStructures;
 
 namespace EventStore.Core.Services.TimerService;
 
-public class TimerBasedScheduler : IDisposable, IScheduler {
-	private readonly PairingHeap<ScheduledTask> _tasks =
-		new PairingHeap<ScheduledTask>((x, y) => x.DueTime < y.DueTime);
-
-	private readonly ITimeProvider _timeProvider;
-	private readonly ITimer _timer;
-
-	private readonly object _queueLock = new object();
-
-	public TimerBasedScheduler(ITimer timer, ITimeProvider timeProvider) {
-		Ensure.NotNull(timer, "timer");
-		Ensure.NotNull(timeProvider, "timeProvider");
-
-		_timer = timer;
-		_timeProvider = timeProvider;
-	}
+public class TimerBasedScheduler(ITimer timer, ITimeProvider timeProvider) : IScheduler {
+	private readonly PairingHeap<ScheduledTask> _tasks = new((x, y) => x.DueTime < y.DueTime);
+	private readonly ITimeProvider _timeProvider = Ensure.NotNull(timeProvider);
+	private readonly ITimer _timer = Ensure.NotNull(timer);
+	private readonly object _queueLock = new();
 
 	public void Stop() {
 		Dispose();
@@ -63,15 +52,9 @@ public class TimerBasedScheduler : IDisposable, IScheduler {
 		_timer.Dispose();
 	}
 
-	private struct ScheduledTask {
-		public readonly DateTime DueTime;
-		public readonly Action<IScheduler, object> Action;
-		public readonly object State;
-
-		public ScheduledTask(DateTime dueTime, Action<IScheduler, object> action, object state) {
-			DueTime = dueTime;
-			Action = action;
-			State = state;
-		}
+	private struct ScheduledTask(DateTime dueTime, Action<IScheduler, object> action, object state) {
+		public readonly DateTime DueTime = dueTime;
+		public readonly Action<IScheduler, object> Action = action;
+		public readonly object State = state;
 	}
 }
