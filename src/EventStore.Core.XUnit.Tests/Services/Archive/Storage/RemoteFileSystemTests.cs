@@ -56,7 +56,6 @@ public sealed class RemoteFileSystemTests : ArchiveStorageTestsBase<RemoteFileSy
 			reduceFileCachePressure: false,
 			unbufferedRead: false, tracker: new TFChunkTracker.NoOp(),
 			getTransformFactory: DbTransformManager.Default);
-		await remoteChunk.EnsureInitialized(CancellationToken.None);
 
 		var logPosition = 0L;
 		for (var i = 0; i < recordsCount; i++) {
@@ -104,7 +103,6 @@ public sealed class RemoteFileSystemTests : ArchiveStorageTestsBase<RemoteFileSy
 			reduceFileCachePressure: false,
 			unbufferedRead: false, tracker: new TFChunkTracker.NoOp(),
 			getTransformFactory: DbTransformManager.Default);
-		await remoteChunk.EnsureInitialized(CancellationToken.None);
 
 		// make sure that chunks are equivalent
 		using (var localChunk = File.OpenHandle(chunkLocalPath, options: FileOptions.Asynchronous)) {

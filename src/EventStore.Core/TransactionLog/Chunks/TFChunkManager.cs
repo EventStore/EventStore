@@ -268,7 +268,6 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 					reduceFileCachePressure: _config.ReduceFileCachePressure,
 					token: token);
 
-				await chunk.EnsureInitialized(token);
 				newChunks[i] = chunk;
 			}
 		} catch {
