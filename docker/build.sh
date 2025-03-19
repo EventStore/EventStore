@@ -1,0 +1,20 @@
+#!/usr/bin/env sh
+
+set -e
+set -x
+
+source_directory=$1
+output_directory=$2
+
+tests=$(find "$source_directory" -maxdepth 1 -type d -name "*.Tests")
+
+# Publish tests
+for test in $tests; do
+    dotnet publish \
+      --runtime="$RUNTIME" \
+      --configuration Release \
+      --output "$output_directory/$(basename "$test")" \
+      "$test"
+done
+
+cp "$source_directory"/*.sln "$output_directory"
