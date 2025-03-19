@@ -21,12 +21,9 @@ for test in $tests; do
       --logger:"console;verbosity=normal" \
       --results-directory "$output_directory/$proj" "$test/$proj.dll"
 
-    exit_code=$?
     html_files=$(find "$output_directory/$proj" -name "*.html")
 
     for html in $html_files; do
       cat "$html" > "$output_directory/test-results.html"
     done
-
-    exit $exit_code
 done
