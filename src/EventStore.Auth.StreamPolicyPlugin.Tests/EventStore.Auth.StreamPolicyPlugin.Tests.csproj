@@ -16,7 +16,7 @@
 </ItemGroup>
 
 <ItemGroup>
-	<ProjectReference Include="..\..\EventStore\src\EventStore.Core.Tests\EventStore.Core.Tests.csproj" />
+	<ProjectReference Include="..\EventStore.Core.Tests\EventStore.Core.Tests.csproj" />
 	<ProjectReference Include="..\EventStore.Auth.StreamPolicyPlugin\EventStore.Auth.StreamPolicyPlugin.csproj" />
 </ItemGroup>
 

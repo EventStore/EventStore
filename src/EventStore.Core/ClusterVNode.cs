@@ -969,7 +969,6 @@ public class ClusterVNode<TStreamId> :
 		var modifiedOptions = options
 			.WithPlugableComponent(_authorizationProvider)
 			.WithPlugableComponent(_authenticationProvider)
-			.WithPlugableComponent(new OtlpExporterPlugin.OtlpExporterPlugin())
 			.WithPlugableComponent(new ArchivePlugableComponent(options.Cluster.Archiver));
 
 		modifiedOptions = modifiedOptions.WithPlugableComponent(new LicensingPlugin(ex => {

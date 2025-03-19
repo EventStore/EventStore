@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<TargetFramework>net8.0</TargetFramework>
-		<Platforms>x64</Platforms>
 		<OutputType>Library</OutputType>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<ProduceReferenceAssembly>false</ProduceReferenceAssembly>
@@ -10,7 +9,9 @@
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 	</PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="Scrutor" Version="4.2.2" />
+		<PackageReference Include="EventStore.Plugins" Version="25.2.5" />
+		<PackageReference Include="Scrutor" Version="5.0.2" />
+		<PackageReference Include="Serilog" Version="4.0.1" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Update="user-certificates-plugin-example.yaml">

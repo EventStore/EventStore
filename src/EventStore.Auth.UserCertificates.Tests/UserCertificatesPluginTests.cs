@@ -7,7 +7,7 @@ using EventStore.Plugins;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Diagnostics;
 using EventStore.Plugins.Licensing;
-using EventStore.Plugins.Tests;
+using EventStore.Plugins.TestHelpers;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;

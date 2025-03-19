@@ -9,7 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Plugins.Authorization;
 using EventStore.Plugins.Licensing;
-using EventStore.Plugins.Tests;
+using EventStore.Plugins.TestHelpers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
