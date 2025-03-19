@@ -23,7 +23,7 @@ public class OAuthAuthenticationTcpIntegrationTests {
 		_output = output;
 	}
 
-	[Fact]
+	[FactRequiringDocker]
 	public async Task admin() {
 		using var fixture = await Fixture.Create(_output, EnableTcp);
 		var token = await fixture.IdentityServer.GetAccessToken("admin", "password");
@@ -36,7 +36,7 @@ public class OAuthAuthenticationTcpIntegrationTests {
 		await client.ReadAllEventsForwardAsync(Position.Start, 100, false);
 	}
 
-	[Fact]
+	[FactRequiringDocker]
 	public async Task user() {
 		using var fixture = await Fixture.Create(_output, EnableTcp);
 		var token = await fixture.IdentityServer.GetAccessToken("user", "password");

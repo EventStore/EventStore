@@ -30,18 +30,21 @@ internal class Fixture : IDisposable {
 			"Release";
 #endif
 
-	private static string SourceDirectory =>
-		Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, "../../../../src"));
-
-	private static string BuildDirectory => Path.GetFullPath(Path.Combine(Environment.CurrentDirectory,
-		$"../../../../bin/{BuildConfiguration}"));
-
 	private static string CertificateDirectory => Path.Join(BuildDirectory, "testcerts");
 
-	private static string PluginSourceDirectory => Path.Combine(SourceDirectory, "EventStore.Auth.OAuth");
+	private static string BuildDirectory => Environment.CurrentDirectory;
+
+	private static string PluginSourceDirectory {
+		get {
+			// x64 has different number of levels than AnyCPU
+			var target = "EventStore.Auth.OAuth";
+			var i = BuildDirectory.LastIndexOf(target) + target.Length;
+			return BuildDirectory[0..i];
+		}
+	}
 
 	private static string PluginPublishDirectory =>
-		Path.Combine(BuildDirectory, "EventStore.Auth.OAuth", "net8.0", "publish");
+		Path.Combine(BuildDirectory, "oauth");
 
 	private static string ESImage {
 		get {
@@ -130,7 +133,6 @@ internal class Fixture : IDisposable {
 			.Mount(_pluginConfiguration.FullName, PluginConfigurationPath, MountType.ReadOnly)
 			.ExposePort(1113, 1113)
 			.ExposePort(2113, 2113)
-			.WaitForPort("1113/tcp", 10000)
 			.Build();
 
 		_eventStore.Start();
@@ -219,7 +221,7 @@ OAuth:
 		using var process = new Process {
 			StartInfo = new ProcessStartInfo {
 				FileName = "dotnet",
-				Arguments = $"publish --configuration {BuildConfiguration} --framework=net8.0",
+				Arguments = $"publish --configuration {BuildConfiguration} --framework=net8.0 --output {PluginPublishDirectory}",
 				WorkingDirectory = pluginDirectory,
 				UseShellExecute = false,
 				RedirectStandardError = true,

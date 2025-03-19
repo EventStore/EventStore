@@ -28,10 +28,10 @@ internal class IdpFixture : IDisposable {
 	private static string IdentityServerSourceDirectory => Path.Combine(SourceDirectory, "IdentityServer");
 
 	private static string IdentityServerConfigurationFile =>
-		Path.Combine(TestSourceDirectory, "conf", "idsrv4.conf.json");
+		Path.Combine(Environment.CurrentDirectory, "conf", "idsrv4.conf.json");
 
 	private static string IdentityServerUserConfigurationFile =>
-		Path.Combine(TestSourceDirectory, "conf", "users.conf.json");
+		Path.Combine(Environment.CurrentDirectory, "conf", "users.conf.json");
 
 	private readonly ITestOutputHelper _output;
 	private readonly IContainerService _identityServer;

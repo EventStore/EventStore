@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 using EventStore.Plugins;
 using EventStore.Plugins.Diagnostics;
 using EventStore.Plugins.Licensing;
-using EventStore.Plugins.Tests;
+using EventStore.Plugins.TestHelpers;
 using EventStore.Plugins.Transforms;
 using FluentAssertions;
 using Microsoft.AspNetCore.Builder;

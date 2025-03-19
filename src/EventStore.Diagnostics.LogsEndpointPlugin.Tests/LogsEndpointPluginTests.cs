@@ -5,11 +5,8 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
-using System.Text.Json.Nodes;
-using EventStore.Plugins.Authentication;
 using EventStore.Plugins;
 using EventStore.Plugins.Diagnostics;
-using EventStore.Plugins.Tests;
 using FluentAssertions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -18,6 +15,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using EventStore.Plugins.Licensing;
+using EventStore.Plugins.TestHelpers;
 
 namespace EventStore.Diagnostics.LogsEndpointPlugin.Tests;
 

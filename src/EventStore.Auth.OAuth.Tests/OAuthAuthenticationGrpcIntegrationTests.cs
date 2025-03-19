@@ -18,7 +18,7 @@ public class OAuthAuthenticationGrpcIntegrationTests {
 		_output = output;
 	}
 
-	[Fact]
+	[FactRequiringDocker]
 	public async Task admin() {
 		using var fixture = await Fixture.Create(_output);
 		var token = await fixture.IdentityServer.GetAccessToken("admin", "password");
@@ -31,7 +31,7 @@ public class OAuthAuthenticationGrpcIntegrationTests {
 		await client.ReadAllAsync(Direction.Forwards, Position.Start).ToArrayAsync();
 	}
 
-	[Fact]
+	[FactRequiringDocker]
 	public async Task user() {
 		using var fixture = await Fixture.Create(_output);
 		var token = await fixture.IdentityServer.GetAccessToken("user", "password");

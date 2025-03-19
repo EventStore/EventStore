@@ -31,7 +31,7 @@ public class OAuthAuthenticationHttpIntegrationTests {
 		};
 	}
 
-	[Fact]
+	[FactRequiringDocker]
 	public async Task admin() {
 		using var fixture = await Fixture.Create(_output,EnableAtomPub);
 		var token = await fixture.IdentityServer.GetAccessToken("admin", "password");
@@ -48,7 +48,7 @@ public class OAuthAuthenticationHttpIntegrationTests {
 		Assert.Equal(HttpStatusCode.OK,readResponse.StatusCode);
 	}
 
-	[Fact]
+	[FactRequiringDocker]
 	public async Task user() {
 		using var fixture = await Fixture.Create(_output, EnableAtomPub);
 		var token = await fixture.IdentityServer.GetAccessToken("user", "password");
