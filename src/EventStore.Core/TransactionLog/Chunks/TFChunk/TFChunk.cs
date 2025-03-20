@@ -54,7 +54,7 @@ public partial class TFChunk : IChunkBlob {
 
 	public bool IsReadOnly {
 		get { return Interlocked.CompareExchange(ref _isReadOnly, 0, 0) == 1; }
-		set { Interlocked.Exchange(ref _isReadOnly, value ? 1 : 0); }
+		private set { Interlocked.Exchange(ref _isReadOnly, value ? 1 : 0); }
 	}
 
 	public bool IsCached {
@@ -64,6 +64,8 @@ public partial class TFChunk : IChunkBlob {
 	public bool IsUncached {
 		get { return _cacheStatus is CacheStatus.Uncached; }
 	}
+
+	public bool Initialized => _lazyInitArgs is null;
 
 	public bool IsRemote { get; }
 
@@ -99,11 +101,25 @@ public partial class TFChunk : IChunkBlob {
 	}
 
 	public ChunkInfo ChunkInfo {
-		get => new() {
-			ChunkEndNumber = _chunkHeader.ChunkEndNumber,
-			ChunkEndPosition = _chunkHeader.ChunkEndPosition,
-			IsRemote = IsRemote,
-		};
+		get {
+			if (_chunkHeader is not null)
+				return new() {
+				ChunkStartNumber = _chunkHeader.ChunkStartNumber,
+				ChunkEndNumber = _chunkHeader.ChunkEndNumber,
+				ChunkEndPosition = _chunkHeader.ChunkEndPosition,
+				IsRemote = IsRemote,
+			};
+
+			if (_lazyInitArgs is (ITransactionFileTracker, int startNumber))
+				return new() {
+					ChunkStartNumber = startNumber,
+					ChunkEndNumber = startNumber,
+					IsRemote = true,
+					ChunkEndPosition = long.MinValue,
+				};
+
+			throw new InvalidOperationException();
+		}
 	}
 
 	public ReadOnlyMemory<byte> TransformHeader {
@@ -174,11 +190,12 @@ public partial class TFChunk : IChunkBlob {
 		Uncaching,
 	}
 
-	private readonly ManualResetEventSlim _destroyEvent = new ManualResetEventSlim(false);
+	private readonly ManualResetEventSlim _destroyEvent = new(false);
 	private volatile bool _selfdestructin54321;
 	private volatile bool _deleteFile;
 	private readonly bool _unbuffered;
 	private readonly bool _writeThrough;
+	private volatile ITuple _lazyInitArgs; // null if initialized
 
 	// https://learn.microsoft.com/en-US/troubleshoot/windows-server/application-management/operating-system-performance-degrades
 	private readonly bool _reduceFileCachePressure;
@@ -224,26 +241,50 @@ public partial class TFChunk : IChunkBlob {
 		FreeCachedData();
 	}
 
-	// local or remote
-	public static async ValueTask<TFChunk> FromCompletedFile(IChunkFileSystem fileSystem, string filename, bool verifyHash, bool unbufferedRead,
-		ITransactionFileTracker tracker, IGetChunkTransformFactory getTransformFactory,
-		bool reduceFileCachePressure = false, CancellationToken token = default) {
-
-		var chunk = new TFChunk(
-			filename,
-			TFConsts.MidpointsDepth,
-			false,
-			unbufferedRead,
-			false,
-			reduceFileCachePressure,
-			fileSystem,
+	private static TFChunk FromCompletedFile(IChunkFileSystem fileSystem, string filename, bool unbufferedRead,
+		IGetChunkTransformFactory getTransformFactory, bool reduceFileCachePressure)
+		=> new(filename, TFConsts.MidpointsDepth, false, unbufferedRead, false, reduceFileCachePressure, fileSystem,
 			getTransformFactory);
 
+	// local or remote
+	public static async ValueTask<TFChunk> FromCompletedFile(IChunkFileSystem fileSystem, string filename,
+		bool verifyHash, bool unbufferedRead,
+		ITransactionFileTracker tracker, IGetChunkTransformFactory getTransformFactory,
+		bool reduceFileCachePressure, ChunkHeader header = null, ChunkFooter footer = null,
+		CancellationToken token = default) {
+
+		var chunk = FromCompletedFile(fileSystem, filename, unbufferedRead, getTransformFactory,
+			reduceFileCachePressure);
+
 		try {
-			await chunk.InitCompleted(verifyHash, tracker, getTransformFactory, token);
+			await chunk.InitCompleted(verifyHash, tracker, header, footer, token);
 		} catch {
 			chunk.Dispose();
 			throw;
+		}
+
+		return chunk;
+	}
+
+	// local or remote
+	public static async ValueTask<TFChunk> FromCompletedFile(IChunkFileSystem fileSystem, string filename,
+		bool verifyHash, bool unbufferedRead,
+		ITransactionFileTracker tracker, IGetChunkTransformFactory getTransformFactory,
+		bool reduceFileCachePressure, int startNumber, CancellationToken token = default) {
+
+		var chunk = FromCompletedFile(fileSystem, filename, unbufferedRead, getTransformFactory,
+			reduceFileCachePressure);
+
+		if (chunk.IsRemote) {
+			chunk.IsReadOnly = true;
+			chunk._lazyInitArgs = (tracker, startNumber);
+		} else {
+			try {
+				await chunk.InitCompleted(verifyHash, tracker, header: null, footer: null, token);
+			} catch {
+				chunk.Dispose();
+				throw;
+			}
 		}
 
 		return chunk;
@@ -340,8 +381,41 @@ public partial class TFChunk : IChunkBlob {
 		return chunk;
 	}
 
-	private async ValueTask InitCompleted(bool verifyHash, ITransactionFileTracker tracker,
-		IGetChunkTransformFactory getTransformFactory, CancellationToken token) {
+	public ValueTask EnsureInitialized(CancellationToken token) => _lazyInitArgs switch {
+		(ITransactionFileTracker tracker, int) => EnsureInitAsCompletedCore(tracker, token),
+		_ => ValueTask.CompletedTask,
+	};
+
+	private async ValueTask EnsureInitAsCompletedCore(ITransactionFileTracker tracker,
+		CancellationToken token) {
+		// lazy init is based on the double check pattern implemented on top of existing lock
+		await _cachedDataLock.AcquireAsync(token);
+		try {
+			if (_lazyInitArgs is not null) {
+				await InitCompleted(verifyHash: false, tracker, null, null, token);
+
+				// cannot be reordered, so we know that this flag is set to 'true' when all fields initialized properly
+				_lazyInitArgs = null;
+			}
+		} catch {
+			// revert internal state
+			if (_handle is not null) {
+				_handle.Dispose();
+				_handle = null;
+			}
+
+			_transform = null;
+			_transformHeader = ReadOnlyMemory<byte>.Empty;
+			_chunkFooter = null;
+			_chunkHeader = null;
+
+			throw;
+		} finally {
+			_cachedDataLock.Release();
+		}
+	}
+
+	private async ValueTask InitCompleted(bool verifyHash, ITransactionFileTracker tracker, ChunkHeader header, ChunkFooter footer, CancellationToken token) {
 		_handle = await _fileSystem.OpenForReadAsync(
 			ChunkLocator,
 			_reduceFileCachePressure
@@ -354,14 +428,19 @@ public partial class TFChunk : IChunkBlob {
 		IsReadOnly = true;
 
 		await using (var stream = _handle.CreateStream()) {
-			_chunkHeader = await ReadHeader(stream, token);
+			if (header is null) {
+				_chunkHeader = await ReadHeader(stream, token);
+			} else {
+				_chunkHeader = header;
+				stream.Position = ChunkHeader.Size;
+			}
 			Log.Debug("Opened completed {chunk} as version {version} (min. compatible version: {minCompatibleVersion})", ChunkLocator, _chunkHeader.Version, _chunkHeader.MinCompatibleVersion);
 
 			if (_chunkHeader.MinCompatibleVersion > CurrentChunkVersion)
 				throw new CorruptDatabaseException(new UnsupportedFileVersionException(ChunkLocator, _chunkHeader.MinCompatibleVersion,
 					CurrentChunkVersion));
 
-			var transformFactory = getTransformFactory.ForExistingChunk(_chunkHeader.TransformType);
+			var transformFactory = _getTransformFactory.ForExistingChunk(_chunkHeader.TransformType);
 
 			var transformHeader = transformFactory.TransformHeaderLength > 0
 				? new byte[transformFactory.TransformHeaderLength]
@@ -370,7 +449,7 @@ public partial class TFChunk : IChunkBlob {
 			_transformHeader = transformHeader;
 			_transform = transformFactory.CreateTransform(transformHeader);
 
-			_chunkFooter = await ReadFooter(stream, token);
+			_chunkFooter = footer ?? await ReadFooter(stream, token);
 			if (!_chunkFooter.IsCompleted) {
 				throw new CorruptDatabaseException(new BadChunkInDatabaseException(
 					$"Chunk file '{ChunkLocator}' should be completed, but is not."));
