@@ -26,9 +26,10 @@ public static class Ensure {
 		return number;
 	}
 
-	public static void Positive(long number, [CallerArgumentExpression("number")] string argumentName = null) {
+	public static long Positive(long number, [CallerArgumentExpression("number")] string argumentName = null) {
 		if (number <= 0)
 			throw new ArgumentOutOfRangeException(argumentName, $"{argumentName} should be positive.");
+		return number;
 	}
 
 	public static long Nonnegative(long number, [CallerArgumentExpression("number")] string argumentName = null) {

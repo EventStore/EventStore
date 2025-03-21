@@ -12,19 +12,21 @@ using EventStore.Transport.Tcp.Framing;
 namespace EventStore.Core.Services.Replication;
 
 internal sealed class TransactionFramer : IAsyncMessageFramer<IEnumerable<ILogRecord>> {
-	private readonly List<ILogRecord> _records;
+	private readonly List<ILogRecord> _records = new(capacity: 1024);
 	private readonly IAsyncMessageFramer<ILogRecord> _inner;
 	private Func<IEnumerable<ILogRecord>, CancellationToken, ValueTask> _handler = static (_, _) => ValueTask.CompletedTask;
 
 	public TransactionFramer(IAsyncMessageFramer<ILogRecord> inner) {
-		_records = new List<ILogRecord>(capacity: 1024);
 		_inner = inner;
 		_inner.RegisterMessageArrivedCallback(OnLogRecordUnframed);
 	}
 
 	public bool HasData => _records.Count > 0 || _inner.HasData;
+
 	public IEnumerable<ArraySegment<byte>> FrameData(ArraySegment<byte> data) => _inner.FrameData(data);
+
 	public ValueTask UnFrameData(IEnumerable<ArraySegment<byte>> data, CancellationToken token) => _inner.UnFrameData(data, token);
+
 	public ValueTask UnFrameData(ArraySegment<byte> data, CancellationToken token) => _inner.UnFrameData(data, token);
 
 	public void Reset() {

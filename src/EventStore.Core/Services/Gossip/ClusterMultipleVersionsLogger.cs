@@ -29,7 +29,7 @@ public class ClusterMultipleVersionsLogger : IHandle<GossipMessage.GossipUpdated
 	}
 
 	public static Dictionary<EndPoint, string> GetIPAddressVsVersion(ClusterInfo cluster, out int numDistinctKnownVersions) {
-		List<MemberInfo> aliveMembers = cluster.Members.Where(memberInfo => memberInfo.IsAlive).ToList();
+		var aliveMembers = cluster.Members.Where(memberInfo => memberInfo.IsAlive).ToList();
 		numDistinctKnownVersions = aliveMembers.Select(memberInfo => memberInfo.ESVersion)
 			.Where(esVersion => !VersionInfo.UnknownVersion.Equals(esVersion)).Distinct().Count();
 

@@ -7,6 +7,7 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -46,11 +47,9 @@ static partial class Enumerator {
 			ClaimsPrincipal user,
 			bool requiresLeader,
 			CancellationToken cancellationToken) {
-			ArgumentNullException.ThrowIfNull(bus);
-
 			_expiryStrategy = expiryStrategy;
 			_subscriptionId = Guid.NewGuid();
-			_bus = bus;
+			_bus = Ensure.NotNull(bus);
 			_resolveLinks = resolveLinks;
 			_user = user;
 			_requiresLeader = requiresLeader;
@@ -99,8 +98,7 @@ static partial class Enumerator {
 					goto ReadLoop;
 				}
 
-				Log.Verbose(
-					"Subscription {subscriptionId} to $all seen event {position}.", _subscriptionId, position);
+				Log.Verbose("Subscription {subscriptionId} to $all seen event {position}.", _subscriptionId, position);
 
 				_currentPosition = position;
 			}
@@ -206,16 +204,14 @@ static partial class Enumerator {
 		}
 
 		private Task<TFPos> CatchUp(TFPos checkpoint, CancellationToken ct) {
-			Log.Verbose(
-				"Subscription {subscriptionId} to $all is catching up from checkpoint {position}",
-				_subscriptionId, checkpoint);
+			Log.Verbose("Subscription {subscriptionId} to $all is catching up from checkpoint {position}", _subscriptionId, checkpoint);
 
 			var catchupCompletionTcs = new TaskCompletionSource<TFPos>();
 
 			// this is a safe use of AsyncTaskEnvelope. Only one call to OnMessage will be running
 			// at any given time because we only expect one reply and that reply kicks off the next read.
 			AsyncTaskEnvelope envelope = null;
-			envelope = new AsyncTaskEnvelope(OnMessage, ct);
+			envelope = new(OnMessage, ct);
 
 			ReadPage(checkpoint, envelope, ct);
 
@@ -241,9 +237,7 @@ static partial class Enumerator {
 								if (eventPosition <= checkpoint)
 									continue;
 
-								Log.Verbose(
-									"Subscription {subscriptionId} to $all received catch-up event {position}.",
-									_subscriptionId, eventPosition);
+								Log.Verbose("Subscription {subscriptionId} to $all received catch-up event {position}.", _subscriptionId, eventPosition);
 
 								await SendEventToSubscription(@event, ct);
 								checkpoint = eventPosition;
@@ -288,8 +282,7 @@ static partial class Enumerator {
 
 			void OnSubscriptionMessage(Message message) {
 				try {
-					if (message is ClientMessage.NotHandled notHandled &&
-					    TryHandleNotHandled(notHandled, out var ex))
+					if (message is ClientMessage.NotHandled notHandled && TryHandleNotHandled(notHandled, out var ex))
 						throw ex;
 
 					switch (message) {
@@ -329,8 +322,7 @@ static partial class Enumerator {
 							return;
 						}
 						default:
-							throw ReadResponseException.UnknownMessage
-								.Create<ClientMessage.SubscriptionConfirmation>(message);
+							throw ReadResponseException.UnknownMessage.Create<ClientMessage.SubscriptionConfirmation>(message);
 					}
 				} catch (Exception exception) {
 					_liveEvents.Writer.TryComplete(exception);
@@ -345,9 +337,7 @@ static partial class Enumerator {
 
 		private void ReadPage(TFPos startPos, IEnvelope envelope, CancellationToken ct) {
 			Guid correlationId = Guid.NewGuid();
-			Log.Verbose(
-				"Subscription {subscriptionId} to $all reading next page starting from {position}.",
-				_subscriptionId, startPos);
+			Log.Verbose("Subscription {subscriptionId} to $all reading next page starting from {position}.", _subscriptionId, startPos);
 
 			if (startPos is { CommitPosition: < 0, PreparePosition: < 0 })
 				startPos = new TFPos(0, 0);
@@ -360,7 +350,6 @@ static partial class Enumerator {
 				cancellationToken: ct));
 		}
 
-		private void Unsubscribe() => _bus.Publish(new ClientMessage.UnsubscribeFromStream(Guid.NewGuid(),
-			_subscriptionId, new NoopEnvelope(), _user));
+		private void Unsubscribe() => _bus.Publish(new ClientMessage.UnsubscribeFromStream(Guid.NewGuid(), _subscriptionId, new NoopEnvelope(), _user));
 	}
 }

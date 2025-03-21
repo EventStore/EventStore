@@ -8,38 +8,33 @@ using Microsoft.AspNetCore.Http;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication;
 
-public class BasicHttpAuthenticationProvider : IHttpAuthenticationProvider {
-	private readonly IAuthenticationProvider _internalAuthenticationProvider;
-
+public class BasicHttpAuthenticationProvider(IAuthenticationProvider internalAuthenticationProvider) : IHttpAuthenticationProvider {
 	public string Name => "basic";
 
-	public BasicHttpAuthenticationProvider(IAuthenticationProvider internalAuthenticationProvider) {
-		_internalAuthenticationProvider = internalAuthenticationProvider;
-	}
-
 	public bool Authenticate(HttpContext context, out HttpAuthenticationRequest request) {
-		if (context.Request.Headers.TryGetValue("authorization", out var values) && values.Count == 1 && 
-		    AuthenticationHeaderValue.TryParse(values[0], out var authenticationHeader) && authenticationHeader.Scheme == "Basic" && 
+		if (context.Request.Headers.TryGetValue("authorization", out var values) && values.Count == 1 &&
+		    AuthenticationHeaderValue.TryParse(values[0], out var authenticationHeader) && authenticationHeader.Scheme == "Basic" &&
 		    TryDecodeCredential(authenticationHeader.Parameter, out var username, out var password)) {
 			request = new HttpAuthenticationRequest(context, username, password);
-			_internalAuthenticationProvider.Authenticate(request);
+			internalAuthenticationProvider.Authenticate(request);
 			return true;
 		}
 
-		request = null;
+		request = null!;
 		return false;
 	}
 
 	private static bool TryDecodeCredential(string value, out string username, out string password) {
 		username = password = default;
 
-		var parts = Encoding.UTF8.GetString(System.Convert.FromBase64String(value)).Split(':', 2);
-		if (parts.Length < 2) {
+		var stringValue = Encoding.UTF8.GetString(System.Convert.FromBase64String(value));
+		var index = stringValue.IndexOf(':');
+		if (index < 0) {
 			return false;
 		}
 
-		username = parts[0];
-		password = parts[1];
+		username = stringValue[..index];
+		password = stringValue[(index + 1)..];
 
 		return true;
 	}

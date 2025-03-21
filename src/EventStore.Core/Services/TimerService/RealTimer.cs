@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace EventStore.Core.Services.TimerService;
 
-public class RealTimer : ITimer {
+public sealed class RealTimer : ITimer {
 	private Action _callback;
 	private readonly Timer _timer;
 
@@ -15,8 +15,7 @@ public class RealTimer : ITimer {
 	}
 
 	private void InvokeCallback(object state) {
-		if (_callback != null)
-			_callback();
+		_callback?.Invoke();
 	}
 
 	public void FireIn(int milliseconds, Action callback) {

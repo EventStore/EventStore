@@ -9,26 +9,21 @@ using Microsoft.AspNetCore.Http;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication;
 
-public class PassthroughHttpAuthenticationProvider : IHttpAuthenticationProvider {
-	private readonly IAuthenticationProvider _passthroughAuthenticationProvider;
+public class PassthroughHttpAuthenticationProvider(IAuthenticationProvider internalAuthenticationProvider) : IHttpAuthenticationProvider {
+	private readonly IAuthenticationProvider _authenticationProvider = GetProvider(internalAuthenticationProvider);
 
 	public string Name => "insecure";
-
-	public PassthroughHttpAuthenticationProvider(IAuthenticationProvider internalAuthenticationProvider) {
-		_passthroughAuthenticationProvider = GetProvider(internalAuthenticationProvider);
-	}
 
 	private static PassthroughAuthenticationProvider GetProvider(IAuthenticationProvider provider) =>
 		provider switch {
 			PassthroughAuthenticationProvider p => p,
 			DelegatedAuthenticationProvider d => GetProvider(d.Inner),
-			_ => throw new ArgumentException(
-				"PassthroughHttpAuthenticationProvider can be initialized only with a PassthroughAuthenticationProvider.")
+			_ => throw new ArgumentException("PassthroughHttpAuthenticationProvider can be initialized only with a PassthroughAuthenticationProvider.")
 		};
 
 	public bool Authenticate(HttpContext context, out HttpAuthenticationRequest request) {
-		request = new HttpAuthenticationRequest(context, null, null);
-		_passthroughAuthenticationProvider.Authenticate(request);
+		request = new(context, null!, null!);
+		_authenticationProvider.Authenticate(request);
 		return true;
 	}
 }

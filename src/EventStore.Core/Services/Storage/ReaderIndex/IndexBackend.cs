@@ -32,39 +32,25 @@ public interface IIndexBackend<TStreamId> : IIndexBackend {
 	StreamMetadata SetStreamMetadata(TStreamId streamId, StreamMetadata metadata);
 }
 
-public class IndexBackend<TStreamId> : IIndexBackend<TStreamId> {
-	private readonly ObjectPool<ITransactionFileReader> _readers;
-	private readonly ILRUCache<TStreamId, EventNumberCached> _streamLastEventNumberCache;
-	private readonly ILRUCache<TStreamId, MetadataCached> _streamMetadataCache;
+public class IndexBackend<TStreamId>(
+	ObjectPool<ITransactionFileReader> readers,
+	ILRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached> streamLastEventNumberCache,
+	ILRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached> streamMetadataCache)
+	: IIndexBackend<TStreamId> {
+	private readonly ObjectPool<ITransactionFileReader> _readers = Ensure.NotNull(readers);
+	private readonly ILRUCache<TStreamId, EventNumberCached> _streamLastEventNumberCache = Ensure.NotNull(streamLastEventNumberCache);
+	private readonly ILRUCache<TStreamId, MetadataCached> _streamMetadataCache = Ensure.NotNull(streamMetadataCache);
 	private SystemSettings _systemSettings;
 
-	public IndexBackend(
-		ObjectPool<ITransactionFileReader> readers,
-		ILRUCache<TStreamId, EventNumberCached> streamLastEventNumberCache,
-		ILRUCache<TStreamId, MetadataCached> streamMetadataCache) {
-
-		Ensure.NotNull(readers, nameof(readers));
-		Ensure.NotNull(streamLastEventNumberCache, nameof(streamLastEventNumberCache));
-		Ensure.NotNull(streamMetadataCache, nameof(streamMetadataCache));
-
-		_readers = readers;
-		_streamLastEventNumberCache = streamLastEventNumberCache;
-		_streamMetadataCache = streamMetadataCache;
-	}
-
-	public TFReaderLease BorrowReader() {
-		return new TFReaderLease(_readers);
-	}
+	public TFReaderLease BorrowReader() => new(_readers);
 
 	public EventNumberCached TryGetStreamLastEventNumber(TStreamId streamId) {
-		EventNumberCached cacheInfo;
-		_streamLastEventNumberCache.TryGet(streamId, out cacheInfo);
+		_streamLastEventNumberCache.TryGet(streamId, out var cacheInfo);
 		return cacheInfo;
 	}
 
 	public MetadataCached TryGetStreamMetadata(TStreamId streamId) {
-		MetadataCached cacheInfo;
-		_streamMetadataCache.TryGet(streamId, out cacheInfo);
+		_streamMetadataCache.TryGet(streamId, out var cacheInfo);
 		return cacheInfo;
 	}
 
@@ -72,10 +58,8 @@ public class IndexBackend<TStreamId> : IIndexBackend<TStreamId> {
 		var res = _streamLastEventNumberCache.Put(
 			streamId,
 			new KeyValuePair<int, long?>(cacheVersion, lastEventNumber),
-			(key, d) => d.Key == 0 ? new EventNumberCached(1, d.Value) : new EventNumberCached(1, null),
-			(key, old, d) => old.Version == d.Key
-				? new EventNumberCached(d.Key + 1, d.Value ?? old.LastEventNumber)
-				: old);
+			(_, d) => d.Key == 0 ? new EventNumberCached(1, d.Value) : new(1, null),
+			(_, old, d) => old.Version == d.Key ? new(d.Key + 1, d.Value ?? old.LastEventNumber) : old);
 		return res.LastEventNumber;
 	}
 
@@ -83,24 +67,24 @@ public class IndexBackend<TStreamId> : IIndexBackend<TStreamId> {
 		var res = _streamMetadataCache.Put(
 			streamId,
 			new KeyValuePair<int, StreamMetadata>(cacheVersion, metadata),
-			(key, d) => d.Key == 0 ? new MetadataCached(1, d.Value) : new MetadataCached(1, null),
-			(key, old, d) => old.Version == d.Key ? new MetadataCached(d.Key + 1, d.Value ?? old.Metadata) : old);
+			(_, d) => d.Key == 0 ? new MetadataCached(1, d.Value) : new(1, null),
+			(_, old, d) => old.Version == d.Key ? new(d.Key + 1, d.Value ?? old.Metadata) : old);
 		return res.Metadata;
 	}
 
 	long? IIndexBackend<TStreamId>.SetStreamLastEventNumber(TStreamId streamId, long lastEventNumber) {
 		var res = _streamLastEventNumberCache.Put(streamId,
 			lastEventNumber,
-			(key, lastEvNum) => new EventNumberCached(1, lastEvNum),
-			(key, old, lastEvNum) => new EventNumberCached(old.Version + 1, lastEvNum));
+			(_, lastEvNum) => new(1, lastEvNum),
+			(_, old, lastEvNum) => new(old.Version + 1, lastEvNum));
 		return res.LastEventNumber;
 	}
 
 	StreamMetadata IIndexBackend<TStreamId>.SetStreamMetadata(TStreamId streamId, StreamMetadata metadata) {
 		var res = _streamMetadataCache.Put(streamId,
 			metadata,
-			(key, meta) => new MetadataCached(1, meta),
-			(key, old, meta) => new MetadataCached(old.Version + 1, meta));
+			(_, meta) => new(1, meta),
+			(_, old, meta) => new(old.Version + 1, meta));
 		return res.Metadata;
 	}
 
@@ -112,26 +96,16 @@ public class IndexBackend<TStreamId> : IIndexBackend<TStreamId> {
 		return _systemSettings;
 	}
 
-	public struct EventNumberCached {
-		public readonly int Version;
-		public readonly long? LastEventNumber;
-
-		public EventNumberCached(int version, long? lastEventNumber) {
-			Version = version;
-			LastEventNumber = lastEventNumber;
-		}
+	public struct EventNumberCached(int version, long? lastEventNumber) {
+		public readonly int Version = version;
+		public readonly long? LastEventNumber = lastEventNumber;
 
 		public static int ApproximateSize => Unsafe.SizeOf<EventNumberCached>();
 	}
 
-	public struct MetadataCached {
-		public readonly int Version;
-		public readonly StreamMetadata Metadata;
-
-		public MetadataCached(int version, StreamMetadata metadata) {
-			Version = version;
-			Metadata = metadata;
-		}
+	public readonly struct MetadataCached(int version, StreamMetadata metadata) {
+		public readonly int Version = version;
+		public readonly StreamMetadata Metadata = metadata;
 
 		public int ApproximateSize => Unsafe.SizeOf<MetadataCached>() + (Metadata?.ApproximateSize ?? 0);
 	}

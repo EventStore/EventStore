@@ -13,11 +13,9 @@ public struct IndexReadEventResult {
 	public readonly long LastEventNumber;
 	public readonly bool? OriginalStreamExists;
 
-	public IndexReadEventResult(ReadEventResult result, StreamMetadata metadata, long lastEventNumber,
-		bool? originalStreamExists) {
+	public IndexReadEventResult(ReadEventResult result, StreamMetadata metadata, long lastEventNumber, bool? originalStreamExists) {
 		if (result == ReadEventResult.Success)
-			throw new ArgumentException(
-				string.Format("Wrong ReadEventResult provided for failure constructor: {0}.", result), "result");
+			throw new ArgumentException($"Wrong ReadEventResult provided for failure constructor: {result}.", nameof(result));
 
 		Result = result;
 		Record = null;

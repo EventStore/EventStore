@@ -33,8 +33,7 @@ public interface IHttpService {
 	List<UriToActionMatch> GetAllUriMatches(Uri uri);
 	void SetupController(IHttpController controller);
 
-	void RegisterCustomAction(ControllerAction action,
-		Func<HttpEntityManager, UriTemplateMatch, RequestParams> handler);
+	void RegisterCustomAction(ControllerAction action, Func<HttpEntityManager, UriTemplateMatch, RequestParams> handler);
 
 	void RegisterAction(ControllerAction action, Action<HttpEntityManager, UriTemplateMatch> handler);
 

@@ -12,12 +12,12 @@ public class UnixSocketAuthenticationProvider : IHttpAuthenticationProvider {
 
 	public bool Authenticate(HttpContext context, out HttpAuthenticationRequest request) {
 		if (context.IsUnixSocketConnection()) {
-			request = new HttpAuthenticationRequest(context, "system", "");
+			request = new(context, "system", "");
 			request.Authenticated(SystemAccounts.System);
 			return true;
 		}
 
-		request = null;
+		request = null!;
 		return false;
 	}
 }

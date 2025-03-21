@@ -2,20 +2,20 @@
 // Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 // ReSharper disable once CheckNamespace
-
 namespace EventStore.Client.Streams;
 
 partial class BatchAppendResp {
 	internal bool IsClosing { get; set; }
+
 	partial class Types {
 		partial class Success {
 			public static Success Completed(long commitPosition, long preparePosition, long currentVersion) => new() {
 				positionOptionCase_ = (commitPosition, preparePosition) switch {
-					(>=0, >=0) => PositionOptionOneofCase.Position,
+					(>= 0, >= 0) => PositionOptionOneofCase.Position,
 					_ => PositionOptionOneofCase.NoPosition
 				},
 				positionOption_ = (commitPosition, preparePosition) switch {
-					(>=0, >=0) => new AllStreamPosition {
+					(>= 0, >= 0) => new AllStreamPosition {
 						CommitPosition = (ulong)commitPosition,
 						PreparePosition = (ulong)preparePosition
 					},

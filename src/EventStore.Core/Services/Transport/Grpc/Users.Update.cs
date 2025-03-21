@@ -12,8 +12,8 @@ using Grpc.Core;
 namespace EventStore.Core.Services.Transport.Grpc;
 
 internal partial class Users {
-	private static readonly Operation UpdateOperation = new Operation(Plugins.Authorization.Operations.Users.Update);
-	
+	private static readonly Operation UpdateOperation = new(Plugins.Authorization.Operations.Users.Update);
+
 	public override async Task<UpdateResp> Update(UpdateReq request, ServerCallContext context) {
 		var options = request.Options;
 
@@ -25,8 +25,7 @@ internal partial class Users {
 
 		var envelope = new CallbackEnvelope(OnMessage);
 
-		_publisher.Publish(new UserManagementMessage.Update(envelope, user, options.LoginName, options.FullName,
-			options.Groups.ToArray()));
+		_publisher.Publish(new UserManagementMessage.Update(envelope, user, options.LoginName, options.FullName, options.Groups.ToArray()));
 
 		await updateSource.Task;
 

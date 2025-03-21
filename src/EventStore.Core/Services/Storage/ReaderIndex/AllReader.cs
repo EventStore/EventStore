@@ -42,22 +42,12 @@ public interface IAllReader {
 		IEventFilter eventFilter, CancellationToken token);
 }
 
-public class AllReader<TStreamId> : IAllReader {
-	private readonly IIndexBackend _backend;
-	private readonly IIndexCommitter _indexCommitter;
-	private readonly INameLookup<TStreamId> _streamNames;
-	private readonly INameLookup<TStreamId> _eventTypes;
-
-	public AllReader(IIndexBackend backend, IIndexCommitter indexCommitter, INameLookup<TStreamId> streamNames, INameLookup<TStreamId> eventTypes) {
-		Ensure.NotNull(backend, "backend");
-		Ensure.NotNull(indexCommitter, "indexCommitter");
-		Ensure.NotNull(streamNames, nameof(streamNames));
-		Ensure.NotNull(eventTypes, nameof(eventTypes));
-		_backend = backend;
-		_indexCommitter = indexCommitter;
-		_streamNames = streamNames;
-		_eventTypes = eventTypes;
-	}
+public class AllReader<TStreamId>(IIndexBackend backend, IIndexCommitter indexCommitter, INameLookup<TStreamId> streamNames, INameLookup<TStreamId> eventTypes)
+	: IAllReader {
+	private readonly IIndexBackend _backend = Ensure.NotNull(backend);
+	private readonly IIndexCommitter _indexCommitter = Ensure.NotNull(indexCommitter);
+	private readonly INameLookup<TStreamId> _streamNames = Ensure.NotNull(streamNames);
+	private readonly INameLookup<TStreamId> _eventTypes = Ensure.NotNull(eventTypes);
 
 	public ValueTask<IndexReadAllResult> ReadAllEventsForward(TFPos pos, int maxCount, CancellationToken token) {
 		return ReadAllEventsForwardInternal(pos, maxCount, int.MaxValue, EventFilter.DefaultAllFilter, token);
@@ -67,7 +57,6 @@ public class AllReader<TStreamId> : IAllReader {
 		IEventFilter eventFilter, CancellationToken token) {
 		return ReadAllEventsForwardInternal(pos, maxCount, maxSearchWindow, eventFilter, token);
 	}
-
 
 	private async ValueTask<IndexReadAllResult> ReadAllEventsForwardInternal(TFPos pos, int maxCount, int maxSearchWindow,
 		IEventFilter eventFilter, CancellationToken token) {
@@ -80,111 +69,110 @@ public class AllReader<TStreamId> : IAllReader {
 		var consideredEventsCount = 0L;
 		var firstCommit = true;
 		var reachedEndOfStream = false;
-		using (var reader = _backend.BorrowReader()) {
-			long nextCommitPos = pos.CommitPosition;
-			while (records.Count < maxCount && consideredEventsCount < maxSearchWindow) {
-				if (nextCommitPos > _indexCommitter.LastIndexedPosition) {
-					reachedEndOfStream = true;
-					break;
-				}
+		using var reader = _backend.BorrowReader();
 
-				reader.Reposition(nextCommitPos);
-
-				SeqReadResult result;
-				while ((result = await reader.TryReadNext(token)).Success && !IsCommitAlike(result.LogRecord)) {
-					// skip until commit
-				}
-
-				if (!result.Success) // no more records in TF
-					break;
-
-				nextCommitPos = result.RecordPostPosition;
-
-				switch (result.LogRecord.RecordType) {
-					case LogRecordType.Prepare:
-					case LogRecordType.Stream:
-					case LogRecordType.EventType: {
-						var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
-						if (firstCommit) {
-							firstCommit = false;
-							prevPos = new TFPos(result.RecordPrePosition, result.RecordPrePosition);
-						}
-
-						if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
-						    && new TFPos(prepare.LogPosition, prepare.LogPosition) >= pos) {
-							var streamName = await _streamNames.LookupName(prepare.EventStreamId, token);
-							var eventType = await _eventTypes.LookupName(prepare.EventType, token);
-							var eventRecord = new EventRecord(eventNumber: prepare.ExpectedVersion + 1,
-								prepare, streamName, eventType);
-							consideredEventsCount++;
-							if (eventFilter.IsEventAllowed(eventRecord)) {
-								records.Add(new CommitEventRecord(eventRecord, prepare.LogPosition));
-							}
-
-							nextPos = new TFPos(result.RecordPostPosition, 0);
-						}
-
-						break;
-					}
-
-					case LogRecordType.Commit: {
-						var commit = (CommitLogRecord)result.LogRecord;
-						if (firstCommit) {
-							firstCommit = false;
-							// for backward pass we want to allow read the same commit and skip read prepares,
-							// so we put post-position of commit and post-position of prepare as TFPos for backward pass
-							prevPos = new TFPos(result.RecordPostPosition, pos.PreparePosition);
-						}
-
-						reader.Reposition(commit.TransactionPosition);
-						while (records.Count < maxCount && consideredEventsCount < maxSearchWindow) {
-							result = await reader.TryReadNext(token);
-							if (!result.Success) // no more records in TF
-								break;
-							// prepare with TransactionEnd could be scavenged already
-							// so we could reach the same commit record. In that case have to stop
-							if (result.LogRecord.LogPosition >= commit.LogPosition)
-								break;
-							if (result.LogRecord.RecordType != LogRecordType.Prepare)
-								continue;
-
-							var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
-							if (prepare.TransactionPosition != commit.TransactionPosition) // wrong prepare
-								continue;
-
-							// prepare with useful data or delete tombstone
-							if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
-							    && new TFPos(commit.LogPosition, prepare.LogPosition) >= pos) {
-								var streamName = await _streamNames.LookupName(prepare.EventStreamId, token);
-								var eventType = await _eventTypes.LookupName(prepare.EventType, token);
-								var eventRecord =
-									new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset,
-										prepare, streamName, eventType);
-								consideredEventsCount++;
-								if (eventFilter.IsEventAllowed(eventRecord)) {
-									records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
-								}
-
-								// for forward pass position is inclusive,
-								// so we put pre-position of commit and post-position of prepare
-								nextPos = new TFPos(commit.LogPosition, result.RecordPostPosition);
-							}
-
-							if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionEnd))
-								break;
-						}
-
-						break;
-					}
-
-					default:
-						throw new Exception(string.Format("Unexpected log record type: {0}.",
-							result.LogRecord.RecordType));
-				}
+		long nextCommitPos = pos.CommitPosition;
+		while (records.Count < maxCount && consideredEventsCount < maxSearchWindow) {
+			if (nextCommitPos > _indexCommitter.LastIndexedPosition) {
+				reachedEndOfStream = true;
+				break;
 			}
 
-			return new IndexReadAllResult(records, pos, nextPos, prevPos, reachedEndOfStream, consideredEventsCount);
+			reader.Reposition(nextCommitPos);
+
+			SeqReadResult result;
+			while ((result = await reader.TryReadNext(token)).Success && !IsCommitAlike(result.LogRecord)) {
+				// skip until commit
+			}
+
+			if (!result.Success) // no more records in TF
+				break;
+
+			nextCommitPos = result.RecordPostPosition;
+
+			switch (result.LogRecord.RecordType) {
+				case LogRecordType.Prepare:
+				case LogRecordType.Stream:
+				case LogRecordType.EventType: {
+					var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
+					if (firstCommit) {
+						firstCommit = false;
+						prevPos = new TFPos(result.RecordPrePosition, result.RecordPrePosition);
+					}
+
+					if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
+					    && new TFPos(prepare.LogPosition, prepare.LogPosition) >= pos) {
+						var streamName = await _streamNames.LookupName(prepare.EventStreamId, token);
+						var eventType = await _eventTypes.LookupName(prepare.EventType, token);
+						var eventRecord = new EventRecord(eventNumber: prepare.ExpectedVersion + 1,
+							prepare, streamName, eventType);
+						consideredEventsCount++;
+						if (eventFilter.IsEventAllowed(eventRecord)) {
+							records.Add(new CommitEventRecord(eventRecord, prepare.LogPosition));
+						}
+
+						nextPos = new TFPos(result.RecordPostPosition, 0);
+					}
+
+					break;
+				}
+
+				case LogRecordType.Commit: {
+					var commit = (CommitLogRecord)result.LogRecord;
+					if (firstCommit) {
+						firstCommit = false;
+						// for backward pass we want to allow read the same commit and skip read prepares,
+						// so we put post-position of commit and post-position of prepare as TFPos for backward pass
+						prevPos = new TFPos(result.RecordPostPosition, pos.PreparePosition);
+					}
+
+					reader.Reposition(commit.TransactionPosition);
+					while (records.Count < maxCount && consideredEventsCount < maxSearchWindow) {
+						result = await reader.TryReadNext(token);
+						if (!result.Success) // no more records in TF
+							break;
+						// prepare with TransactionEnd could be scavenged already
+						// so we could reach the same commit record. In that case have to stop
+						if (result.LogRecord.LogPosition >= commit.LogPosition)
+							break;
+						if (result.LogRecord.RecordType != LogRecordType.Prepare)
+							continue;
+
+						var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
+						if (prepare.TransactionPosition != commit.TransactionPosition) // wrong prepare
+							continue;
+
+						// prepare with useful data or delete tombstone
+						if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
+						    && new TFPos(commit.LogPosition, prepare.LogPosition) >= pos) {
+							var streamName = await _streamNames.LookupName(prepare.EventStreamId, token);
+							var eventType = await _eventTypes.LookupName(prepare.EventType, token);
+							var eventRecord =
+								new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset,
+									prepare, streamName, eventType);
+							consideredEventsCount++;
+							if (eventFilter.IsEventAllowed(eventRecord)) {
+								records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
+							}
+
+							// for forward pass position is inclusive,
+							// so we put pre-position of commit and post-position of prepare
+							nextPos = new TFPos(commit.LogPosition, result.RecordPostPosition);
+						}
+
+						if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionEnd))
+							break;
+					}
+
+					break;
+				}
+
+				default:
+					throw new Exception($"Unexpected log record type: {result.LogRecord.RecordType}.");
+			}
 		}
+
+		return new IndexReadAllResult(records, pos, nextPos, prevPos, reachedEndOfStream, consideredEventsCount);
 	}
 
 	public ValueTask<IndexReadAllResult> ReadAllEventsBackward(TFPos pos, int maxCount, CancellationToken token) {
@@ -208,128 +196,125 @@ public class AllReader<TStreamId> : IAllReader {
 		var consideredEventsCount = 0L;
 		bool firstCommit = true;
 		var reachedEndOfStream = false;
-		using (var reader = _backend.BorrowReader()) {
-			long nextCommitPostPos = pos.CommitPosition;
-			while (records.Count < maxCount && consideredEventsCount < maxSearchWindow) {
-				reader.Reposition(nextCommitPostPos);
+		using var reader = _backend.BorrowReader();
 
-				SeqReadResult result;
-				while ((result = await reader.TryReadPrev(token)).Success && !IsCommitAlike(result.LogRecord)) {
-					// skip until commit
-				}
+		long nextCommitPostPos = pos.CommitPosition;
+		while (records.Count < maxCount && consideredEventsCount < maxSearchWindow) {
+			reader.Reposition(nextCommitPostPos);
 
-				if (!result.Success) {
-					// no more records in TF
-					reachedEndOfStream = true;
+			SeqReadResult result;
+			while ((result = await reader.TryReadPrev(token)).Success && !IsCommitAlike(result.LogRecord)) {
+				// skip until commit
+			}
+
+			if (!result.Success) {
+				// no more records in TF
+				reachedEndOfStream = true;
+				break;
+			}
+
+			nextCommitPostPos = result.RecordPrePosition;
+
+			if (nextCommitPostPos > _indexCommitter.LastIndexedPosition) {
+				continue;
+			}
+
+			switch (result.LogRecord.RecordType) {
+				case LogRecordType.Prepare:
+				case LogRecordType.Stream:
+				case LogRecordType.EventType: {
+					var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
+					if (firstCommit) {
+						firstCommit = false;
+						prevPos = new TFPos(result.RecordPostPosition, result.RecordPostPosition);
+					}
+
+					if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
+					    && new TFPos(result.RecordPostPosition, result.RecordPostPosition) <= pos) {
+						var streamName = await _streamNames.LookupName(prepare.EventStreamId, token);
+						var eventType = await _eventTypes.LookupName(prepare.EventType, token);
+						var eventRecord = new EventRecord(eventNumber: prepare.ExpectedVersion + 1,
+							prepare, streamName, eventType);
+						consideredEventsCount++;
+
+						if (eventFilter.IsEventAllowed(eventRecord)) {
+							records.Add(new CommitEventRecord(eventRecord, prepare.LogPosition));
+						}
+
+						// for backward pass we allow read the same commit, but force to skip last read prepare
+						// so we put post-position of commit and pre-position of prepare
+						nextPos = new TFPos(result.RecordPrePosition, result.RecordPrePosition);
+					}
+
 					break;
 				}
 
-				nextCommitPostPos = result.RecordPrePosition;
+				case LogRecordType.Commit: {
+					var commit = (CommitLogRecord)result.LogRecord;
+					if (firstCommit) {
+						firstCommit = false;
+						// for forward pass we allow read the same commit and as we have post-positions here
+						// we can put just prepare post-position as prepare pre-position for forward read
+						// so we put pre-position of commit and post-position of prepare
+						prevPos = new TFPos(commit.LogPosition, pos.PreparePosition);
+					}
 
-				if (nextCommitPostPos > _indexCommitter.LastIndexedPosition) {
-					continue;
-				}
+					var commitPostPos = result.RecordPostPosition;
+					// as we don't know exact position of the last record of transaction,
+					// we have to sequentially scan backwards, so no need to reposition
+					while (records.Count < maxCount && consideredEventsCount < maxSearchWindow) {
+						result = await reader.TryReadPrev(token);
+						if (!result.Success) // no more records in TF
+							break;
 
-				switch (result.LogRecord.RecordType) {
-					case LogRecordType.Prepare:
-					case LogRecordType.Stream:
-					case LogRecordType.EventType: {
+						// prepare with TransactionBegin could be scavenged already
+						// so we could reach beyond the start of transaction. In that case we have to stop.
+						if (result.LogRecord.LogPosition < commit.TransactionPosition)
+							break;
+						if (result.LogRecord.RecordType != LogRecordType.Prepare)
+							continue;
+
 						var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
-						if (firstCommit) {
-							firstCommit = false;
-							prevPos = new TFPos(result.RecordPostPosition, result.RecordPostPosition);
-						}
+						if (prepare.TransactionPosition != commit.TransactionPosition) // wrong prepare
+							continue;
 
+						// prepare with useful data or delete tombstone
 						if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
-						    && new TFPos(result.RecordPostPosition, result.RecordPostPosition) <= pos) {
+						    && new TFPos(commitPostPos, result.RecordPostPosition) <= pos) {
 							var streamName = await _streamNames.LookupName(prepare.EventStreamId, token);
 							var eventType = await _eventTypes.LookupName(prepare.EventType, token);
-							var eventRecord = new EventRecord(eventNumber: prepare.ExpectedVersion + 1,
-								prepare, streamName, eventType);
+							var eventRecord =
+								new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset,
+									prepare, streamName, eventType);
 							consideredEventsCount++;
 
 							if (eventFilter.IsEventAllowed(eventRecord)) {
-								records.Add(new CommitEventRecord(eventRecord, prepare.LogPosition));
+								records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
 							}
 
 							// for backward pass we allow read the same commit, but force to skip last read prepare
 							// so we put post-position of commit and pre-position of prepare
-							nextPos = new TFPos(result.RecordPrePosition, result.RecordPrePosition);
+							nextPos = new TFPos(commitPostPos, prepare.LogPosition);
 						}
 
-						break;
+						if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionBegin))
+							break;
 					}
 
-					case LogRecordType.Commit: {
-						var commit = (CommitLogRecord)result.LogRecord;
-						if (firstCommit) {
-							firstCommit = false;
-							// for forward pass we allow read the same commit and as we have post-positions here
-							// we can put just prepare post-position as prepare pre-position for forward read
-							// so we put pre-position of commit and post-position of prepare
-							prevPos = new TFPos(commit.LogPosition, pos.PreparePosition);
-						}
-
-						var commitPostPos = result.RecordPostPosition;
-						// as we don't know exact position of the last record of transaction,
-						// we have to sequentially scan backwards, so no need to reposition
-						while (records.Count < maxCount && consideredEventsCount < maxSearchWindow) {
-							result = await reader.TryReadPrev(token);
-							if (!result.Success) // no more records in TF
-								break;
-
-							// prepare with TransactionBegin could be scavenged already
-							// so we could reach beyond the start of transaction. In that case we have to stop.
-							if (result.LogRecord.LogPosition < commit.TransactionPosition)
-								break;
-							if (result.LogRecord.RecordType != LogRecordType.Prepare)
-								continue;
-
-							var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
-							if (prepare.TransactionPosition != commit.TransactionPosition) // wrong prepare
-								continue;
-
-							// prepare with useful data or delete tombstone
-							if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
-							    && new TFPos(commitPostPos, result.RecordPostPosition) <= pos) {
-								var streamName = await _streamNames.LookupName(prepare.EventStreamId, token);
-								var eventType = await _eventTypes.LookupName(prepare.EventType, token);
-								var eventRecord =
-									new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset,
-										prepare, streamName, eventType);
-								consideredEventsCount++;
-
-								if (eventFilter.IsEventAllowed(eventRecord)) {
-									records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
-								}
-
-								// for backward pass we allow read the same commit, but force to skip last read prepare
-								// so we put post-position of commit and pre-position of prepare
-								nextPos = new TFPos(commitPostPos, prepare.LogPosition);
-							}
-
-							if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionBegin))
-								break;
-						}
-
-						break;
-					}
-
-					default:
-						throw new Exception(string.Format("Unexpected log record type: {0}.",
-							result.LogRecord.RecordType));
+					break;
 				}
-			}
 
-			return new IndexReadAllResult(records, pos, nextPos, prevPos, reachedEndOfStream, consideredEventsCount);
+				default:
+					throw new Exception($"Unexpected log record type: {result.LogRecord.RecordType}.");
+			}
 		}
+
+		return new IndexReadAllResult(records, pos, nextPos, prevPos, reachedEndOfStream, consideredEventsCount);
 	}
 
 	private static bool IsCommitAlike(ILogRecord rec) {
 		return rec.RecordType == LogRecordType.Commit
-		       || ((rec.RecordType == LogRecordType.Prepare
-		            || rec.RecordType == LogRecordType.EventType
-		            || rec.RecordType == LogRecordType.Stream) &&
+		       || (rec.RecordType is LogRecordType.Prepare or LogRecordType.EventType or LogRecordType.Stream &&
 		           ((IPrepareLogRecord)rec).Flags.HasAnyOf(PrepareFlags.IsCommitted));
 	}
 }

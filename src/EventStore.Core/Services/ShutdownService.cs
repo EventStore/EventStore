@@ -13,7 +13,7 @@ namespace EventStore.Core.Services;
 
 // This intercepts the ShutdownRequest and shuts down Peripheral Services before shutting down the Core.
 // todo: later we can move the logic that tracks the core service shutdown into here, and also subsystems shutdown.
-public class ShutdownService :
+public class ShutdownService(IPublisher mainQueue, VNodeInfo nodeInfo, TimeSpan? shutdownTimeout = null) :
 	IHandle<ClientMessage.RequestShutdown>,
 	IHandle<SystemMessage.RegisterForGracefulTermination>,
 	IHandle<SystemMessage.ComponentTerminated>,
@@ -22,10 +22,8 @@ public class ShutdownService :
 	private static readonly ILogger Log = Serilog.Log.ForContext<ShutdownService>();
 	private static readonly TimeSpan PeripheryShutdownTimeout = TimeSpan.FromSeconds(30);
 
-	private readonly IPublisher _mainQueue;
-	private readonly VNodeInfo _nodeInfo;
 	private readonly Dictionary<string, Action> _shutdownActions = [];
-	private readonly TimeSpan _shutdownTimeout;
+	private readonly TimeSpan _shutdownTimeout = shutdownTimeout ?? PeripheryShutdownTimeout;
 
 	private bool _exitProcess;
 	private bool _shutdownHttp;
@@ -37,23 +35,16 @@ public class ShutdownService :
 	}
 	private State _state;
 
-	public ShutdownService(IPublisher mainQueue, VNodeInfo nodeInfo, TimeSpan? shutdownTimeout = null) {
-		_mainQueue = mainQueue;
-		_nodeInfo = nodeInfo;
-		_shutdownTimeout = shutdownTimeout ?? PeripheryShutdownTimeout;
-	}
-
 	public void Handle(SystemMessage.RegisterForGracefulTermination message) {
 		if (_state is not State.Running) {
-			Log.Warning("Component {ComponentName} tried to register for graceful shutdown while the server is shutting down",
-				message.ComponentName);
+			Log.Warning("Component {ComponentName} tried to register for graceful shutdown while the server is shutting down", message.ComponentName);
 			return;
 		}
 
 		if (!_shutdownActions.TryAdd(message.ComponentName, message.Action))
 			throw new InvalidOperationException($"Component {message.ComponentName} already registered");
 
-		Log.Information("========== [{HttpEndPoint}] Component '{Component}' is registered for graceful termination", _nodeInfo.HttpEndPoint,
+		Log.Information("========== [{HttpEndPoint}] Component '{Component}' is registered for graceful termination", nodeInfo.HttpEndPoint,
 			message.ComponentName);
 	}
 
@@ -72,7 +63,7 @@ public class ShutdownService :
 		}
 
 		_state = State.ShuttingDownPeriphery;
-		Log.Information("========== [{httpEndPoint}] IS SHUTTING DOWN PERIPHERAL COMPONENTS...", _nodeInfo.HttpEndPoint);
+		Log.Information("========== [{httpEndPoint}] IS SHUTTING DOWN PERIPHERAL COMPONENTS...", nodeInfo.HttpEndPoint);
 
 		foreach (var entry in _shutdownActions) {
 			try {
@@ -82,9 +73,9 @@ public class ShutdownService :
 			}
 		}
 
-		_mainQueue.Publish(TimerMessage.Schedule.Create(
+		mainQueue.Publish(TimerMessage.Schedule.Create(
 			_shutdownTimeout,
-			_mainQueue,
+			mainQueue,
 			new SystemMessage.PeripheralShutdownTimeout()));
 	}
 
@@ -92,11 +83,11 @@ public class ShutdownService :
 		if (!_shutdownActions.Remove(message.ComponentName))
 			throw new InvalidOperationException($"Component {message.ComponentName} already terminated");
 
-		Log.Information("========== [{HttpEndPoint}] Component '{ComponentName}' has shut down.", _nodeInfo.HttpEndPoint,
+		Log.Information("========== [{HttpEndPoint}] Component '{ComponentName}' has shut down.", nodeInfo.HttpEndPoint,
 			message.ComponentName);
 
 		if (_state is State.ShuttingDownPeriphery && _shutdownActions.Count == 0) {
-			Log.Information("========== [{HttpEndPoint}] All Components Shutdown.", _nodeInfo.HttpEndPoint);
+			Log.Information("========== [{HttpEndPoint}] All Components Shutdown.", nodeInfo.HttpEndPoint);
 			ShutDownCore();
 		}
 	}
@@ -108,14 +99,14 @@ public class ShutdownService :
 		}
 
 		Log.Information("========== [{httpEndPoint}] TIMED OUT SHUTTING DOWN PERIPHERAL COMPONENTS {Components}...",
-			_nodeInfo.HttpEndPoint,
+			nodeInfo.HttpEndPoint,
 			string.Join(", ", _shutdownActions.Keys));
 		ShutDownCore();
 	}
 
 	private void ShutDownCore() {
 		_state = State.ShuttingDownCore;
-		_mainQueue.Publish(new SystemMessage.BecomeShuttingDown(
+		mainQueue.Publish(new SystemMessage.BecomeShuttingDown(
 			correlationId: Guid.NewGuid(),
 			exitProcess: _exitProcess,
 			shutdownHttp: _shutdownHttp));

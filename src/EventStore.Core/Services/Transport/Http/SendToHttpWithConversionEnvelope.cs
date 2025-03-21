@@ -9,14 +9,13 @@ using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http;
 
-public class SendToHttpWithConversionEnvelope<TExpectedResponseMessage, TExpectedHttpFormattedResponseMessage> :
-	IEnvelope
+public class SendToHttpWithConversionEnvelope<TExpectedResponseMessage, TExpectedHttpFormattedResponseMessage> : IEnvelope
 	where TExpectedResponseMessage : Message {
 	private readonly Func<ICodec, TExpectedHttpFormattedResponseMessage, string> _formatter;
 	private readonly Func<ICodec, TExpectedHttpFormattedResponseMessage, ResponseConfiguration> _configurator;
 	private readonly Func<TExpectedResponseMessage, TExpectedHttpFormattedResponseMessage> _convertor;
 
-	private readonly IEnvelope _httpEnvelope;
+	private readonly SendToHttpEnvelope<TExpectedResponseMessage> _httpEnvelope;
 
 	public SendToHttpWithConversionEnvelope(IPublisher networkSendQueue,
 		HttpEntityManager entity,
@@ -27,8 +26,7 @@ public class SendToHttpWithConversionEnvelope<TExpectedResponseMessage, TExpecte
 		_formatter = formatter;
 		_configurator = configurator;
 		_convertor = convertor;
-		_httpEnvelope = new SendToHttpEnvelope<TExpectedResponseMessage>(networkSendQueue, entity, Formatter,
-			Configurator, nonMatchingEnvelope);
+		_httpEnvelope = new(networkSendQueue, entity, Formatter, Configurator, nonMatchingEnvelope);
 	}
 
 	private ResponseConfiguration Configurator(ICodec codec, TExpectedResponseMessage message) {

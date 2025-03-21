@@ -10,15 +10,13 @@ using EventStore.Core.Messaging;
 using EventStore.Client.Streams;
 using EventStore.Core.Services.Transport.Common;
 using Grpc.Core;
+using static EventStore.Client.Streams.AppendReq.Types.Options;
 using Empty = EventStore.Client.Empty;
 
 namespace EventStore.Core.Services.Transport.Grpc;
 
 internal partial class Streams<TStreamId> {
-	public override async Task<AppendResp> Append(
-		IAsyncStreamReader<AppendReq> requestStream,
-		ServerCallContext context) {
-
+	public override async Task<AppendResp> Append(IAsyncStreamReader<AppendReq> requestStream, ServerCallContext context) {
 		using var duration = _appendTracker.Start();
 		try {
 			if (!await requestStream.MoveNext())
@@ -31,21 +29,17 @@ internal partial class Streams<TStreamId> {
 			var streamName = options.StreamIdentifier;
 
 			var expectedVersion = options.ExpectedStreamRevisionCase switch {
-				AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.Revision => new StreamRevision(
-					options.Revision).ToInt64(),
-				AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.Any => AnyStreamRevision.Any.ToInt64(),
-				AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.StreamExists => AnyStreamRevision.StreamExists
-					.ToInt64(),
-				AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.NoStream =>
-					AnyStreamRevision.NoStream.ToInt64(),
+				ExpectedStreamRevisionOneofCase.Revision => new StreamRevision(options.Revision).ToInt64(),
+				ExpectedStreamRevisionOneofCase.Any => AnyStreamRevision.Any.ToInt64(),
+				ExpectedStreamRevisionOneofCase.StreamExists => AnyStreamRevision.StreamExists.ToInt64(),
+				ExpectedStreamRevisionOneofCase.NoStream => AnyStreamRevision.NoStream.ToInt64(),
 				_ => throw RpcExceptions.InvalidArgument(options.ExpectedStreamRevisionCase)
 			};
 
 			var requiresLeader = GetRequiresLeader(context.RequestHeaders);
 
 			var user = context.GetHttpContext().User;
-			var op = WriteOperation.WithParameter(
-				Plugins.Authorization.Operations.Streams.Parameters.StreamId(streamName));
+			var op = WriteOperation.WithParameter(Plugins.Authorization.Operations.Streams.Parameters.StreamId(streamName));
 			if (!await _provider.CheckAccessAsync(user, op, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
@@ -75,6 +69,7 @@ internal partial class Streams<TStreamId> {
 				if (eventSize > _maxAppendEventSize) {
 					throw RpcExceptions.MaxAppendEventSizeExceeded(proposedMessage.Id.ToString(), eventSize, _maxAppendEventSize);
 				}
+
 				size += eventSize;
 
 				if (size > _maxAppendSize) {
@@ -108,12 +103,12 @@ internal partial class Streams<TStreamId> {
 
 			void HandleWriteEventsCompleted(Message message) {
 				if (message is ClientMessage.NotHandled notHandled &&
-					RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
+				    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
 					appendResponseSource.TrySetException(ex);
 					return;
 				}
 
-				if (!(message is ClientMessage.WriteEventsCompleted completed)) {
+				if (message is not ClientMessage.WriteEventsCompleted completed) {
 					appendResponseSource.TrySetException(
 						RpcExceptions.UnknownMessage<ClientMessage.WriteEventsCompleted>(message));
 					return;
@@ -150,19 +145,19 @@ internal partial class Streams<TStreamId> {
 						response.WrongExpectedVersion = new AppendResp.Types.WrongExpectedVersion();
 
 						switch (options.ExpectedStreamRevisionCase) {
-							case AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.Any:
+							case ExpectedStreamRevisionOneofCase.Any:
 								response.WrongExpectedVersion.ExpectedAny = new Empty();
 								response.WrongExpectedVersion.Any2060 = new Empty();
 								break;
-							case AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.StreamExists:
+							case ExpectedStreamRevisionOneofCase.StreamExists:
 								response.WrongExpectedVersion.ExpectedStreamExists = new Empty();
 								response.WrongExpectedVersion.StreamExists2060 = new Empty();
 								break;
-							case AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.NoStream:
+							case ExpectedStreamRevisionOneofCase.NoStream:
 								response.WrongExpectedVersion.ExpectedNoStream = new Empty();
 								response.WrongExpectedVersion.ExpectedRevision2060 = ulong.MaxValue;
 								break;
-							case AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.Revision:
+							case ExpectedStreamRevisionOneofCase.Revision:
 								response.WrongExpectedVersion.ExpectedRevision =
 									StreamRevision.FromInt64(expectedVersion);
 								response.WrongExpectedVersion.ExpectedRevision2060 =

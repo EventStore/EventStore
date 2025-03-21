@@ -926,11 +926,9 @@ public class ClusterVNode<TStreamId> :
 				nodeTcpOptions?.NodeTcpPortAdvertiseAs ?? 0);
 		}
 
-		_httpService = new KestrelHttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
-			_workersHandler, options.Application.LogHttpRequests,
+		_httpService = new KestrelHttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(), options.Application.LogHttpRequests,
 			string.IsNullOrEmpty(GossipAdvertiseInfo.AdvertiseHostToClientAs) ? GossipAdvertiseInfo.AdvertiseExternalHostAs : GossipAdvertiseInfo.AdvertiseHostToClientAs,
 			GossipAdvertiseInfo.AdvertiseHttpPortToClientAs == 0 ? GossipAdvertiseInfo.AdvertiseHttpPortAs : GossipAdvertiseInfo.AdvertiseHttpPortToClientAs,
-			options.Auth.DisableFirstLevelHttpAuthorization,
 			NodeInfo.HttpEndPoint);
 
 		var components = new AuthenticationProviderFactoryComponents {

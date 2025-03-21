@@ -4,7 +4,6 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNext.IO;
@@ -24,9 +23,13 @@ internal sealed class LogRecordFramer : IAsyncMessageFramer<ILogRecord> {
 	}
 
 	public bool HasData => _inner.HasData;
+
 	public IEnumerable<ArraySegment<byte>> FrameData(ArraySegment<byte> data) => _inner.FrameData(data);
+
 	public ValueTask UnFrameData(IEnumerable<ArraySegment<byte>> data, CancellationToken token) => _inner.UnFrameData(data, token);
+
 	public ValueTask UnFrameData(ArraySegment<byte> data, CancellationToken token) => _inner.UnFrameData(data, token);
+
 	public void Reset() => _inner.Reset();
 
 	private ValueTask OnMessageArrived(ReadOnlySequence<byte> recordPayload, CancellationToken token) {
@@ -36,7 +39,6 @@ internal sealed class LogRecordFramer : IAsyncMessageFramer<ILogRecord> {
 	}
 
 	public void RegisterMessageArrivedCallback(Func<ILogRecord, CancellationToken, ValueTask> handler) {
-		Ensure.NotNull(handler, nameof(handler));
-		_handler = handler;
+		_handler = Ensure.NotNull(handler);
 	}
 }
