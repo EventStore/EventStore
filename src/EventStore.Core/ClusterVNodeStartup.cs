@@ -123,7 +123,7 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 
 		// UseAuthentication/UseAuthorization allow the rest of the pipeline to access auth
 		// in a conventional way (e.g. with AuthorizeAttribute). The server doesn't make use
-		// of this yet but plugins may. The registered authentication scheme (es auth)
+		// of this yet but plugins may. The registered authentication scheme (kurrent auth)
 		// is driven by the HttpContext.User established above
 		app.UseAuthentication();
 		app.UseRouting();
@@ -191,7 +191,7 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 				o.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
 			}
 
-			o.AddScheme<EventStoreAuthenticationHandler>("es auth", displayName: null);
+			o.AddScheme<EventStoreAuthenticationHandler>("kurrent auth", displayName: null);
 		});
 		if (OAuthEnabled) {
 			var oidcConfig = _configuration.GetSection("KurrentDB:OAuth");
