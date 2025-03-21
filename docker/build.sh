@@ -10,6 +10,8 @@ tests=$(find "$source_directory" -maxdepth 1 -type d -name "*.Tests")
 
 # Publish tests
 for test in $tests; do
+    echo Publishing tests for $test
+
     dotnet publish \
       --runtime="$RUNTIME" \
       --no-self-contained \
