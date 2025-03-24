@@ -466,4 +466,9 @@ public class when_a_buffer_pool_has_been_disposed : has_buffer_manager_fixture {
 	public void converting_to_a_byte_array_throws_objectdisposedexception() {
 		Assert.Throws<ObjectDisposedException>(() => { m_DisposedPool.ToByteArray(); });
 	}
+
+	[Test]
+	public void justfail() {
+		Assert.Fail();
+	}
 }
