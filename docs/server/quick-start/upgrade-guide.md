@@ -52,16 +52,18 @@ Upgrading the cluster this way keeps the cluster online and able to service requ
 If you modified the Linux service file to increase the open files limit, those changes will be overridden during the upgrade. You will need to reapply them after the upgrade.
 :::
 
-## File and location changes when upgrading from EventStoreDB
+## Breaking changes
+
+### File and location changes when upgrading from EventStoreDB
 
 You will need to take the following changes into account when upgrading from EventStoreDB:
 
-### On Windows
+#### On Windows
 
 1. The executable `EventStore.ClusterNode.exe` has been renamed to `KurrentDB.exe`.
 1. The test client executable `EventStore.TestClient.exe` has been renamed to `KurrentDB.TestClient.exe`.
 
-### On Linux
+#### On Linux
 
 1. The `eventstore` service has been renamed to `kurrentdb`.
 1. The `eventstored` executable has been renamed to `kurrentd`.
@@ -88,11 +90,7 @@ If you install KurrentDB through a package manager, it will create a default con
 If you are running KurrentDB as a service, you will need to grant the `kurrent` user access to any data, logs, or configuration directories that the `eventstore` user had access to.
 :::
 
-## Breaking changes
-
-### From v24.10 and earlier
-
-#### Metrics name changes
+### Metrics name changes
 
 ::: info
 The old EventStore metric names can still be used by changing the two meter names in `metricsconfig.json` to have `EventStore` prefixes:
@@ -148,7 +146,7 @@ The following metric names have changed generally
 | `eventstore_gc_total_allocated` | `kurrentdb_gc_allocated_bytes_total`    |
 | `eventstore_proc_up_time`       | `kurrentdb_proc_up_time_seconds_total`  |
 
-#### Removed configuration options
+### Removed configuration options
 
 A number of configuration options have been removed in 25.0. KurrentDB will not start by default if any of these options are present in the database configuration.
 
@@ -175,7 +173,7 @@ The following deprecated options were removed as they had no effect:
 - `DisableInternalTcpTls`
 - `OptimizeIndexMerge`
 
-#### New OAuth redirect uri
+### New OAuth redirect uri
 
 The new embedded web UI requires a new redirect uri in order to work with the OAuth plugin.
 
