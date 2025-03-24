@@ -3,24 +3,17 @@
 
 using System;
 using System.Net;
+using EventStore.Common.Utils;
 
 namespace EventStore.Core.Services.Gossip;
 
-public class KnownEndpointGossipSeedSource : IGossipSeedSource {
-	private readonly EndPoint[] _ipEndPoints;
-
-	public KnownEndpointGossipSeedSource(EndPoint[] ipEndPoints) {
-		if (ipEndPoints == null)
-			throw new ArgumentNullException("ipEndPoints");
-		_ipEndPoints = ipEndPoints;
-	}
+public class KnownEndpointGossipSeedSource(EndPoint[] ipEndPoints) : IGossipSeedSource {
+	private readonly EndPoint[] _ipEndPoints = Ensure.NotNull(ipEndPoints);
 
 	public IAsyncResult BeginGetHostEndpoints(AsyncCallback requestCallback, object state) {
-		requestCallback(null);
+		requestCallback(null!);
 		return null;
 	}
 
-	public EndPoint[] EndGetHostEndpoints(IAsyncResult asyncResult) {
-		return _ipEndPoints;
-	}
+	public EndPoint[] EndGetHostEndpoints(IAsyncResult asyncResult) => _ipEndPoints;
 }

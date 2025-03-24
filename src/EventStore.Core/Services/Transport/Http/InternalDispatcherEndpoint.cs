@@ -12,22 +12,13 @@ using Microsoft.AspNetCore.Http;
 
 namespace EventStore.Core.Services.Transport.Http;
 
-public class InternalDispatcherEndpoint : IHandle<HttpMessage.PurgeTimedOutRequests> {
-	private readonly IPublisher _inputBus;
-	private readonly MultiQueuedHandler _requestsMultiHandler;
+public class InternalDispatcherEndpoint(IPublisher inputBus, MultiQueuedHandler requestsMultiHandler) : IHandle<HttpMessage.PurgeTimedOutRequests> {
 	private static readonly TimeSpan UpdateInterval = TimeSpan.FromSeconds(1);
-	private readonly IEnvelope _publishEnvelope;
-	public InternalDispatcherEndpoint(IPublisher inputBus, MultiQueuedHandler requestsMultiHandler) {
-		_inputBus = inputBus;
-		_requestsMultiHandler = requestsMultiHandler;
-		_publishEnvelope = inputBus;
-	}
+	private readonly IEnvelope _publishEnvelope = inputBus;
 
 	public void Handle(HttpMessage.PurgeTimedOutRequests message) {
-		_requestsMultiHandler.PublishToAll(message);
-		_inputBus.Publish(
-			TimerMessage.Schedule.Create(
-				UpdateInterval, _publishEnvelope, message));
+		requestsMultiHandler.PublishToAll(message);
+		inputBus.Publish(TimerMessage.Schedule.Create(UpdateInterval, _publishEnvelope, message));
 	}
 
 	public Task InvokeAsync(HttpContext context, RequestDelegate next) {
@@ -38,7 +29,7 @@ public class InternalDispatcherEndpoint : IHandle<HttpMessage.PurgeTimedOutReque
 			return next(context);
 		}
 
-		_requestsMultiHandler.Publish(new AuthenticatedHttpRequestMessage(manager, match));
+		requestsMultiHandler.Publish(new AuthenticatedHttpRequestMessage(manager, match));
 		return tcs.Task;
 	}
 }

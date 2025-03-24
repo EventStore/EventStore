@@ -58,13 +58,13 @@ public static class SystemStreams {
 	}
 
 	public static string MetastreamOf(string streamId) {
-		return "$$" + streamId;
+		return $"$${streamId}";
 	}
 
 	public static bool IsMetastream(string streamId) => streamId is ['$', '$', ..];
 
 	public static string OriginalStreamOf(string metastreamId) {
-		return metastreamId.Substring(2);
+		return metastreamId[2..];
 	}
 
 	public static bool IsInMemoryStream(string streamId) {
@@ -118,7 +118,7 @@ public static class SystemEventTypes {
 	public const string PersistentSubscriptionConfig = "$PersistentConfig";
 
 	public static string StreamReferenceEventToStreamId(string eventType, ReadOnlyMemory<byte> data) {
-		string streamId = null;
+		string streamId;
 		switch (eventType) {
 			case LinkTo: {
 				string[] parts = Helper.UTF8NoBom.GetString(data.Span).Split(_linkToSeparator, 2);
@@ -139,7 +139,7 @@ public static class SystemEventTypes {
 	}
 
 	public static string StreamReferenceEventToStreamId(string eventType, string data) {
-		string streamId = null;
+		string streamId;
 		switch (eventType) {
 			case LinkTo: {
 				string[] parts = data.Split(_linkToSeparator, 2);

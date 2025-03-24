@@ -28,6 +28,7 @@ using Empty = Google.Protobuf.WellKnownTypes.Empty;
 using Status = Google.Rpc.Status;
 using static EventStore.Client.Streams.BatchAppendReq.Types;
 using static EventStore.Client.Streams.BatchAppendReq.Types.Options;
+using static EventStore.Core.Messages.OperationResult;
 using OperationResult = EventStore.Core.Messages.OperationResult;
 
 namespace EventStore.Core.Services.Transport.Grpc;
@@ -238,7 +239,7 @@ partial class Streams<TStreamId> {
 									}
 								},
 								ClientMessage.WriteEventsCompleted completed => completed.Result switch {
-									OperationResult.Success => new BatchAppendResp {
+									Success => new BatchAppendResp {
 										Success = BatchAppendResp.Types.Success.Completed(completed.CommitPosition,
 											completed.PreparePosition, completed.LastEventNumber),
 									},
@@ -252,10 +253,7 @@ partial class Streams<TStreamId> {
 									OperationResult.StreamDeleted => new BatchAppendResp {
 										Error = Status.StreamDeleted(clientWriteRequest.StreamId)
 									},
-									OperationResult.CommitTimeout or
-										OperationResult.ForwardTimeout or
-										OperationResult.PrepareTimeout => new BatchAppendResp
-											{ Error = Status.Timeout },
+									CommitTimeout or ForwardTimeout or PrepareTimeout => new BatchAppendResp { Error = Status.Timeout },
 									_ => new BatchAppendResp { Error = Status.Unknown }
 								},
 								_ => new BatchAppendResp {
@@ -290,8 +288,7 @@ partial class Streams<TStreamId> {
 			ClientWriteRequest FromOptions(Guid correlationId, Options options, TimeSpan timeout,
 				CancellationToken cancellationToken) =>
 				new(correlationId, options.StreamIdentifier, options.ExpectedStreamPositionCase switch {
-					ExpectedStreamPositionOneofCase.StreamPosition => new StreamRevision(options.StreamPosition)
-						.ToInt64(),
+					ExpectedStreamPositionOneofCase.StreamPosition => new StreamRevision(options.StreamPosition).ToInt64(),
 					ExpectedStreamPositionOneofCase.Any => AnyStreamRevision.Any.ToInt64(),
 					ExpectedStreamPositionOneofCase.StreamExists => AnyStreamRevision.StreamExists.ToInt64(),
 					ExpectedStreamPositionOneofCase.NoStream => AnyStreamRevision.NoStream.ToInt64(),
@@ -329,17 +326,11 @@ partial class Streams<TStreamId> {
 		}
 	}
 
-	private class MaxAppendEventSizeExceededException : Exception {
-		public string EventId { get; }
-		public int ProposedEventSize { get; }
-		public int MaxAppendEventSize { get; }
-
-		public MaxAppendEventSizeExceededException(string eventId, int proposedEventSize, int maxAppendEventSize)
-			: base($"Event with Id: {eventId}, Size: {proposedEventSize}, exceeded Max Append Event Size of {maxAppendEventSize}") {
-			EventId = eventId;
-			ProposedEventSize = proposedEventSize;
-			MaxAppendEventSize = maxAppendEventSize;
-		}
+	private class MaxAppendEventSizeExceededException(string eventId, int proposedEventSize, int maxAppendEventSize)
+		: Exception($"Event with Id: {eventId}, Size: {proposedEventSize}, exceeded Max Append Event Size of {maxAppendEventSize}") {
+		public string EventId { get; } = eventId;
+		public int ProposedEventSize { get; } = proposedEventSize;
+		public int MaxAppendEventSize { get; } = maxAppendEventSize;
 	}
 
 	private record ClientWriteRequest {
@@ -355,7 +346,7 @@ partial class Streams<TStreamId> {
 			Func<ValueTask> onTimeout, CancellationToken cancellationToken) {
 			CorrelationId = correlationId;
 			StreamId = streamId;
-			_events = new List<Event>();
+			_events = [];
 			_size = 0;
 			ExpectedVersion = expectedVersion;
 

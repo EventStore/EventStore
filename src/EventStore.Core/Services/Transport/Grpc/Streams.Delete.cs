@@ -11,6 +11,7 @@ using EventStore.Client;
 using EventStore.Client.Streams;
 using EventStore.Core.Services.Transport.Common;
 using Grpc.Core;
+using static EventStore.Client.Streams.TombstoneReq.Types.Options;
 
 namespace EventStore.Core.Services.Transport.Grpc;
 
@@ -65,19 +66,15 @@ internal partial class Streams<TStreamId> {
 			var streamName = options.StreamIdentifier;
 
 			var expectedVersion = options.ExpectedStreamRevisionCase switch {
-				TombstoneReq.Types.Options.ExpectedStreamRevisionOneofCase.Revision =>
-				new StreamRevision(options.Revision).ToInt64(),
-				TombstoneReq.Types.Options.ExpectedStreamRevisionOneofCase.Any =>
-				AnyStreamRevision.Any.ToInt64(),
-				TombstoneReq.Types.Options.ExpectedStreamRevisionOneofCase.NoStream =>
-				AnyStreamRevision.NoStream.ToInt64(),
-				TombstoneReq.Types.Options.ExpectedStreamRevisionOneofCase.StreamExists =>
-				AnyStreamRevision.StreamExists.ToInt64(),
+				ExpectedStreamRevisionOneofCase.Revision => new StreamRevision(options.Revision).ToInt64(),
+				ExpectedStreamRevisionOneofCase.Any => AnyStreamRevision.Any.ToInt64(),
+				ExpectedStreamRevisionOneofCase.NoStream => AnyStreamRevision.NoStream.ToInt64(),
+				ExpectedStreamRevisionOneofCase.StreamExists => AnyStreamRevision.StreamExists.ToInt64(),
 				_ => throw RpcExceptions.InvalidArgument(options.ExpectedStreamRevisionCase)
 			};
 
 			var requiresLeader = GetRequiresLeader(context.RequestHeaders);
-		
+
 			var user = context.GetHttpContext().User;
 			var op = DeleteOperation.WithParameter(Plugins.Authorization.Operations.Streams.Parameters.StreamId(streamName));
 			if (!await _provider.CheckAccessAsync(user, op, context.CancellationToken)) {

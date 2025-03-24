@@ -14,15 +14,9 @@ using Newtonsoft.Json;
 
 namespace EventStore.Core.Services.Transport.Http;
 
-public class AuthenticationMiddleware : IMiddleware {
-	private readonly IAuthenticationProvider _authenticationProvider;
-	private readonly IReadOnlyList<IHttpAuthenticationProvider> _httpAuthenticationProviders;
-
-	public AuthenticationMiddleware(IReadOnlyList<IHttpAuthenticationProvider> httpAuthenticationProviders, IAuthenticationProvider authenticationProvider) {
-		_httpAuthenticationProviders = httpAuthenticationProviders;
-		_authenticationProvider = authenticationProvider;
-	}
-
+public class AuthenticationMiddleware(
+	IReadOnlyList<IHttpAuthenticationProvider> httpAuthenticationProviders,
+	IAuthenticationProvider authenticationProvider) : IMiddleware {
 	public async Task InvokeAsync(HttpContext context, RequestDelegate next) {
 		try {
 			if (context.IsGrpc()) {
@@ -50,13 +44,14 @@ public class AuthenticationMiddleware : IMiddleware {
 				if (context.Response.StatusCode == 302 && principal.Identity?.IsAuthenticated == false) {
 					// Unless the call is made from a browser, return 401 instead of redirecting to the login page
 					var userAgent = context.Request.Headers.UserAgent.FirstOrDefault();
-					if (userAgent == null || userAgent.StartsWith("Mozilla") == false){
+					if (userAgent == null || userAgent.StartsWith("Mozilla") == false) {
 						// Avoid setting the status code if the response has already started
 						if (!context.Response.HasStarted) {
 							context.Response.StatusCode = 401;
 						}
 					}
 				}
+
 				break;
 			case HttpAuthenticationRequestStatus.Error:
 				context.Response.StatusCode = HttpStatusCode.InternalServerError;
@@ -112,8 +107,8 @@ public class AuthenticationMiddleware : IMiddleware {
 	}
 
 	private bool TrySelectProvider(HttpContext context, out HttpAuthenticationRequest authenticationRequest) {
-		for (int i = 0; i < _httpAuthenticationProviders.Count; i++) {
-			if (_httpAuthenticationProviders[i].Authenticate(context, out authenticationRequest)) {
+		for (int i = 0; i < httpAuthenticationProviders.Count; i++) {
+			if (httpAuthenticationProviders[i].Authenticate(context, out authenticationRequest)) {
 				return true;
 			}
 		}
@@ -124,11 +119,13 @@ public class AuthenticationMiddleware : IMiddleware {
 
 	private async Task AddHttp1ChallengeHeaders(HttpContext context) {
 		context.Response.StatusCode = HttpStatusCode.Unauthorized;
-		var authSchemes = _authenticationProvider.GetSupportedAuthenticationSchemes();
+		var authSchemes = authenticationProvider.GetSupportedAuthenticationSchemes();
+		// ReSharper disable once ConditionIsAlwaysTrueOrFalse
 		if (authSchemes != null && authSchemes.Any()) {
 			//add "X-" in front to prevent any default browser behaviour e.g Basic Auth popups
 			context.Response.Headers.Append("WWW-Authenticate", $"X-{authSchemes.First()} realm=\"ESDB\"");
-			var properties = _authenticationProvider.GetPublicProperties();
+			var properties = authenticationProvider.GetPublicProperties();
+			// ReSharper disable once ConditionIsAlwaysTrueOrFalse
 			if (properties != null && properties.Any()) {
 				await context.Response.WriteAsync(JsonConvert.SerializeObject(properties));
 			}

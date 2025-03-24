@@ -50,24 +50,17 @@ public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCom
 	private readonly CancellationToken _stopToken;
 	private CancellationTokenSource _stop;
 
-	public string Name {
-		get { return _queueStats.Name; }
-	}
+	public string Name => _queueStats.Name;
 
 	private readonly QueueStatsCollector _queueStats;
-
 	private readonly ConcurrentQueueWrapper<StorageMessage.CommitAck> _replicatedQueue = new();
-
 	private readonly ConcurrentDictionary<long, PendingTransaction> _pendingTransactions = new();
-
 	private readonly SortedList<long, StorageMessage.CommitAck> _commitAcks = new();
 	private readonly AsyncManualResetEvent _addMsgSignal = new(initialState: false);
-	private TimeSpan _waitTimeoutMs = TimeSpan.FromMilliseconds(100);
+	private readonly TimeSpan _waitTimeoutMs = TimeSpan.FromMilliseconds(100);
 	private readonly TaskCompletionSource<object> _tcs = new();
 
-	public Task Task {
-		get { return _tcs.Task; }
-	}
+	public Task Task => _tcs.Task;
 
 	public IndexCommitterService(
 		IIndexCommitter<TStreamId> indexCommitter,
@@ -76,16 +69,10 @@ public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCom
 		IReadOnlyCheckpoint replicationCheckpoint,
 		ITableIndex tableIndex,
 		QueueStatsManager queueStatsManager) {
-		Ensure.NotNull(indexCommitter, nameof(indexCommitter));
-		Ensure.NotNull(publisher, nameof(publisher));
-		Ensure.NotNull(writerCheckpoint, nameof(writerCheckpoint));
-		Ensure.NotNull(replicationCheckpoint, nameof(replicationCheckpoint));
-
-
-		_indexCommitter = indexCommitter;
-		_publisher = publisher;
-		_writerCheckpoint = writerCheckpoint;
-		_replicationCheckpoint = replicationCheckpoint;
+		_indexCommitter = Ensure.NotNull(indexCommitter);
+		_publisher = Ensure.NotNull(publisher);
+		_writerCheckpoint = Ensure.NotNull(writerCheckpoint);
+		_replicationCheckpoint = Ensure.NotNull(replicationCheckpoint);
 		_tableIndex = tableIndex;
 		_queueStats = queueStatsManager.CreateQueueStatsCollector("Index Committer");
 		_stop = new();
@@ -136,8 +123,7 @@ public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCom
 			_queueStats.ProcessingStarted<FaultedIndexCommitterServiceState>(0);
 			Log.Fatal(exc, "Error in IndexCommitterService. Terminating...");
 			_tcs.TrySetException(exc);
-			Application.Exit(ExitCode.Error,
-				"Error in IndexCommitterService. Terminating...\nError: " + exc.Message);
+			Application.Exit(ExitCode.Error, "Error in IndexCommitterService. Terminating...\nError: " + exc.Message);
 
 			await _stopToken.WaitAsync();
 
@@ -151,9 +137,8 @@ public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCom
 	}
 
 	private async ValueTask ProcessCommitReplicated(StorageMessage.CommitAck message, CancellationToken token) {
-		PendingTransaction transaction;
 		long lastEventNumber = message.LastEventNumber;
-		if (_pendingTransactions.TryRemove(message.TransactionPosition, out transaction)) {
+		if (_pendingTransactions.TryRemove(message.TransactionPosition, out var transaction)) {
 			var isTfEof = IsTfEof(transaction.PostPosition);
 			if (transaction.Prepares.Count > 0) {
 				await _indexCommitter.Commit(transaction.Prepares, isTfEof, true, token);
@@ -172,19 +157,15 @@ public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCom
 			message.TransactionPosition, message.FirstEventNumber, lastEventNumber));
 	}
 
-	private bool IsTfEof(long postPosition) {
-		return postPosition == _writerCheckpoint.Read();
-	}
+	private bool IsTfEof(long postPosition) => postPosition == _writerCheckpoint.Read();
 
 	public ValueTask<long> GetCommitLastEventNumber(CommitLogRecord commit, CancellationToken token)
 		=> _indexCommitter.GetCommitLastEventNumber(commit, token);
 
 	public void AddPendingPrepare(IPrepareLogRecord<TStreamId>[] prepares, long postPosition) {
 		var transactionPosition = prepares[0].TransactionPosition;
-		PendingTransaction transaction;
-		if (_pendingTransactions.TryGetValue(transactionPosition, out transaction)) {
-			var newTransaction = new PendingTransaction(transactionPosition, postPosition, transaction.Prepares,
-				transaction.Commit);
+		if (_pendingTransactions.TryGetValue(transactionPosition, out var transaction)) {
+			var newTransaction = new PendingTransaction(transactionPosition, postPosition, transaction.Prepares, transaction.Commit);
 			newTransaction.AddPendingPrepares(prepares);
 			if (!_pendingTransactions.TryUpdate(transactionPosition, newTransaction, transaction)) {
 				throw new InvalidOperationException("Failed to update pending prepare");
@@ -198,10 +179,8 @@ public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCom
 	}
 
 	public void AddPendingCommit(CommitLogRecord commit, long postPosition) {
-		PendingTransaction transaction;
-		if (_pendingTransactions.TryGetValue(commit.TransactionPosition, out transaction)) {
-			var newTransaction = new PendingTransaction(commit.TransactionPosition, postPosition,
-				transaction.Prepares, commit);
+		if (_pendingTransactions.TryGetValue(commit.TransactionPosition, out var transaction)) {
+			var newTransaction = new PendingTransaction(commit.TransactionPosition, postPosition, transaction.Prepares, commit);
 			if (!_pendingTransactions.TryUpdate(commit.TransactionPosition, newTransaction, transaction)) {
 				throw new InvalidOperationException("Failed to update pending commit");
 			}
@@ -213,32 +192,30 @@ public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCom
 		}
 	}
 
-	public void Handle(SystemMessage.BecomeShuttingDown message) {
-		Stop();
-	}
+	public void Handle(SystemMessage.BecomeShuttingDown message) => Stop();
+
 	public void Handle(StorageMessage.CommitAck message) {
 		lock (_commitAcks) {
 			_commitAcks.TryAdd(message.LogPosition, message);
 		}
+
 		EnqueueReplicatedCommits();
 	}
 
-	public void Handle(ReplicationTrackingMessage.ReplicatedTo message) {
-		EnqueueReplicatedCommits();
-	}
+	public void Handle(ReplicationTrackingMessage.ReplicatedTo message) => EnqueueReplicatedCommits();
 
 	private void EnqueueReplicatedCommits() {
 		var replicated = new List<StorageMessage.CommitAck>();
 		lock (_commitAcks) {
-			if (_commitAcks.Count > 0) {
-				do {
-					var ack = _commitAcks.Values[0];
-					if (ack.LogPosition >= _replicationCheckpoint.Read()) { break; }
-					replicated.Add(ack);
-					_commitAcks.RemoveAt(0);
-				} while (_commitAcks.Count > 0);
+			while (_commitAcks.Count > 0) {
+				var ack = _commitAcks.Values[0];
+				if (ack.LogPosition >= _replicationCheckpoint.Read()) { break; }
+
+				replicated.Add(ack);
+				_commitAcks.RemoveAt(0);
 			}
 		}
+
 		foreach (var ack in replicated) {
 #if DEBUG
 			_queueStats.Enqueued();
@@ -252,11 +229,10 @@ public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCom
 		return _queueStats.GetStatistics(0);
 	}
 
-	private class FaultedIndexCommitterServiceState {
-	}
+	private class FaultedIndexCommitterServiceState;
 
 	internal class PendingTransaction {
-		public readonly List<IPrepareLogRecord<TStreamId>> Prepares = new List<IPrepareLogRecord<TStreamId>>();
+		public readonly List<IPrepareLogRecord<TStreamId>> Prepares = [];
 		private CommitLogRecord _commit;
 
 		public CommitLogRecord Commit {

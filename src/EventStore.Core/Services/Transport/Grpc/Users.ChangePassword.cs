@@ -7,11 +7,13 @@ using EventStore.Core.Messaging;
 using EventStore.Client.Users;
 using EventStore.Plugins.Authorization;
 using Grpc.Core;
+using static EventStore.Plugins.Authorization.Operations.Users;
 
 namespace EventStore.Core.Services.Transport.Grpc;
 
 internal partial class Users {
-	private static readonly Operation ChangePasswordOperation = new Operation(Plugins.Authorization.Operations.Users.ChangePassword);
+	private static readonly Operation ChangePasswordOperation = new(Plugins.Authorization.Operations.Users.ChangePassword);
+
 	public override async Task<ChangePasswordResp> ChangePassword(ChangePasswordReq request,
 		ServerCallContext context) {
 		var options = request.Options;
@@ -19,24 +21,21 @@ internal partial class Users {
 		var user = context.GetHttpContext().User;
 		var changePasswordOperation = ChangePasswordOperation;
 		if (user?.Identity?.Name != null) {
-			changePasswordOperation =
-				changePasswordOperation.WithParameter(
-					Plugins.Authorization.Operations.Users.Parameters.User(user.Identity.Name));
+			changePasswordOperation = changePasswordOperation.WithParameter(Parameters.User(user.Identity.Name));
 		}
+
 		if (!await _authorizationProvider.CheckAccessAsync(user, changePasswordOperation, context.CancellationToken)) {
 			throw RpcExceptions.AccessDenied();
 		}
-		var changePasswordSource = new TaskCompletionSource<bool>();
 
+		var changePasswordSource = new TaskCompletionSource<bool>();
 		var envelope = new CallbackEnvelope(OnMessage);
 
-		_publisher.Publish(new UserManagementMessage.ChangePassword(envelope, user, options.LoginName,
-			options.CurrentPassword,
-			options.NewPassword));
+		_publisher.Publish(new UserManagementMessage.ChangePassword(envelope, user, options.LoginName, options.CurrentPassword, options.NewPassword));
 
 		await changePasswordSource.Task;
 
-		return new ChangePasswordResp();
+		return new();
 
 		void OnMessage(Message message) {
 			if (HandleErrors(options.LoginName, message, changePasswordSource)) return;

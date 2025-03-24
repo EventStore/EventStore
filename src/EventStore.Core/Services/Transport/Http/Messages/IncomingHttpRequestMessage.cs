@@ -8,14 +8,8 @@ using EventStore.Transport.Http.EntityManagement;
 namespace EventStore.Core.Services.Transport.Http.Messages;
 
 [DerivedMessage(CoreMessage.Http)]
-public partial class IncomingHttpRequestMessage : Message {
-	public readonly IPublisher NextStagePublisher;
-	public readonly IHttpService HttpService;
-	public readonly HttpEntity Entity;
-
-	public IncomingHttpRequestMessage(IHttpService httpService, HttpEntity entity, IPublisher nextStagePublisher) {
-		HttpService = httpService;
-		Entity = entity;
-		NextStagePublisher = nextStagePublisher;
-	}
+public partial class IncomingHttpRequestMessage(IHttpService httpService, HttpEntity entity, IPublisher nextStagePublisher) : Message {
+	public readonly IPublisher NextStagePublisher = nextStagePublisher;
+	public readonly IHttpService HttpService = httpService;
+	public readonly HttpEntity Entity = entity;
 }

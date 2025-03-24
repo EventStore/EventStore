@@ -9,7 +9,7 @@ namespace EventStore.Core.Services.Transport.Common;
 /// A structure referring to a potential logical record position
 /// in the Event Store transaction file.
 /// </summary>
-public struct Position : IEquatable<Position>, IComparable<Position> {
+public readonly struct Position : IEquatable<Position>, IComparable<Position> {
 	/// <summary>
 	/// Position representing the start of the transaction file
 	/// </summary>
@@ -39,7 +39,7 @@ public struct Position : IEquatable<Position>, IComparable<Position> {
 	/// Constructs a position with the given commit and prepare positions.
 	/// It is not guaranteed that the position is actually the start of a
 	/// record in the transaction file.
-	/// 
+	///
 	/// The commit position cannot be less than the prepare position.
 	/// </summary>
 	/// <param name="commitPosition">The commit position of the record.</param>

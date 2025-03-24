@@ -10,35 +10,21 @@ using Serilog;
 
 namespace EventStore.Core.Services.PeriodicLogs;
 
-public class PeriodicallyLoggingService :
+public class PeriodicallyLoggingService(IPublisher publisher, string esVersion, ILogger logger) :
 	IHandle<SystemMessage.SystemStart>,
 	IHandle<MonitoringMessage.CheckEsVersion> {
+	private static readonly TimeSpan Interval = TimeSpan.FromHours(12);
 
-	private static readonly TimeSpan _interval = TimeSpan.FromHours(12);
-
-	private readonly IPublisher _publisher;
-	private readonly string _esVersion;
-	private readonly ILogger _logger;
-	private readonly TimerMessage.Schedule _esVersionScheduleLog;
-
-	public PeriodicallyLoggingService(IPublisher publisher, string esVersion, ILogger logger) {
-		Ensure.NotNull(publisher, nameof(publisher));
-		Ensure.NotNull(logger, nameof(logger));
-
-		_publisher = publisher;
-		_esVersion = esVersion;
-		_logger = logger;
-		_esVersionScheduleLog = TimerMessage.Schedule.Create(_interval, publisher,
-			new MonitoringMessage.CheckEsVersion());
-	}
+	private readonly IPublisher _publisher = Ensure.NotNull(publisher);
+	private readonly ILogger _logger = Ensure.NotNull(logger);
+	private readonly TimerMessage.Schedule _esVersionScheduleLog = TimerMessage.Schedule.Create(Interval, publisher, new MonitoringMessage.CheckEsVersion());
 
 	public void Handle(SystemMessage.SystemStart message) {
 		_publisher.Publish(new MonitoringMessage.CheckEsVersion());
 	}
 
 	public void Handle(MonitoringMessage.CheckEsVersion message) {
-		_logger.Information("Current version of KurrentDB is : {dbVersion} ", _esVersion);
+		_logger.Information("Current version of KurrentDB is : {dbVersion} ", esVersion);
 		_publisher.Publish(_esVersionScheduleLog);
 	}
-
 }
