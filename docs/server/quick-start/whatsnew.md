@@ -106,6 +106,16 @@ You can use the HTTP sink without a license, but a license is required for all o
 
 Refer to the [documentation](../features/connectors/README.md) for instructions on setting up and configuring connectors and sinks.
 
+#### Elasticsearch sink
+
+<Badge type="info" vertical="middle" text="License Required"/>
+
+The Elasticsearch sink pulls messages from a KurrentDB stream and stores them in
+an Elasticsearch index. The records will be serialized into JSON documents,
+compatible with Elasticsearch's document structure.
+
+Refer to the [documentation](../features/connectors/sinks/elasticsearch.md) for instructions on setting up a Elasticsearch sink.
+
 #### Kafka sink
 
 <Badge type="info" vertical="middle" text="License Required"/>
