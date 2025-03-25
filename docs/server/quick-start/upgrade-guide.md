@@ -19,8 +19,6 @@ Packages for KurrentDB are still hosted on [Cloudsmith](https://cloudsmith.io/~e
 
 Packages are available for [Debian](./installation.md#debian-packages), [RedHat](./installation.md#redhat-packages), [Docker](./installation.md#docker), and [NuGet](./installation.md#nuget).
 
-If you have a previous version of EventStoreDB installed, please uninstall those versions before installing KurrentDB.
-
 ## Should you upgrade?
 
 KurrentDB 25.0 is a short term support (STS) feature release and will be supported until the next major or minor release of KurrentDB.
