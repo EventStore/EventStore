@@ -64,3 +64,8 @@ public class KurrentDbSinkConnectorDataProtector : ConnectorDataProtector<Kurren
         "ConnectionString"
     ];
 }
+
+[PublicAPI]
+public class KafkaSourceConnectorDataProtector : ConnectorDataProtector<KafkaSinkOptions> {
+    public override string[] Keys => [];
+}

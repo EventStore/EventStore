@@ -1,5 +1,6 @@
 using System.Collections.Frozen;
 using EventStore.Connect.Connectors;
+using EventStore.Connectors.Connect.Components.Connectors.KafkaSource;
 using Kurrent.Connectors.Elasticsearch;
 using Kurrent.Connectors.KurrentDB;
 using Kurrent.Connectors.Http;
@@ -30,6 +31,7 @@ public class ConnectorCatalogue {
             [typeof(KurrentDbSink)] = For<KurrentDbSink, KurrentDbSinkValidator, KurrentDbSinkConnectorDataProtector>([$"{EntitlementPrefix}_ESDB_SINK", $"{EntitlementPrefix}_ESDB_SOURCE"], true),
             [typeof(ElasticsearchSink)] = For<ElasticsearchSink, ElasticsearchSinkValidator, ElasticsearchSinkConnectorDataProtector>([$"{EntitlementPrefix}_ELASTICSEARCH_SINK", $"{EntitlementPrefix}_ELASTICSEARCH_SOURCE"], true),
             [typeof(MongoDbSink)] = For<MongoDbSink, MongoDbSinkValidator, MongoDbSinkConnectorDataProtector>([$"{EntitlementPrefix}_MONGODB_SINK"], true),
+            [typeof(Kurrent.Connectors.Kafka.KafkaSource)] = For<Kurrent.Connectors.Kafka.KafkaSource, KafkaSourceValidator, KafkaSourceConnectorDataProtector>([$"{EntitlementPrefix}_KAFKA_SINK"], true),
         }.ToFrozenDictionary();
 
         ItemsByAlias = Items

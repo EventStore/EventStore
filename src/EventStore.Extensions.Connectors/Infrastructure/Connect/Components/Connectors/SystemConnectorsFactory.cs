@@ -2,6 +2,8 @@
 // ReSharper disable CheckNamespace
 
 using EventStore.Connect.Processors;
+using EventStore.Connect.Producers.Configuration;
+using EventStore.Connect.Readers.Configuration;
 using EventStore.Connectors;
 using EventStore.Connectors.Connect.Components.Connectors;
 using EventStore.Connectors.System;
@@ -9,12 +11,14 @@ using Kurrent.Surge.Connectors.Sinks;
 using EventStore.Core.Bus;
 using Kurrent.Surge;
 using Kurrent.Surge.Connectors;
+using Kurrent.Surge.Connectors.Sources;
 using Kurrent.Surge.Consumers;
 using Kurrent.Surge.Consumers.Configuration;
 using Kurrent.Surge.Persistence.State;
 using Kurrent.Surge.Processors;
 using Kurrent.Surge.Processors.Configuration;
 using Kurrent.Surge.Schema;
+using Kurrent.Surge.SourceConnector;
 using Kurrent.Surge.Transformers;
 using Kurrent.Toolkit;
 using Microsoft.Extensions.Configuration;
@@ -36,31 +40,68 @@ public class SystemConnectorsFactory(SystemConnectorsFactoryOptions options, ISe
     IServiceProvider               Services { get; } = services;
 
     public IConnector CreateConnector(ConnectorId connectorId, IConfiguration configuration) {
-        var sinkOptions = configuration.GetRequiredOptions<SinkOptions>();
+        var connectorOptions = configuration.GetRequiredOptions<ConnectorOptions>();
 
-        var updated = Options.ProcessConfiguration?.Invoke(configuration);
+        configuration = Options.ProcessConfiguration?.Invoke(configuration) ?? configuration;
 
-        configuration = updated ?? configuration;
+        var connector = CreateConnectorInstance(connectorOptions.InstanceTypeName);
 
-        var sink = CreateSink(sinkOptions.InstanceTypeName);
+        return connector switch {
+			ISink => CreateSinkConnector(),
+			ISource source => CreateSourceConnector(source),
+			_ => throw new ArgumentException($"Connector {connectorOptions.InstanceTypeName} is not a valid connector type")
+		};
 
-        if (sinkOptions.Transformer.Enabled)
-            sink = new RecordTransformerSink(sink, new JintRecordTransformer(sinkOptions.Transformer.DecodeFunction()));
+        SinkConnector CreateSinkConnector() {
+	        var sinkOptions = configuration.GetRequiredOptions<SinkOptions>();
 
-        var sinkProxy = new SinkProxy(connectorId,
-            sink,
-            configuration,
-            Services);
+	        if (sinkOptions.Transformer.Enabled)
+		        connector = new RecordTransformerSink(connector, new JintRecordTransformer(sinkOptions.Transformer.DecodeFunction()));
 
-        var processor = ConfigureProcessor(connectorId, sinkOptions, sinkProxy);
+	        var sinkProxy = new SinkProxy(connectorId, connector, configuration, Services);
 
-        return new SinkConnector(processor, sinkProxy);
+	        var processor = ConfigureProcessor(connectorId, sinkOptions, sinkProxy);
 
-        static ISink CreateSink(string connectorTypeName) {
+	        return new SinkConnector(processor, sinkProxy);
+        }
+
+        SourceConnector CreateSourceConnector(ISource source) {
+	        var loggerFactory = Services.GetRequiredService<ILoggerFactory>();
+	        var schemaRegistry = Services.GetRequiredService<SchemaRegistry>();
+	        var readerBuilder = Services.GetRequiredService<Func<SystemReaderBuilder>>()();
+	        var producerBuilder = Services.GetRequiredService<Func<SystemProducerBuilder>>()();
+	        var getNodeSystemInfo = Services.GetRequiredService<GetNodeSystemInfo>();
+
+	        var publishStateChangesOptions = new PublishStateChangesOptions {
+		        Enabled        = true,
+		        StreamTemplate = Options.LifecycleStreamTemplate
+	        };
+
+	        var nodeId = getNodeSystemInfo().AsTask().GetAwaiter().GetResult().InstanceId.ToString();
+
+	        var autoLockOptions = Options.AutoLock with { OwnerId = nodeId };
+
+	        return new SourceConnector(
+		        new SourceConnectorOptions {
+			        ConnectorId = connectorId,
+			        SchemaRegistry = schemaRegistry,
+			        Configuration = configuration,
+			        AutoLock = autoLockOptions,
+			        PublishStateChanges = publishStateChangesOptions,
+			        ServiceProvider = Services
+		        },
+		        source,
+		        readerBuilder,
+		        producerBuilder,
+		        loggerFactory
+	        );
+        }
+
+        static dynamic CreateConnectorInstance(string connectorTypeName) {
             if (!ConnectorCatalogue.TryGetConnector(connectorTypeName, out var connector))
-                throw new ArgumentException($"Failed to find sink {connectorTypeName}", nameof(connectorTypeName));
+                throw new ArgumentException($"Failed to find connector {connectorTypeName}", nameof(connectorTypeName));
 
-            return (Activator.CreateInstance(connector.ConnectorType) as ISink)!;
+            return Activator.CreateInstance(connector.ConnectorType)!;
         }
     }
 

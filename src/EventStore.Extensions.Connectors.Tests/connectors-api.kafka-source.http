@@ -1,0 +1,85 @@
+### Create Kafka source connector
+POST {{kurrent.url}}/connectors/{{kafka.source.id}}
+Content-Type: application/json
+
+{
+  "settings": {
+    "instanceTypeName": "kafka-source",
+    "topic": "{{kafka.topic}}",
+    "partition": "0",
+    "offset": "29",
+    "schemaRegistry:url": "{{kafka.schemaRegistry.url}}",
+    "consumer:bootstrapServers": "{{kafka.consumer.bootstrapServers}}",
+    "consumer:autoOffsetReset": "latest",
+    "consumer:enableAutoCommit": "true",
+    "consumer:autoCommitIntervalMs": "5000",
+    "consumer:allowAutoCreateTopics": "true",
+    "consumer:enableAutoOffsetStore": "false"
+  }
+}
+
+### Start Kafka source connector
+POST {{kurrent.url}}/connectors/{{kafka.source.id}}/start
+
+### Produce Order Placed Event to Kafka topic (Schema Registry)
+POST {{kafka.restProxy}}/topics/{{kafka.topic}}
+Content-Type: application/vnd.kafka.jsonschema.v2+json
+Accept: application/vnd.kafka.v2+json
+
+{
+    "value_schema": "{ \"type\": \"object\", \"title\": \"OrderPlacedEvent\", \"properties\": { \"orderId\": { \"type\": \"string\" }, \"customerId\": { \"type\": \"string\" }, \"orderItems\": { \"type\": \"array\", \"items\": { \"type\": \"object\", \"properties\": { \"productId\": { \"type\": \"string\" }, \"quantity\": { \"type\": \"integer\" }, \"unitPrice\": { \"type\": \"number\" } } } }, \"totalAmount\": { \"type\": \"number\" }, \"shippingAddress\": { \"type\": \"object\", \"properties\": { \"street\": { \"type\": \"string\" }, \"city\": { \"type\": \"string\" }, \"postalCode\": { \"type\": \"string\" }, \"country\": { \"type\": \"string\" } } }, \"placedAt\": { \"type\": \"string\", \"format\": \"date-time\" } }, \"required\": [\"orderId\", \"customerId\", \"orderItems\", \"totalAmount\", \"placedAt\"] }",
+    "key_schema": "{ \"type\": \"string\" }",
+    "records": [
+        {
+            "key": "3e65788e-7c2c-414e-a00b-3e011afb3fe7",
+            "value": {
+                "orderId": "ORD-2025-10042",
+                "customerId": "CUST-5789",
+                "orderItems": [
+                    {
+                        "productId": "PROD-1234",
+                        "quantity": 2,
+                        "unitPrice": 79.99
+                    },
+                    {
+                        "productId": "PROD-5678",
+                        "quantity": 1,
+                        "unitPrice": 129.50
+                    }
+                ],
+                "totalAmount": 289.48,
+                "shippingAddress": {
+                    "street": "123 Main Street",
+                    "city": "Atlanta",
+                    "postalCode": "30303",
+                    "country": "USA"
+                },
+                "placedAt": "2025-03-14T09:32:17Z"
+            }
+        }
+    ]
+}
+
+### Stop Kafka source connector
+POST {{kurrent.url}}/connectors/{{kafka.source.id}}/stop
+
+### Delete Kafka source Connector
+DELETE {{kurrent.url}}/connectors/{{kafka.source.id}}
+
+### Get Kafka Partitions
+GET {{kafka.restProxy}}/topics/{{kafka.topic}}/partitions
+
+### Get Kafka Partitions By Id
+GET {{kafka.restProxy}}/topics/{{kafka.topic}}/partitions/0
+
+### Get Subject
+GET {{kafka.schemaRegistry}}/schemas/ids/2/versions
+Content-Type: application/vnd.schemaregistry.v1+json
+
+### List Connectors
+GET {{kurrent.url}}/connectors
+Content-Type: application/json
+
+{
+    "includeSettings": true
+}

@@ -31,7 +31,7 @@ public class ConnectorsCommandApplication : EntityApplication<ConnectorEntity> {
                 .Protect(cmd.ConnectorId, protectSettings)
                 .AsDictionary();
 
-            CheckAccess(settings, licenseService);
+            // CheckAccess(settings, licenseService);
 
             return [
                 new ConnectorCreated {
@@ -56,7 +56,7 @@ public class ConnectorsCommandApplication : EntityApplication<ConnectorEntity> {
         });
 
         OnExisting<ReconfigureConnector>((connector, cmd) => {
-            CheckAccess(connector, licenseService);
+            // CheckAccess(connector, licenseService);
 
             connector.EnsureNotDeleted();
 
@@ -79,7 +79,7 @@ public class ConnectorsCommandApplication : EntityApplication<ConnectorEntity> {
         });
 
         OnExisting<StartConnector>((connector, cmd) => {
-            CheckAccess(connector, licenseService);
+            // CheckAccess(connector, licenseService);
 
             connector.EnsureNotDeleted();
 
@@ -101,7 +101,7 @@ public class ConnectorsCommandApplication : EntityApplication<ConnectorEntity> {
         });
 
         OnExisting<ResetConnector>((connector, cmd) => {
-            CheckAccess(connector, licenseService);
+            // CheckAccess(connector, licenseService);
 
             connector.EnsureNotDeleted();
 
@@ -141,7 +141,7 @@ public class ConnectorsCommandApplication : EntityApplication<ConnectorEntity> {
         });
 
         OnExisting<RenameConnector>((connector, cmd) => {
-            CheckAccess(connector, licenseService);
+            // CheckAccess(connector, licenseService);
 
             connector.EnsureNotDeleted();
 
