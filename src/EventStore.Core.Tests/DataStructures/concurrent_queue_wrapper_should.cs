@@ -11,6 +11,11 @@ namespace EventStore.Core.Tests.DataStructures;
 [TestFixture]
 public class concurrent_queue_wrapper_should {
 	[Test]
+	public void justfail() {
+		Assert.Fail();
+	}
+
+	[Test]
 	public void return_correct_counts_and_values_1() {
 		var queue = new ConcurrentQueueWrapper<int>();
 		Assert.AreEqual(0, queue.Count);
