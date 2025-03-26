@@ -1339,7 +1339,7 @@ public class ClusterVNode<TStreamId> :
 					retainBytes: archiveOptions.RetainAtLeast.LogicalBytes);
 			}
 
-			var chunkExecutor = new ChunkExecutor<TStreamId, ILogRecord>(
+			var chunkExecutor = new ChunkExecutor<TStreamId, ILogRecord, TFChunk>(
 				logger,
 				logFormat.Metastreams,
 				chunkRemover,
