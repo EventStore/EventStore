@@ -3,7 +3,6 @@
 
 using System;
 using System.Buffers;
-using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -604,6 +603,12 @@ public partial class TFChunk : IChunkBlob {
 		var realPosition = GetRawPosition(writePosition);
 		// the writer work item's stream is responsible for computing the current checksum when the position is set
 		workItem.WorkingStream.Position = realPosition;
+
+		// Workaround: the following call triggers the hash computation for the data up to a new position
+		// (see ChunkDataWriteStream.WriteAsync sources). Otherwise, the optimization with
+		// WriterWorkItem.TryGetBufferedWriter doesn't work.
+		await workItem.WorkingStream.WriteAsync(ReadOnlyMemory<byte>.Empty, token);
+
 		_writerWorkItem = workItem;
 
 		return chunkHeader;
@@ -867,18 +872,23 @@ public partial class TFChunk : IChunkBlob {
 			throw new InvalidOperationException("Cannot write to a read-only block.");
 
 		var workItem = _writerWorkItem;
-		long oldPosition;
-		int length;
-		using (var dataOnDisk = SerializeLogRecord(record, out length)) {
-			oldPosition = GetDataPosition(workItem);
-			if (workItem.WorkingStream.Position + length + 2 * sizeof(int) > ChunkHeader.Size + _chunkHeader.ChunkSize)
-				return RecordWriteResult.Failed(oldPosition);
+		var length = record.GetSizeWithLengthPrefixAndSuffix();
+		var oldPosition = GetDataPosition(workItem);
+		if (workItem.WorkingStream.Position + length > ChunkHeader.Size + _chunkHeader.ChunkSize)
+			return RecordWriteResult.Failed(oldPosition);
 
+		if (workItem.TryGetDirectBuffer(length) is {IsEmpty:false} directBuf) {
+			var bytesWritten = SerializeLogRecordDirectly(record, directBuf.Span);
+			Debug.Assert(bytesWritten == length);
+			workItem.AppendData(bytesWritten);
+		} else
+		{
+			using var dataOnDisk = SerializeLogRecord(record, length);
 			await workItem.AppendData(dataOnDisk.Memory, token);
 		}
 
 		_physicalDataSize = (int)GetDataPosition(workItem); // should fit 32 bits
-		_logicalDataSize = ChunkHeader.GetLocalLogPosition(record.LogPosition + length + 2 * sizeof(int));
+		_logicalDataSize = ChunkHeader.GetLocalLogPosition(record.LogPosition + length);
 
 		// for non-scavenged chunk _physicalDataSize should be the same as _logicalDataSize
 		// for scavenged chunk _logicalDataSize should be at least the same as _physicalDataSize
@@ -890,20 +900,37 @@ public partial class TFChunk : IChunkBlob {
 
 		return RecordWriteResult.Successful(oldPosition, _physicalDataSize);
 
-		static MemoryOwner<byte> SerializeLogRecord(ILogRecord record, out int recordLength) {
-			var writer = new BufferWriterSlim<byte>(record.GetSizeWithLengthPrefixAndSuffix());
+		static void WriteRecord(ILogRecord record, ref BufferWriterSlim<byte> writer) {
 			writer.Advance(sizeof(int)); // reserved for length prefix
 			record.WriteTo(ref writer);
 
-			recordLength = writer.WrittenCount - sizeof(int);
-			writer.WriteLittleEndian(recordLength); // length suffix
+			var recordLength = writer.WrittenCount - sizeof(int);
 
-			var buffer = writer.DetachOrCopyBuffer();
-			Debug.Assert(record.GetSizeWithLengthPrefixAndSuffix() == buffer.Length);
+			// write length suffix
+			writer.WriteLittleEndian(recordLength);
 
 			// write length prefix
-			BinaryPrimitives.WriteInt32LittleEndian(buffer.Span, recordLength);
+			var bytesWritten = writer.WrittenCount;
+			writer.WrittenCount = 0;
+			writer.WriteLittleEndian(recordLength);
+			writer.WrittenCount = bytesWritten;
+		}
+
+		static MemoryOwner<byte> SerializeLogRecord(ILogRecord record, int length) {
+			using var buffer2 = Memory.AllocateExactly<byte>(length);
+			var writer = new BufferWriterSlim<byte>(buffer2.Span);
+			WriteRecord(record, ref writer);
+
+			var buffer = writer.DetachOrCopyBuffer();
+			Debug.Assert(length == buffer.Length);
+
 			return buffer;
+		}
+
+		static int SerializeLogRecordDirectly(ILogRecord record, Span<byte> buffer) {
+			var writer = new BufferWriterSlim<byte>(buffer);
+			WriteRecord(record, ref writer);
+			return writer.WrittenCount;
 		}
 	}
 
@@ -911,7 +938,14 @@ public partial class TFChunk : IChunkBlob {
 		var workItem = _writerWorkItem;
 		if (workItem.WorkingStream.Position + buffer.Length > workItem.WorkingStream.Length)
 			return false;
-		await workItem.AppendData(buffer, token);
+
+		if (workItem.TryGetDirectBuffer(buffer.Length) is { IsEmpty: false } directBuf) {
+			buffer.CopyTo(directBuf);
+			workItem.AppendData(buffer.Length);
+		} else {
+			await workItem.AppendData(buffer, token);
+		}
+
 		return true;
 	}
 
