@@ -7,6 +7,11 @@ using EventStore.Common.Utils;
 namespace EventStore.Common.Tests.Utils;
 
 public class JsonTests {
+	[Fact]
+	public void justfailxunit() {
+		Assert.Fail();
+	}
+
 	[Theory]
 	[InlineData("""
 		{
