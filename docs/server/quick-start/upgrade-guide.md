@@ -88,6 +88,13 @@ If you install KurrentDB through a package manager, it will create a default con
 If you are running KurrentDB as a service, you will need to grant the `kurrent` user access to any data, logs, or configuration directories that the `eventstore` user had access to.
 :::
 
+### Log Levels supported in logconfig.json
+
+The log levels specified in `logconfig.json` must now be Microsoft levels rather than Serilog levels.
+
+If you have customized your `logconfig.json` you will need to change `Fatal` to `Critical` and `Verbose` to `Trace`.
+[#4837](https://github.com/kurrent-io/EventStore/pull/4837)
+
 ### Metrics name changes
 
 ::: info
