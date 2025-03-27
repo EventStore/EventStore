@@ -1,6 +1,5 @@
 #!/usr/bin/env sh
 set -e
-set -x
 
 tests_directory=/build/published-tests
 settings=/build/ci/ci.runsettings

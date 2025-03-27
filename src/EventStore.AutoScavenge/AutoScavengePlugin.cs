@@ -23,20 +23,10 @@ using ILogger = Serilog.ILogger;
 
 namespace EventStore.AutoScavenge;
 
-public class AutoScavengePluginBase() : Plugin(requiredEntitlements: ["AUTO_SCAVENGE"]), ISubsystem {
-	public virtual Task Start() => Task.CompletedTask;
-
-	public virtual Task Stop() => Task.CompletedTask;
-}
-
-public class AutoScavengePlugin : AutoScavengePluginBase, IConnectedSubsystemsPlugin {
+public class AutoScavengePlugin() : SubsystemsPlugin(name: "auto-scavenge", requiredEntitlements: ["AUTO_SCAVENGE"]), IConnectedSubsystemsPlugin {
 	private static readonly ILogger Log = Serilog.Log.ForContext<AutoScavengePlugin>();
 	private readonly CancellationTokenSource _cts = new();
 	private AutoScavengeService? _autoScavengeService;
-
-	public string CommandLineName => "auto-scavenge";
-
-	public IReadOnlyList<ISubsystem> GetSubsystems() => [this];
 
 	private static readonly JsonSerializerOptions JsonSerializerOptions = new() {
 		PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -120,7 +110,7 @@ public class AutoScavengePlugin : AutoScavengePluginBase, IConnectedSubsystemsPl
 		PublishDiagnosticsData(
 			new Dictionary<string, object?>() { ["enabled"] = Enabled },
 			PluginDiagnosticsDataCollectionMode.Partial);
-		Stop();
+		_ = Stop();
 	}
 
 	public override void ConfigureApplication(IApplicationBuilder builder, IConfiguration configuration) {

@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<TargetFramework>net8.0</TargetFramework>
-		<Platforms>x64</Platforms>
 		<OutputType>Library</OutputType>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<ProduceReferenceAssembly>false</ProduceReferenceAssembly>
@@ -12,4 +11,8 @@
 	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
 		<DebugSymbols>true</DebugSymbols>
 	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="EventStore.Plugins" Version="25.2.5"/>
+		<PackageReference Include="Serilog" Version="4.1.0" />
+	</ItemGroup>
 </Project>
