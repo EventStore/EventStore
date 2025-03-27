@@ -93,7 +93,7 @@ If you are running KurrentDB as a service, you will need to grant the `kurrent` 
 The log levels specified in `logconfig.json` must now be Microsoft levels rather than Serilog levels.
 
 If you have customized your `logconfig.json` you will need to change `Fatal` to `Critical` and `Verbose` to `Trace`.
-[#4837](https://github.com/kurrent-io/EventStore/pull/4837).
+[#4837](https://github.com/kurrent-io/EventStore/pull/4837)
 
 ### Metrics name changes
 
