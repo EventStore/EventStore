@@ -113,14 +113,12 @@ public partial class TFChunk : IChunkBlob {
 					ChunkStartNumber = startNumber,
 					ChunkEndNumber = startNumber,
 					IsRemote = true,
-					ChunkEndPosition = long.MinValue,
 				};
 
 			if (_chunkHeader is not null)
 				return new() {
 					ChunkStartNumber = _chunkHeader.ChunkStartNumber,
 					ChunkEndNumber = _chunkHeader.ChunkEndNumber,
-					ChunkEndPosition = _chunkHeader.ChunkEndPosition,
 					IsRemote = IsRemote,
 				};
 

@@ -112,9 +112,9 @@ public sealed class ArchiverService :
 		// process only chunks that are already in the archive, all other chunks
 		// will be processed by the main loop
 		while (_switchedChunks.TryTake(out var chunkInfo)) {
-			if (chunkInfo.ChunkEndPosition <= checkpoint) {
-				var chunk = _chunkManager.UnsafeGetChunk(chunkInfo.ChunkEndNumber);
-				await chunk.EnsureInitialized(token);
+			var chunk = _chunkManager.UnsafeGetChunk(chunkInfo.ChunkEndNumber);
+			await chunk.EnsureInitialized(token);
+			if (chunk.ChunkHeader.ChunkEndPosition <= checkpoint) {
 				Log.Information("Storing switched chunk in archive: \"{chunk}\"", chunk.ChunkLocator);
 				await _archive.StoreChunk(chunk, token);
 			}
