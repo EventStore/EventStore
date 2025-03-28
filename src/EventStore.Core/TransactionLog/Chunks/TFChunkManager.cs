@@ -431,10 +431,10 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 			if (chunk != null) {
 				// we would be removing `chunk` and replacing it with `newChunks`.
 				// check that chunk's range is covered by the newChunks.
-				var chunkHeader = chunk.ChunkHeader;
-				if (chunkHeader.ChunkStartNumber < chunkStartNumber || chunkHeader.ChunkEndNumber > chunkEndNumber)
+				var chunkInfo = chunk.ChunkInfo;
+				if (chunkInfo.ChunkStartNumber < chunkStartNumber || chunkInfo.ChunkEndNumber > chunkEndNumber)
 					return false;
-				i = chunkHeader.ChunkEndNumber + 1;
+				i = chunkInfo.ChunkEndNumber + 1;
 			} else {
 				//Cover the case of initial replication of merged chunks where they were never set
 				// in the map in the first place.
