@@ -85,7 +85,7 @@ public sealed class ArchiverService :
 			while (!_lifetimeToken.IsCancellationRequested) {
 				await ProcessSwitchedChunksAsync(checkpoint, _lifetimeToken);
 
-				if (_chunkManager.UnsafeTryGetChunkFor(checkpoint) is { ChunkFooter.IsCompleted: true } chunk &&
+				if (await _chunkManager.TryGetInitializedChunkFor(checkpoint, _lifetimeToken) is { ChunkFooter.IsCompleted: true } chunk &&
 					chunk.ChunkHeader.ChunkEndPosition <= Volatile.Read(in _replicationPosition)) {
 					Log.Information("Storing chunk in archive: \"{chunk}\"", chunk.ChunkLocator);
 					await _archive.StoreChunk(chunk, _lifetimeToken);
@@ -145,5 +145,14 @@ public sealed class ArchiverService :
 		} finally {
 			_archivingSignal.Dispose();
 		}
+	}
+}
+
+file static class ChunkRegistry {
+	public static async ValueTask<IChunkBlob> TryGetInitializedChunkFor(this IChunkRegistry<IChunkBlob> registry,
+		long logPosition, CancellationToken token) {
+		var chunk = registry.UnsafeTryGetChunkFor(logPosition);
+		await chunk.EnsureInitialized(token);
+		return chunk;
 	}
 }
