@@ -1,5 +1,5 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
 using System.Collections.Generic;
@@ -111,7 +111,7 @@ public class StorageChaser<TStreamId> : StorageChaser, IMonitoredQueue,
 			// with no concurrency issues with writer, as writer before jumping
 			// into leader mode and accepting writes will wait till chaser caught up.
 			await _indexCommitterService.Init(_chaser.Checkpoint.Read(), _stopToken);
-			_leaderBus.Publish(new SystemMessage.ServiceInitialized("StorageChaser"));
+			_leaderBus.Publish(new SystemMessage.ServiceInitialized(nameof(StorageChaser)));
 
 			while (!_stopToken.IsCancellationRequested) {
 				if (_systemStarted)
@@ -137,7 +137,7 @@ public class StorageChaser<TStreamId> : StorageChaser, IMonitoredQueue,
 
 		_writerCheckpoint.Flushed -= OnWriterFlushed;
 		_chaser.Close();
-		_leaderBus.Publish(new SystemMessage.ServiceShutdown(Name));
+		_leaderBus.Publish(new SystemMessage.ServiceShutdown(nameof(StorageChaser)));
 	}
 
 	private void OnWriterFlushed(long obj) {

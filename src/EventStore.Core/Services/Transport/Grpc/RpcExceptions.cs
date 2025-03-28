@@ -1,5 +1,5 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
 using System.Runtime.CompilerServices;
@@ -125,6 +125,16 @@ public static class RpcExceptions {
 				{Constants.Exceptions.StreamName, streamName},
 				{Constants.Exceptions.ExpectedVersion, expectedVersion.ToString()},
 				{Constants.Exceptions.ActualVersion, actualVersion?.ToString() ?? string.Empty}
+			});
+
+	public static RpcException MaxAppendEventSizeExceeded(string eventId, int proposedEventSize, int maxAppendEventSize) =>
+		new(
+			new Status(StatusCode.InvalidArgument, $"Event with Id: {eventId}, Size: {proposedEventSize}, exceeds Maximum Append Event Size of {maxAppendEventSize}."),
+			new Metadata {
+				{Constants.Exceptions.ExceptionKey, Constants.Exceptions.MaximumAppendEventSizeExceeded},
+				{Constants.Exceptions.MaximumAppendEventSize, maxAppendEventSize.ToString()},
+				{Constants.Exceptions.EventId, eventId},
+				{Constants.Exceptions.ProposedAppendEventSize, proposedEventSize.ToString()}
 			});
 
 	public static RpcException MaxAppendSizeExceeded(int maxAppendSize) =>

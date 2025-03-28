@@ -1,13 +1,16 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 
 namespace EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
 public interface IChunkManagerForChunkExecutor<TStreamId, TRecord> {
+	IChunkFileSystem FileSystem { get; }
+
 	ValueTask<IChunkWriterForExecutor<TStreamId, TRecord>> CreateChunkWriter(
 		IChunkReaderForExecutor<TStreamId, TRecord> sourceChunk,
 		CancellationToken token);
@@ -15,8 +18,12 @@ public interface IChunkManagerForChunkExecutor<TStreamId, TRecord> {
 	IChunkReaderForExecutor<TStreamId, TRecord> GetChunkReaderFor(long position);
 }
 
+public interface IChunkManagerForChunkRemover {
+	ValueTask<bool> SwitchInChunks(IReadOnlyList<string> locators, CancellationToken token);
+}
+
 public interface IChunkWriterForExecutor<TStreamId, TRecord> {
-	string FileName { get; }
+	string LocalFileName { get; }
 
 	ValueTask WriteRecord(RecordForExecutor<TStreamId, TRecord> record, CancellationToken token);
 

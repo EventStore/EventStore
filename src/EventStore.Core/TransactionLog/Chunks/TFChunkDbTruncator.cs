@@ -1,5 +1,5 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
 using System.Collections.Generic;
@@ -43,10 +43,11 @@ public class TFChunkDbTruncator {
 
 		var oldLastChunkNum = (int)(writerChk / _config.ChunkSize);
 		var newLastChunkNum = (int)(truncateChk / _config.ChunkSize);
-		var chunkEnumerator = new TFChunkEnumerator(_config.FileNamingStrategy, _fileSystem);
-		var truncatingToBoundary = truncateChk % _config.ChunkSize == 0;
+		var chunkEnumerator = _fileSystem.GetChunks();
+		chunkEnumerator.LastChunkNumber = oldLastChunkNum;
+		var truncatingToBoundary = truncateChk % _config.ChunkSize is 0;
 
-		var excessiveChunks = _config.FileNamingStrategy.GetAllVersionsFor(oldLastChunkNum + 1);
+		var excessiveChunks = _fileSystem.LocalNamingStrategy.GetAllVersionsFor(oldLastChunkNum + 1);
 		if (excessiveChunks.Length > 0)
 			throw new Exception(
 				$"During truncation of DB excessive TFChunks were found:\n{string.Join("\n", excessiveChunks)}.");
@@ -55,7 +56,7 @@ public class TFChunkDbTruncator {
 		string newLastChunkFilename = null;
 
 		// find the chunk to truncate to
-		await foreach (var chunkInfo in chunkEnumerator.EnumerateChunks(oldLastChunkNum, token: token)) {
+		await foreach (var chunkInfo in chunkEnumerator.WithCancellation(token)) {
 			switch (chunkInfo) {
 				case LatestVersion(var fileName, var _, var end):
 					if (newLastChunkFilename != null || end < newLastChunkNum) break;
@@ -83,7 +84,7 @@ public class TFChunkDbTruncator {
 				chunkNumToDeleteFrom--;
 			}
 
-			await foreach (var chunkInfo in chunkEnumerator.EnumerateChunks(oldLastChunkNum, token: token)) {
+			await foreach (var chunkInfo in chunkEnumerator.WithCancellation(token)) {
 				switch (chunkInfo) {
 					case LatestVersion(var fileName, var start, _):
 						if (start >= chunkNumToDeleteFrom)

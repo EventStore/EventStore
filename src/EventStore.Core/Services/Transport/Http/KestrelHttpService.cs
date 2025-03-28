@@ -1,5 +1,5 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
 using System.Collections.Generic;
@@ -7,17 +7,10 @@ using System.Net;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
-using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http.Messages;
 using EventStore.Core.Settings;
 using EventStore.Transport.Http.EntityManagement;
 using ILogger = Serilog.ILogger;
-using MidFunc = System.Func<
-	Microsoft.AspNetCore.Http.HttpContext,
-	System.Func<System.Threading.Tasks.Task>,
-	System.Threading.Tasks.Task
->;
 
 namespace EventStore.Core.Services.Transport.Http;
 
@@ -63,8 +56,8 @@ public class KestrelHttpService : IHttpService,
 	}
 
 	public void Handle(SystemMessage.SystemInit message) {
-
 		_isListening = true;
+		_inputBus.Publish(new SystemMessage.ServiceInitialized(nameof(KestrelHttpService)));
 	}
 
 	public void Handle(SystemMessage.BecomeShuttingDown message) {
@@ -72,7 +65,7 @@ public class KestrelHttpService : IHttpService,
 			Shutdown();
 		_inputBus.Publish(
 			new SystemMessage.ServiceShutdown(
-				$"HttpServer [{String.Join(", ", EndPoints)}]"));
+				nameof(KestrelHttpService), $"[{string.Join(", ", EndPoints)}]"));
 	}
 
 	public void Shutdown() {

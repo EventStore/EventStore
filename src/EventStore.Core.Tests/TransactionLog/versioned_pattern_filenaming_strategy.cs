@@ -1,8 +1,7 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using NUnit.Framework;
@@ -180,13 +179,8 @@ public class versioned_pattern_filenaming_strategy : SpecificationWithDirectory 
 	}
 
 	[Test]
-	public void returns_correct_prefix_with_get_prefix_for() {
+	public void returns_correct_prefix() {
 		var strategy = new VersionedPatternFileNamingStrategy(PathName, "chunk-");
-		Assert.AreEqual("chunk-", strategy.GetPrefixFor(null, null));
-		Assert.AreEqual("chunk-000000.", strategy.GetPrefixFor(0, null));
-		Assert.AreEqual("chunk-001337.", strategy.GetPrefixFor(1337, null));
-		Assert.AreEqual("chunk-000000.000000", strategy.GetPrefixFor(0, 0));
-		Assert.AreEqual("chunk-000000.001337", strategy.GetPrefixFor(0, 1337));
-		Assert.AreEqual("chunk-001234.005678", strategy.GetPrefixFor(1234, 5678));
+		Assert.AreEqual("chunk-", strategy.Prefix);
 	}
 }

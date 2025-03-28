@@ -1,5 +1,5 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
 using EventStore.Core.Data;
@@ -27,6 +27,7 @@ public static class Format {
 		switch (entity.ResponseCodec.ContentType) {
 			case ContentType.Atom:
 			case ContentType.AtomJson:
+			case ContentType.LegacyAtomJson:
 			case ContentType.Html:
 				return entity.ResponseCodec.To(Convert.ToEntry(msg.Record, entity.ResponseUrl, embed,
 					singleEntry: true));
@@ -42,7 +43,7 @@ public static class Format {
 			return String.Empty;
 
 		return entity.ResponseCodec.To(
-			Convert.ToStreamEventBackwardFeed(msg, entity.ResponseUrl, embed, headOfStream));
+			Convert.ToStreamEventBackwardFeed(msg, entity.ResponseUrl, embed, headOfStream, entity.ResponseCodec.ContentType));
 	}
 
 	public static string GetStreamEventsForward(HttpResponseFormatterArgs entity, Message message,
@@ -62,7 +63,7 @@ public static class Format {
 
 		return entity.ResponseCodec.To(Convert.ToAllEventsBackwardFeed(msg, entity.ResponseUrl, embed));
 	}
-	
+
 	public static string ReadAllEventsBackwardFilteredCompleted(HttpResponseFormatterArgs entity, Message message,
 		EmbedLevel embed) {
 		var msg = message as ClientMessage.FilteredReadAllEventsBackwardCompleted;
@@ -80,7 +81,7 @@ public static class Format {
 
 		return entity.ResponseCodec.To(Convert.ToAllEventsForwardFeed(msg, entity.ResponseUrl, embed));
 	}
-	
+
 	public static string ReadAllEventsForwardFilteredCompleted(HttpResponseFormatterArgs entity, Message message,
 		EmbedLevel embed) {
 		var msg = message as ClientMessage.FilteredReadAllEventsForwardCompleted;
@@ -142,7 +143,7 @@ public static class Format {
 			    .ReadNextNPersistentMessagesResult.Success) {
 			return msg != null ? entity.ResponseCodec.To(msg.Reason) : string.Empty;
 		}
-		
+
 		return entity.ResponseCodec.To(Convert.ToNextNPersistentMessagesFeed(msg, entity.ResponseUrl, streamId,
 			groupName, count, embed));
 	}
@@ -150,6 +151,6 @@ public static class Format {
 	public static string GetDescriptionDocument(HttpResponseFormatterArgs entity, string streamId,
 		string[] persistentSubscriptionStats) {
 		return entity.ResponseCodec.To(Convert.ToDescriptionDocument(entity.RequestedUrl, streamId,
-			persistentSubscriptionStats));
+			persistentSubscriptionStats, entity.ResponseCodec.ContentType));
 	}
 }

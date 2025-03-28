@@ -1,5 +1,5 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
 using System.Collections.Generic;
@@ -31,17 +31,25 @@ public class TFChunkDbCreationHelper<TLogFormat, TStreamId> {
 	private readonly LogFormatAbstractor<TStreamId> _logFormat;
 	private readonly TStreamId _scavengePointEventTypeId;
 
-	private TFChunkDbCreationHelper(TFChunkDbConfig dbConfig, LogFormatAbstractor<TStreamId> logFormat) {
+	private TFChunkDbCreationHelper(TFChunkDbConfig dbConfig, LogFormatAbstractor<TStreamId> logFormat,
+		IChunkFileSystem fileSystem = null) {
+
 		Ensure.NotNull(dbConfig, "dbConfig");
+
 		_dbConfig = dbConfig;
 		_logFormat = logFormat;
 		_scavengePointEventTypeId = logFormat.EventTypeIndex.GetExisting(SystemEventTypes.ScavengePoint);
 
-		_db = new TFChunkDb(_dbConfig);
+		_db = new TFChunkDb(_dbConfig, fileSystem: fileSystem);
 	}
 
-	public static async ValueTask<TFChunkDbCreationHelper<TLogFormat, TStreamId>> CreateAsync(TFChunkDbConfig dbConfig, LogFormatAbstractor<TStreamId> logFormat, CancellationToken token = default) {
-		var result = new TFChunkDbCreationHelper<TLogFormat, TStreamId>(dbConfig, logFormat);
+	public static async ValueTask<TFChunkDbCreationHelper<TLogFormat, TStreamId>> CreateAsync(
+		TFChunkDbConfig dbConfig,
+		LogFormatAbstractor<TStreamId> logFormat,
+		IChunkFileSystem fileSystem = null,
+		CancellationToken token = default) {
+
+		var result = new TFChunkDbCreationHelper<TLogFormat, TStreamId>(dbConfig, logFormat, fileSystem);
 
 		await result._db.Open(token: token);
 

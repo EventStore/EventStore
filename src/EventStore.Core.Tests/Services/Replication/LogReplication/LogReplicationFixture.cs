@@ -1,5 +1,5 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
 using System.IO;
@@ -26,11 +26,9 @@ using EventStore.Core.Tests.Services.Storage.ReadIndex;
 using EventStore.Core.Time;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using Serilog;
-using Serilog.Events;
 
 namespace EventStore.Core.Tests.Services.Replication.LogReplication;
 
@@ -52,7 +50,6 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 
 		var dbConfig = new TFChunkDbConfig(
 			path: dbPath,
-			fileNamingStrategy: new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
 			chunkSize: ChunkSize,
 			maxChunksCacheSize: 2 * ChunkSize,
 			writerCheckpoint: new InterceptorCheckpoint(new InMemoryCheckpoint()),
@@ -492,8 +489,8 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 			var replicaChunk = _replicaInfo.Db.Manager.GetChunk(chunkNum);
 
 			VerifyHeader(leaderChunk.ChunkHeader, replicaChunk.ChunkHeader);
-			var leaderData = ReadChunkData(leaderChunk.FileName, excludeChecksum: leaderChunk.ChunkFooter != null);
-			var replicaData = ReadChunkData(replicaChunk.FileName, excludeChecksum: replicaChunk.ChunkFooter != null);
+			var leaderData = ReadChunkData(leaderChunk.LocalFileName, excludeChecksum: leaderChunk.ChunkFooter != null);
+			var replicaData = ReadChunkData(replicaChunk.LocalFileName, excludeChecksum: replicaChunk.ChunkFooter != null);
 			Assert.True(leaderData.SequenceEqual(replicaData));
 
 			chunkNum = leaderChunk.ChunkHeader.ChunkEndNumber + 1;
@@ -502,7 +499,7 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 		if (atChunkBoundary) {
 			// verify that the chunk data is empty on the leader
 			var leaderChunk = _leaderInfo.Db.Manager.GetChunk(expectedLogicalChunks);
-			var leaderData = ReadChunkData(leaderChunk.FileName, excludeChecksum: false);
+			var leaderData = ReadChunkData(leaderChunk.LocalFileName, excludeChecksum: false);
 			Assert.True(leaderData.SequenceEqual(new byte[leaderData.Length]));
 		}
 	}

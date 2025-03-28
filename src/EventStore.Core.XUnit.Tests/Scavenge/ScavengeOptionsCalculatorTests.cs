@@ -1,21 +1,24 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 #nullable enable
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using EventStore.Core.Messaging;
+using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
+using EventStore.Core.Services.Archive;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.Scavenging;
 using Microsoft.Extensions.Configuration;
 using Xunit;
-using EventStore.Core.Services.UserManagement;
-using System;
 
 namespace EventStore.Core.XUnit.Tests.Scavenge;
 
 public class ScavengeOptionsCalculatorTests {
+	private const string SectionName = KurrentConfigurationKeys.Prefix;
 	private static ScavengeOptionsCalculator GenSut(
 		KeyValuePair<string, string?>[]? vNodeOptions = null,
 		int? threshold = null) {
@@ -32,10 +35,11 @@ public class ScavengeOptionsCalculatorTests {
 			syncOnly: false);
 
 		var config = new ConfigurationBuilder().AddInMemoryCollection(
-				vNodeOptions.Append(new("EventStore:ClusterSize", "1")))
+				vNodeOptions.Append(new($"{SectionName}:ClusterSize", "1")))
 			.Build();
 		var options = ClusterVNodeOptions.FromConfiguration(config);
-		var sut = new ScavengeOptionsCalculator(options, message);
+		var archiveOptions = config.GetSection($"{SectionName}:Archive").Get<ArchiveOptions>() ?? new();
+		var sut = new ScavengeOptionsCalculator(options, archiveOptions, message);
 		return sut;
 	}
 
@@ -50,7 +54,7 @@ public class ScavengeOptionsCalculatorTests {
 	[Fact]
 	public void merging_can_be_disabled() {
 		var sut = GenSut([
-			new("EventStore:DisableScavengeMerging", "true"),
+			new($"{SectionName}:DisableScavengeMerging", "true"),
 		]);
 
 		Assert.False(sut.MergeChunks);
@@ -60,7 +64,7 @@ public class ScavengeOptionsCalculatorTests {
 	public void merging_is_disabled_when_archiving_is_enabled() {
 		var sut = GenSut(
 			vNodeOptions: [
-				new("EventStore:Archive:Enabled", "true"),
+				new($"{SectionName}:Archive:Enabled", "true"),
 			]);
 
 		Assert.False(sut.MergeChunks);

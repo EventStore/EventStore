@@ -1,8 +1,7 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,6 +9,7 @@ using DotNext;
 using DotNext.Buffers;
 using DotNext.IO;
 using DotNext.Threading.Tasks;
+using Serilog;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
@@ -30,51 +30,51 @@ public interface IChunkHandle : IFlushable, IDisposable {
 		set;
 	}
 
+	string Name { get; }
+
 	/// <summary>
 	/// Gets access mode for this handle.
 	/// </summary>
 	FileAccess Access { get; }
 
-	ValueTask SetReadOnlyAsync(bool value, CancellationToken token);
-
 	/// <summary>
 	/// Creates an unbuffered stream for this handle.
 	/// </summary>
 	/// <returns>The unbuffered stream for this handle.</returns>
-	Stream CreateStream() => CreateStream(this, 60_000);
+	Stream CreateStream(bool leaveOpen = true) => CreateStream(this, leaveOpen, 60_000);
 
-	protected static Stream CreateStream(IChunkHandle handle, int synchronousTimeout)
-		=> new UnbufferedStream(handle) { ReadTimeout = synchronousTimeout, WriteTimeout = synchronousTimeout };
+	protected static Stream CreateStream(IChunkHandle handle, bool leaveOpen, int synchronousTimeout)
+		=> new UnbufferedStream(handle, leaveOpen) { ReadTimeout = synchronousTimeout, WriteTimeout = synchronousTimeout };
 
-	private sealed class UnbufferedStream(IChunkHandle handle) : RandomAccessStream {
+	private protected class UnbufferedStream(IChunkHandle handle, bool leaveOpen) : RandomAccessStream {
 		private int _readTimeout, _writeTimeout;
 		private CancellationTokenSource _timeoutSource;
 
-		public override void Flush() => handle.Flush();
+		public sealed override void Flush() => handle.Flush();
 
-		public override void SetLength(long value) => handle.Length = value;
+		public sealed override void SetLength(long value) => handle.Length = value;
 
-		public override bool CanRead => handle.Access.HasFlag(FileAccess.Read);
+		public sealed override bool CanRead => handle.Access.HasFlag(FileAccess.Read);
 
-		public override bool CanSeek => true;
+		public sealed override bool CanSeek => true;
 
-		public override bool CanWrite => handle.Access.HasFlag(FileAccess.Write);
+		public sealed override bool CanWrite => handle.Access.HasFlag(FileAccess.Write);
 
 		public override bool CanTimeout => true;
 
-		public override int WriteTimeout {
+		public sealed override int WriteTimeout {
 			get => _writeTimeout;
 			set => _writeTimeout =
 				value >= Timeout.Infinite ? value : throw new ArgumentOutOfRangeException(nameof(value));
 		}
 
-		public override int ReadTimeout {
+		public sealed override int ReadTimeout {
 			get => _readTimeout;
 			set => _readTimeout =
 				value >= Timeout.Infinite ? value : throw new ArgumentOutOfRangeException(nameof(value));
 		}
 
-		public override long Length => handle.Length;
+		public sealed override long Length => handle.Length;
 
 		protected override void Write(ReadOnlySpan<byte> buffer, long offset) {
 			// leave fast without sync over async
@@ -99,7 +99,7 @@ public interface IChunkHandle : IFlushable, IDisposable {
 			// never called. Quite a few synchronous stream operations can call synchronous write under
 			// the hood (e.g. SetLength). We want to be sure that these are at least not called
 			// routinely, because it is inefficient.
-			Debug.Fail("Synchronous writes are undesirable");
+			Log.Warning("Synchronous writes should be uncommon. Handle: {Handle}", handle.Name);
 		}
 
 
@@ -128,8 +128,7 @@ public interface IChunkHandle : IFlushable, IDisposable {
 				}
 			}
 
-			// see comment on other Debug.Fail call
-			Debug.Fail("Synchronous writes are undesirable");
+			Log.Warning("Synchronous reads should be uncommon. Handle: {Handle}", handle.Name);
 			return bytesRead;
 		}
 
@@ -153,6 +152,8 @@ public interface IChunkHandle : IFlushable, IDisposable {
 		protected override void Dispose(bool disposing) {
 			if (disposing) {
 				_timeoutSource?.Dispose();
+				if (!leaveOpen)
+					handle.Dispose();
 			}
 
 			base.Dispose(disposing);

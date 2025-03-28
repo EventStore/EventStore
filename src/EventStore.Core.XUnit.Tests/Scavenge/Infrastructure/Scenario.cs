@@ -1,5 +1,5 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
 using System.Collections.Generic;
@@ -13,6 +13,7 @@ using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Metrics;
+using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Settings;
 using EventStore.Core.Tests;
@@ -47,17 +48,19 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 	private static EqualityComparer<TStreamId> StreamIdComparer { get; } =
 		EqualityComparer<TStreamId>.Default;
 
-	private Func<TFChunkDbConfig, LogFormatAbstractor<TStreamId>, ValueTask<DbResult>> _getDb;
+	private Func<TFChunkDbConfig, LogFormatAbstractor<TStreamId>, IChunkFileSystem, ValueTask<DbResult>> _getDb;
 	private Func<ScavengeStateBuilder<TStreamId>, ScavengeStateBuilder<TStreamId>> _stateTransform;
 	private Action<ScavengeState<TStreamId>> _assertState;
 	private List<ScavengePoint> _newScavengePoint;
 	private ITFChunkScavengerLog _logger;
 
 	private int _threads = 1;
+	private bool _isArchiver;
+	private bool _skipIndexCheck;
 	private bool _mergeChunks;
 	private bool _syncOnly;
 	private string _dbPath;
-	private long _archiveCheckpoint;
+	private IArchiveStorageReader _archiveReader = NoArchiveReader.Instance;
 	private int _retainDays = TimeSpan.MaxValue.Days;
 	private long _retainBytes = long.MaxValue;
 	private TStreamId _accumulatingCancellationTrigger;
@@ -72,7 +75,7 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 	protected Tracer Tracer { get; set; }
 
 	public Scenario() {
-		_getDb = (_, _) => throw new Exception("db not configured. call WithDb");
+		_getDb = (_, _, _) => throw new Exception("db not configured. call WithDb");
 		_stateTransform = x => x;
 		Tracer = new Tracer();
 	}
@@ -94,7 +97,7 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 		long? retainBytes = null,
 		int? retainDays = null) {
 
-		_archiveCheckpoint = chunksInArchive *  ChunkSize;
+		_archiveReader = new ArchiveReaderEmptyChunks(chunkSize: ChunkSize, chunksInArchive);
 		_retainBytes = retainBytes ?? 0;
 		_retainDays = retainDays ?? 0;
 		return this;
@@ -105,13 +108,23 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 		return this;
 	}
 
+	public Scenario<TLogFormat, TStreamId> IsArchiver(bool isArchiver = true) {
+		_isArchiver = isArchiver;
+		return this;
+	}
+
+	public Scenario<TLogFormat, TStreamId> SkipIndexCheck() {
+		_skipIndexCheck = true;
+		return this;
+	}
+
 	public Scenario<TLogFormat, TStreamId> WithDbPath(string path) {
 		_dbPath = path;
 		return this;
 	}
 
 	public Scenario<TLogFormat, TStreamId> WithDb(DbResult db) {
-		_getDb = (_, _) => new(db);
+		_getDb = (_, _, _) => new(db);
 		return this;
 	}
 
@@ -120,8 +133,13 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 			TFChunkDbCreationHelper<TLogFormat, TStreamId>,
 			TFChunkDbCreationHelper<TLogFormat, TStreamId>> f) {
 
-		_getDb = async (dbConfig, logFormat) =>
-			await f(await TFChunkDbCreationHelper<TLogFormat, TStreamId>.CreateAsync(dbConfig, logFormat, CancellationToken.None)).CreateDb();
+		_getDb = async (dbConfig, logFormat, fileSystem) => {
+			var dbCreationHelper = await TFChunkDbCreationHelper<TLogFormat, TStreamId>.CreateAsync(
+				dbConfig, logFormat, fileSystem, CancellationToken.None);
+			dbCreationHelper = f(dbCreationHelper);
+			var db = await dbCreationHelper.CreateDb();
+			return db;
+		};
 		return this;
 	}
 
@@ -246,7 +264,14 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 		var dbConfig = TFChunkHelper.CreateSizedDbConfig(_dbPath, 0, chunkSize: 1024 * 1024);
 		var dbTransformManager = DbTransformManager.Default;
 
-		var dbResult = await _getDb(dbConfig, logFormat);
+		var locatorCodec = new PrefixingLocatorCodec();
+		var fileSystem = new FileSystemWithArchive(
+			chunkSize: dbConfig.ChunkSize,
+			locatorCodec: locatorCodec,
+			localFileSystem: new ChunkLocalFileSystem(dbConfig.Path),
+			archive: _archiveReader);
+
+		var dbResult = await _getDb(dbConfig, logFormat, fileSystem);
 		var keptRecords = getExpectedKeptRecords != null
 			? getExpectedKeptRecords(dbResult)
 			: null;
@@ -295,7 +320,9 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 			ptableVersion: PTableVersions.IndexV4,
 			maxAutoMergeIndexLevel: int.MaxValue,
 			pTableMaxReaderCount: ESConsts.PTableInitialReaderCount,
-			maxSizeForMemory: 1, // convert everything to ptables immediately
+			maxSizeForMemory: _skipIndexCheck
+				? 1_000_000 // we aren't going to check the index so no need to convert to ptables
+				: 1, // convert everything to ptables immediately so we can check the index
 			maxTablesPerLevel: 2,
 			inMem: false);
 		logFormat.StreamNamesProvider.SetTableIndex(tableIndex);
@@ -439,10 +466,12 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 			IChunkExecutor<TStreamId> chunkExecutor = new ChunkExecutor<TStreamId, ILogRecord>(
 				logger: logger,
 				metastreamLookup: chunkExecutorMetastreamLookup,
-				chunkDeleter: new TracingChunkDeleter<TStreamId, ILogRecord>(
-					new ChunkDeleter<TStreamId, ILogRecord>(
+				chunkRemover: new TracingChunkRemover<TStreamId, ILogRecord>(
+					new ChunkRemover<TStreamId, ILogRecord>(
 						logger: logger,
-						archiveCheckpoint: new AdvancingCheckpoint(_ => new(_archiveCheckpoint)),
+						archiveCheckpoint: new AdvancingCheckpoint(_archiveReader.GetCheckpoint),
+						chunkManager: new ChunkManagerForChunkRemover(dbResult.Db.Manager),
+						locatorCodec: locatorCodec,
 						retainPeriod: TimeSpan.FromDays(_retainDays),
 						retainBytes: _retainBytes),
 					Tracer),
@@ -458,6 +487,7 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 				unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes,
 				cancellationCheckPeriod: cancellationCheckPeriod,
 				threads: _threads,
+				isArchiver: _isArchiver,
 				throttle: throttle);
 
 			IChunkMerger chunkMerger = new ChunkMerger(
@@ -599,7 +629,8 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 			// The index entries we expected to be kept are kept
 			if (keptRecords != null) {
 				await CheckRecords(keptRecords, dbResult, cancellationTokenSource.Token);
-				await CheckIndex(keptIndexEntries, readIndex, collidingStreams, hasher, cancellationTokenSource.Token);
+				if (!_skipIndexCheck)
+					await CheckIndex(keptIndexEntries, readIndex, collidingStreams, hasher, cancellationTokenSource.Token);
 			}
 
 			_assertState?.Invoke(scavengeState);
@@ -735,7 +766,7 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 					beforePosition: long.MaxValue,
 					token));
 
-			if (result.EventInfos.Length > 100)
+			if (result.EventInfos.Length > 10_000)
 				throw new Exception("wasn't expecting a stream this long in the tests");
 
 			Assert.All(result.EventInfos, info => {
@@ -768,7 +799,8 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 
 			transformFactory.CreateTransformHeader(transformHeader);
 			var newChunk = await TFChunk.CreateWithHeader(
-				filename: $"{chunk.FileName}.tmp",
+				db.Manager.FileSystem,
+				filename: $"{chunk.LocalFileName}.tmp",
 				header: newChunkHeader,
 				fileSize: ChunkHeader.Size,
 				inMem: false,
@@ -777,12 +809,13 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 				reduceFileCachePressure: false,
 				tracker: new TFChunkTracker.NoOp(),
 				transformFactory: transformFactory,
+				getTransformFactory: db.TransformManager,
 				transformHeader: transformHeader,
 				token);
 
 			await newChunk.CompleteScavenge(null, token);
 
-			await db.Manager.SwitchChunk(newChunk, false, false, token);
+			await db.Manager.SwitchInTempChunk(newChunk, false, false, token);
 		}
 	}
 }

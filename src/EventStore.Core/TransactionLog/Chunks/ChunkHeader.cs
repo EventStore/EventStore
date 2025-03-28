@@ -1,5 +1,5 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
 using System.Diagnostics;
@@ -154,6 +154,8 @@ public sealed class ChunkHeader : IBinaryFormattable<ChunkHeader> {
 
 		return ChunkStartPosition + localLogicalPosition;
 	}
+
+	public bool IsSingleLogicalChunk => ChunkStartNumber == ChunkEndNumber;
 
 	public override string ToString() {
 		return string.Format(

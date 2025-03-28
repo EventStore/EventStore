@@ -1,5 +1,5 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
 using System.Collections.Generic;
@@ -144,7 +144,7 @@ partial class Enumerator {
 
 		private static TFPos ConvertCheckpoint(Position? checkpoint, TFPos lastLivePos) {
 			if (!checkpoint.HasValue)
-				return new TFPos(-1, -1);
+				return TFPos.HeadOfTf;
 
 			if (checkpoint == Position.End)
 				return lastLivePos;
@@ -304,6 +304,9 @@ partial class Enumerator {
 							if (completed.IsEndOfStream) {
 								// issue a checkpoint when going live to make sure that at least
 								// one checkpoint is issued within the checkpoint interval
+								if (checkpoint < completed.CurrentPos)
+									checkpoint = completed.CurrentPos;
+
 								await SendCheckpointToSubscription(checkpoint, ct);
 
 								catchupCompletionTcs.TrySetResult(checkpoint);
@@ -346,6 +349,10 @@ partial class Enumerator {
 		}
 
 		private async Task SendCheckpointToSubscription(TFPos checkpoint, CancellationToken ct) {
+			if (checkpoint == TFPos.HeadOfTf) {
+				// there is not yet any checkpoint to send (failsafe)
+				return;
+			}
 			var checkpointPos = Position.FromInt64(checkpoint.CommitPosition, checkpoint.PreparePosition);
 			await _channel.Writer.WriteAsync(new ReadResponse.CheckpointReceived(
 				commitPosition: checkpointPos.CommitPosition,

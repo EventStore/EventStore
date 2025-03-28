@@ -1,5 +1,5 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System.IO;
 using System.Linq;
@@ -32,7 +32,7 @@ public class when_truncating_to_a_data_chunk_boundary : SpecificationWithDirecto
 		DbUtil.CreateSingleChunk(_config, 4, GetFilePathFor("chunk-000004.000000"));
 		DbUtil.CreateOngoingChunk(_config, 5, GetFilePathFor("chunk-000005.000000"));
 
-		var truncator = new TFChunkDbTruncator(_config, ChunkLocalFileSystem.Instance, static _ => new IdentityChunkTransformFactory());
+		var truncator = new TFChunkDbTruncator(_config, new ChunkLocalFileSystem(_config.Path), static _ => new IdentityChunkTransformFactory());
 		await truncator.TruncateDb(_config.TruncateCheckpoint.ReadNonFlushed(), CancellationToken.None);
 	}
 

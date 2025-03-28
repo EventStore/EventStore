@@ -1,5 +1,5 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System.IO;
 using System.Threading;
@@ -36,7 +36,7 @@ public class when_truncating_into_the_middle_of_multichunk : SpecificationWithDi
 		DbUtil.CreateMultiChunk(_config, 8, 9, GetFilePathFor("chunk-000008.000001"));
 		DbUtil.CreateOngoingChunk(_config, 11, GetFilePathFor("chunk-000011.000000"));
 
-		var truncator = new TFChunkDbTruncator(_config, ChunkLocalFileSystem.Instance, static _ => new IdentityChunkTransformFactory());
+		var truncator = new TFChunkDbTruncator(_config, new ChunkLocalFileSystem(_config.Path), static _ => new IdentityChunkTransformFactory());
 		await truncator.TruncateDb(_config.TruncateCheckpoint.ReadNonFlushed(), CancellationToken.None);
 	}
 

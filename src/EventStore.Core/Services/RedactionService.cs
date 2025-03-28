@@ -1,5 +1,5 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
 using System.IO;
@@ -90,7 +90,7 @@ public class RedactionService<TStreamId> :
 
 			eventPositions[i] = new EventPosition(
 				logPosition: logPos,
-				chunkFile: Path.GetFileName(chunk.FileName),
+				chunkFile: Path.GetFileName(chunk.LocalFileName),
 				chunkVersion: chunk.ChunkHeader.MinCompatibleVersion,
 				chunkComplete: chunk.ChunkFooter is { IsCompleted: true },
 				chunkEventOffset: (uint) chunkEventOffset);
@@ -151,7 +151,7 @@ public class RedactionService<TStreamId> :
 		Message reply;
 		switch (await IsValidSwitchChunkRequest(targetChunkFile, newChunkFile, token)) {
 			case { ValueOrDefault: { } newChunk }:
-				await _db.Manager.SwitchChunk(
+				await _db.Manager.SwitchInTempChunk(
 					chunk: newChunk,
 					verifyHash: false,
 					removeChunksWithGreaterNumbers: false,
@@ -183,7 +183,7 @@ public class RedactionService<TStreamId> :
 
 		int targetChunkNumber;
 		try {
-			targetChunkNumber = _db.Config.FileNamingStrategy.GetIndexFor(targetChunkFile);
+			targetChunkNumber = _db.Manager.FileSystem.LocalNamingStrategy.GetIndexFor(targetChunkFile);
 		} catch {
 			return new(SwitchChunkResult.TargetChunkFileNameInvalid);
 		}
@@ -208,7 +208,7 @@ public class RedactionService<TStreamId> :
 			return new(SwitchChunkResult.TargetChunkExcessive);
 		}
 
-		if (Path.GetFileName(targetChunk.FileName) != targetChunkFile) {
+		if (Path.GetFileName(targetChunk.LocalFileName) != targetChunkFile) {
 			return new(SwitchChunkResult.TargetChunkInactive);
 		}
 
@@ -255,7 +255,7 @@ public class RedactionService<TStreamId> :
 				unbufferedRead: _db.Config.Unbuffered,
 				reduceFileCachePressure: true,
 				tracker: new TFChunkTracker.NoOp(),
-				getTransformFactory: _db.TransformManager.GetFactoryForExistingChunk,
+				getTransformFactory: _db.TransformManager,
 				token: token);
 		} catch (HashValidationException) {
 			return new(SwitchChunkResult.NewChunkHashInvalid);

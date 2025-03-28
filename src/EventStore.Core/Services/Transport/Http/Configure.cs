@@ -1,5 +1,5 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
 using System.Collections.Generic;
@@ -10,6 +10,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.Transport.Http.Controllers;
+using ContentType = EventStore.Transport.Http.ContentType;
 using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
 using OperationResult = EventStore.Core.Messages.OperationResult;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
@@ -56,7 +57,7 @@ public static class Configure {
 		var targetBase = new Uri(string.Format("{0}://{1}:{2}/", originalUrl.Scheme, targetHost, targetPort),
 			UriKind.Absolute);
 		var forwardUri = new Uri(targetBase, srcBase.MakeRelativeUri(originalUrl));
-		return new ResponseConfiguration(HttpStatusCode.TemporaryRedirect, "Temporary Redirect", "text/plain",
+		return new ResponseConfiguration(HttpStatusCode.TemporaryRedirect, "Temporary Redirect", ContentType.PlainText,
 			Helper.UTF8NoBom,
 			new KeyValuePair<string, string>("Location", forwardUri.ToString()));
 	}
@@ -69,13 +70,13 @@ public static class Configure {
 			UriKind.Absolute);
 		var forwardUri = new Uri(targetBase, srcBase.MakeRelativeUri(originalUrl));
 		return new ResponseConfiguration(HttpStatusCode.InternalServerError,
-			"Operation Not Supported on Read Only Replica", "text/plain",
+			"Operation Not Supported on Read Only Replica", ContentType.PlainText,
 			Helper.UTF8NoBom,
 			new KeyValuePair<string, string>("Location", forwardUri.ToString()));
 	}
 
 	public static ResponseConfiguration NotFound() {
-		return new ResponseConfiguration(HttpStatusCode.NotFound, "Not Found", "text/plain", Helper.UTF8NoBom);
+		return new ResponseConfiguration(HttpStatusCode.NotFound, "Not Found", ContentType.PlainText, Helper.UTF8NoBom);
 	}
 
 	public static ResponseConfiguration NotFound(string etag, int? cacheSeconds, bool isCachePublic,
@@ -94,37 +95,37 @@ public static class Configure {
 	}
 
 	public static ResponseConfiguration Gone(string description = null) {
-		return new ResponseConfiguration(HttpStatusCode.Gone, description ?? "Deleted", "text/plain",
+		return new ResponseConfiguration(HttpStatusCode.Gone, description ?? "Deleted", ContentType.PlainText,
 			Helper.UTF8NoBom);
 	}
 
 	public static ResponseConfiguration NotModified() {
-		return new ResponseConfiguration(HttpStatusCode.NotModified, "Not Modified", "text/plain",
+		return new ResponseConfiguration(HttpStatusCode.NotModified, "Not Modified", ContentType.PlainText,
 			Helper.UTF8NoBom);
 	}
 
 	public static ResponseConfiguration BadRequest(string description = null) {
-		return new ResponseConfiguration(HttpStatusCode.BadRequest, description ?? "Bad Request", "text/plain",
+		return new ResponseConfiguration(HttpStatusCode.BadRequest, description ?? "Bad Request", ContentType.PlainText,
 			Helper.UTF8NoBom);
 	}
 
 	public static ResponseConfiguration InternalServerError(string description = null) {
 		return new ResponseConfiguration(HttpStatusCode.InternalServerError, description ?? "Internal Server Error",
-			"text/plain", Helper.UTF8NoBom);
+			ContentType.PlainText, Helper.UTF8NoBom);
 	}
 
 	public static ResponseConfiguration ServiceUnavailable(string description = null) {
 		return new ResponseConfiguration(HttpStatusCode.ServiceUnavailable, description ?? "Service Unavailable",
-			"text/plain", Helper.UTF8NoBom);
+			ContentType.PlainText, Helper.UTF8NoBom);
 	}
 
 	public static ResponseConfiguration NotImplemented(string description = null) {
 		return new ResponseConfiguration(HttpStatusCode.NotImplemented, description ?? "Not Implemented",
-			"text/plain", Helper.UTF8NoBom);
+			ContentType.PlainText, Helper.UTF8NoBom);
 	}
 
 	public static ResponseConfiguration Unauthorized(string description = null) {
-		return new ResponseConfiguration(HttpStatusCode.Unauthorized, description ?? "Unauthorized", "text/plain",
+		return new ResponseConfiguration(HttpStatusCode.Unauthorized, description ?? "Unauthorized", ContentType.PlainText,
 			Helper.UTF8NoBom);
 	}
 
@@ -372,7 +373,7 @@ public static class Configure {
 				case OperationResult.Success:
 					var location = HostName.Combine(entity.ResponseUrl, "/streams/{0}/{1}",
 						Uri.EscapeDataString(eventStreamId), msg.FirstEventNumber);
-					return new ResponseConfiguration(HttpStatusCode.Created, "Created", "text/plain",
+					return new ResponseConfiguration(HttpStatusCode.Created, "Created", ContentType.PlainText,
 						Helper.UTF8NoBom,
 						new KeyValuePair<string, string>("Location", location));
 				case OperationResult.PrepareTimeout:
@@ -381,9 +382,9 @@ public static class Configure {
 					return InternalServerError("Write timeout");
 				case OperationResult.WrongExpectedVersion:
 					return new ResponseConfiguration(HttpStatusCode.BadRequest, "Wrong expected EventNumber",
-						"text/plain", Helper.UTF8NoBom,
-						new KeyValuePair<string, string>(SystemHeaders.CurrentVersion,
-							msg.CurrentVersion.ToString()));
+						ContentType.PlainText, Helper.UTF8NoBom,
+						new KeyValuePair<string, string>(SystemHeaders.CurrentVersion, msg.CurrentVersion.ToString()),
+						new KeyValuePair<string, string>(SystemHeaders.LegacyCurrentVersion, msg.CurrentVersion.ToString()));
 				case OperationResult.StreamDeleted:
 					return Gone("Stream deleted");
 				case OperationResult.InvalidTransaction:
@@ -407,7 +408,7 @@ public static class Configure {
 		if (msg != null) {
 			switch (msg.Result) {
 				case OperationResult.Success:
-					return new ResponseConfiguration(HttpStatusCode.NoContent, "Stream deleted", "text/plain",
+					return new ResponseConfiguration(HttpStatusCode.NoContent, "Stream deleted", ContentType.PlainText,
 						Helper.UTF8NoBom);
 				case OperationResult.PrepareTimeout:
 				case OperationResult.CommitTimeout:
@@ -415,9 +416,9 @@ public static class Configure {
 					return InternalServerError("Delete timeout");
 				case OperationResult.WrongExpectedVersion:
 					return new ResponseConfiguration(HttpStatusCode.BadRequest, "Wrong expected EventNumber",
-						"text/plain", Helper.UTF8NoBom,
-						new KeyValuePair<string, string>(SystemHeaders.CurrentVersion,
-							msg.CurrentVersion.ToString()));
+						ContentType.PlainText, Helper.UTF8NoBom,
+						new KeyValuePair<string, string>(SystemHeaders.CurrentVersion, msg.CurrentVersion.ToString()),
+						new KeyValuePair<string, string>(SystemHeaders.LegacyCurrentVersion, msg.CurrentVersion.ToString()));
 				case OperationResult.StreamDeleted:
 					return Gone("Stream deleted");
 				case OperationResult.InvalidTransaction:

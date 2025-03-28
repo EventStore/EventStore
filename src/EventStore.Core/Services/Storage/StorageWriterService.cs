@@ -1,5 +1,5 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
 using System.Collections.Generic;
@@ -10,7 +10,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using DotNext.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -27,13 +26,24 @@ using EventStore.Core.TransactionLog.LogRecords;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ILogger = Serilog.ILogger;
-using OperationCanceledException = System.OperationCanceledException;
 
 namespace EventStore.Core.Services.Storage;
 
 public abstract class StorageWriterService {
 }
 
+// StorageWriterService has its own queue. Messages are handled on that queue atomically, any exception
+// will shutdown the server.
+//
+// The service ensures that the CancellationToken passed into the handlers is only cancelled
+// when the server is being shutdown.
+//
+// The handlers can therefore treat the CancellationToken argument as normal - throwing if it is
+// cancelled and passing it on to other methods. (They still should not throw due to cancellation
+// during atomic sequences - also per normal best practices).
+//
+// Some messages have a CancellationToken associated with the client operation. If this is cancelled
+// the handler must not throw. Instead it can ignore the message.
 public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>,
 	IAsyncHandle<SystemMessage.StateChangeMessage>,
 	IAsyncHandle<SystemMessage.WriteEpoch>,
@@ -48,7 +58,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 	private static readonly ILogger Log = Serilog.Log.ForContext<StorageWriterService>();
 	private static EqualityComparer<TStreamId> StreamIdComparer { get; } = EqualityComparer<TStreamId>.Default;
 
-	protected static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
+	private static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
 	private static readonly TimeSpan WaitForChaserSingleIterationTimeout = TimeSpan.FromMilliseconds(200);
 
 	protected readonly TFChunkDb Db;
@@ -64,7 +74,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 	protected readonly IEpochManager EpochManager;
 	protected readonly IPublisher Bus;
 	private readonly ISubscriber _subscribeToBus;
-	protected readonly IQueuedHandler StorageWriterQueue;
+	private readonly QueuedHandlerThreadPool _writerQueue;
 	private readonly InMemoryBus _writerBus;
 
 	private readonly Clock _clock = Clock.Instance;
@@ -86,13 +96,9 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 	private long _lastFlushSize;
 	private long _maxFlushSize;
 	private long _maxFlushDelay;
-	private readonly List<Task> _tasks = new List<Task>();
 	private readonly TStreamId _emptyEventTypeId;
 	private readonly TStreamId _scavengePointsStreamId;
 	private readonly TStreamId _scavengePointEventTypeId;
-	public IEnumerable<Task> Tasks {
-		get { return _tasks; }
-	}
 
 	public StorageWriterService(IPublisher bus,
 		ISubscriber subscribeToBus,
@@ -144,7 +150,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		Writer = writer;
 
 		_writerBus = new InMemoryBus("StorageWriterBus", watchSlowMsg: false);
-		StorageWriterQueue = new QueuedHandlerThreadPool(new AdHocHandler<Message>(CommonHandle),
+		_writerQueue = new QueuedHandlerThreadPool(new AdHocHandler<Message>(CommonHandle),
 			"StorageWriterQueue",
 			queueStatsManager,
 			queueTrackers,
@@ -165,7 +171,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 
 	public void Start() {
 		Writer.Open();
-		_tasks.Add(StorageWriterQueue.Start());
+		_writerQueue.Start();
 	}
 
 	protected void SubscribeToMessage<T>() where T : Message {
@@ -177,19 +183,11 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		if (message is StorageMessage.IFlushableMessage)
 			Interlocked.Increment(ref FlushMessagesInQueue);
 
-		StorageWriterQueue.Publish(message);
-
-		if (message is SystemMessage.BecomeShuttingDown)
-		// we need to handle this message on main thread to stop StorageWriterQueue
-		{
-			StorageWriterQueue.Stop();
-			BlockWriter = true;
-			Bus.Publish(new SystemMessage.ServiceShutdown("StorageWriter"));
-		}
+		_writerQueue.Publish(message);
 	}
 
 	private async ValueTask CommonHandle(Message message, CancellationToken token) {
-		if (BlockWriter && !(message is SystemMessage.StateChangeMessage)) {
+		if (BlockWriter && message is not SystemMessage.StateChangeMessage) {
 			Log.Verbose("Blocking message {message} in StorageWriterService. Message:", message.GetType().Name);
 			Log.Verbose("{message}", message);
 			return;
@@ -207,6 +205,8 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		try {
 			await _writerBus.DispatchAsync(message, token);
 		} catch (Exception exc) {
+			// any exception, including the token being cancelled, terminates the process, because
+			// the message processing is atomic.
 			BlockWriter = true;
 			Log.Fatal(exc, "Unexpected error in StorageWriterService. Terminating the process...");
 			Application.Exit(ExitCode.Error,
@@ -215,7 +215,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 	}
 
 	void IHandle<SystemMessage.SystemInit>.Handle(SystemMessage.SystemInit message) {
-		Bus.Publish(new SystemMessage.ServiceInitialized("StorageWriter"));
+		Bus.Publish(new SystemMessage.ServiceInitialized(nameof(StorageWriterService)));
 	}
 
 	public virtual async ValueTask HandleAsync(SystemMessage.StateChangeMessage message, CancellationToken token) {
@@ -230,6 +230,8 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 				}
 			case VNodeState.ShuttingDown: {
 					await Writer.Flush(token);
+					BlockWriter = true;
+					_writerQueue.Stop().GetAwaiter().OnCompleted(Bus.PublishStorageWriterShutdown);
 					break;
 				}
 		}
@@ -282,12 +284,8 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		Interlocked.Decrement(ref FlushMessagesInQueue);
 
 		try {
-			// Workaround: The transaction cannot be canceled in a middle, it should be atomic.
-			// There is no way to rollback it on cancellation
-			if (msg.CancellationToken.IsCancellationRequested || token.IsCancellationRequested)
+			if (msg.CancellationToken.IsCancellationRequested)
 				return;
-
-			token = CancellationToken.None;
 
 			var logPosition = Writer.Position;
 			var prepares = new List<IPrepareLogRecord<TStreamId>>();
@@ -362,6 +360,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 						endEventNumber: -1,
 						isSoftDeleted: false),
 					token);
+				return;
 			}
 
 			bool softUndeleteMetastream = _systemStreams.IsMetaStream(streamId)
@@ -433,7 +432,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 				streamMetadataEventTypeId, modifiedMeta, Empty.ByteArray),
 			token);
 
-		_indexWriter.PreCommit(new[] { res.Prepare });
+		_indexWriter.PreCommit([res.Prepare]);
 	}
 
 	public bool SoftUndeleteRawMeta(ReadOnlyMemory<byte> rawMeta, long recreateFromEventNumber, out byte[] modifiedMeta) {
@@ -747,13 +746,12 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		// Workaround: The transaction cannot be canceled in a middle, it should be atomic.
 		// There is no way to rollback it on cancellation
 		token.ThrowIfCancellationRequested();
-		token = CancellationToken.None;
 
 		Writer.OpenTransaction();
 		var writerPos = Writer.Position;
 
 		foreach (var prepare in prepares) {
-			long newWriterPos = await Writer.WriteToTransaction(prepare, token)
+			long newWriterPos = await Writer.WriteToTransaction(prepare, CancellationToken.None)
 			                    ?? throw new InvalidOperationException("The transaction does not fit in the current chunk.");
 			if (newWriterPos - writerPos != prepare.GetSizeWithLengthPrefixAndSuffix())
 				throw new Exception($"Expected writer position to be at: {writerPos + prepare.GetSizeWithLengthPrefixAndSuffix()} but it was at {newWriterPos}");
@@ -866,7 +864,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		_indexWriter.PurgeNotProcessedTransactions(Db.Config.WriterCheckpoint.Read());
 	}
 
-	private struct WriteResult {
+	private readonly struct WriteResult {
 		public readonly long WrittenPos;
 		public readonly long NewPos;
 		public readonly IPrepareLogRecord<TStreamId> Prepare;
@@ -902,4 +900,9 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 
 		message.Envelope.ReplyWith(new MonitoringMessage.InternalStatsRequestResponse(stats));
 	}
+}
+
+file static class MessageBusHelpers {
+	internal static void PublishStorageWriterShutdown(this IPublisher publisher)
+		=> publisher.Publish(new SystemMessage.ServiceShutdown(nameof(StorageWriterService)));
 }

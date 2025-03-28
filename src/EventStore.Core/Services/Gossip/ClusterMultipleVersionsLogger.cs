@@ -1,5 +1,5 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
-// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+// Copyright (c) Kurrent, Inc and/or licensed to Kurrent, Inc under one or more agreements.
+// Kurrent, Inc licenses this file to you under the Kurrent License v1 (see LICENSE.md).
 
 using System;
 using System.Collections.Generic;
@@ -24,7 +24,7 @@ public class ClusterMultipleVersionsLogger : IHandle<GossipMessage.GossipUpdated
 		Dictionary<EndPoint, string> ipAddressVsVersion = GetIPAddressVsVersion(updatedCluster, out int numDistinctKnownVersions);
 		if (numDistinctKnownVersions > 1) {
 			IEnumerable<string> ipAndVersion = ipAddressVsVersion.Select(keyvalue => $"({keyvalue.Key},{keyvalue.Value})");
-			Log.Warning($"MULTIPLE ES VERSIONS ON CLUSTER NODES FOUND [ {string.Join(", ", ipAndVersion)} ]");
+			Log.Warning($"MULTIPLE DB VERSIONS ON CLUSTER NODES FOUND [ {string.Join(", ", ipAndVersion)} ]");
 		}
 	}
 
