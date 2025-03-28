@@ -129,7 +129,7 @@ public class TFChunkDbCreationHelper<TLogFormat, TStreamId> {
 		// for each chunk i
 		for (int i = 0; i < _chunkRecs.Count; ++i) {
 			var chunk = await (i is 0
-				? _db.Manager.GetInitializedChunk(0, CancellationToken.None)
+				? _db.Manager.GetInitializedChunk(0, token)
 				: _db.Manager.AddNewChunk(token));
 			logPos = i * (long)_db.Config.ChunkSize;
 

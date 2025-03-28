@@ -110,6 +110,8 @@ public partial class TFChunk : IChunkBlob {
 		get {
 			if (_lazyInitArgs is (ITransactionFileTracker, int startNumber))
 				return new() {
+					// only remote chunks are lazily initialized
+					// and all remote chunks have a range of 1.
 					ChunkStartNumber = startNumber,
 					ChunkEndNumber = startNumber,
 					IsRemote = true,
@@ -407,7 +409,7 @@ public partial class TFChunk : IChunkBlob {
 		await _cachedDataLock.AcquireAsync(token);
 		try {
 			if (_lazyInitArgs is not null) {
-				await InitCompleted(verifyHash: false, tracker, null, null, token);
+				await InitCompleted(verifyHash: false, tracker, header: null, footer: null, token);
 
 				// cannot be reordered, so we know that this flag is set to 'true' when all fields initialized properly
 				_lazyInitArgs = null;
