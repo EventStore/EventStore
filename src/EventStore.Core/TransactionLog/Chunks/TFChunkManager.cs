@@ -115,15 +115,18 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 			var chunk = _chunks[chunkNum];
 			if (chunk.IsReadOnly)
 				await chunk.UnCacheFromMemory(token);
-			chunkNum = chunk.ChunkHeader.ChunkStartNumber - 1;
+			chunkNum = chunk.ChunkInfo.ChunkStartNumber - 1;
 		}
 
 		// cache everything from lastChunkToCache up to now
 		for (int chunkNum = lastChunkToCache; chunkNum < _chunksCount;) {
 			var chunk = _chunks[chunkNum];
-			if (chunk.IsReadOnly)
+			if (chunk.IsReadOnly) {
+				await chunk.EnsureInitialized(token);
 				await chunk.CacheInMemory(token);
-			chunkNum = chunk.ChunkHeader.ChunkEndNumber + 1;
+			}
+
+			chunkNum = chunk.ChunkInfo.ChunkEndNumber + 1;
 		}
 	}
 

@@ -93,23 +93,21 @@ public partial class TFChunk : IChunkBlob {
 	}
 
 	public ChunkHeader ChunkHeader {
-		get { return _chunkHeader; }
+		get {
+			ThrowIfNotInitialized();
+			return _chunkHeader;
+		}
 	}
 
 	public ChunkFooter ChunkFooter {
-		get { return _chunkFooter; }
+		get {
+			ThrowIfNotInitialized();
+			return _chunkFooter;
+		}
 	}
 
 	public ChunkInfo ChunkInfo {
 		get {
-			if (_chunkHeader is not null)
-				return new() {
-				ChunkStartNumber = _chunkHeader.ChunkStartNumber,
-				ChunkEndNumber = _chunkHeader.ChunkEndNumber,
-				ChunkEndPosition = _chunkHeader.ChunkEndPosition,
-				IsRemote = IsRemote,
-			};
-
 			if (_lazyInitArgs is (ITransactionFileTracker, int startNumber))
 				return new() {
 					ChunkStartNumber = startNumber,
@@ -118,12 +116,23 @@ public partial class TFChunk : IChunkBlob {
 					ChunkEndPosition = long.MinValue,
 				};
 
-			throw new InvalidOperationException();
+			if (_chunkHeader is not null)
+				return new() {
+					ChunkStartNumber = _chunkHeader.ChunkStartNumber,
+					ChunkEndNumber = _chunkHeader.ChunkEndNumber,
+					ChunkEndPosition = _chunkHeader.ChunkEndPosition,
+					IsRemote = IsRemote,
+				};
+
+			throw CreateNotInitializedException();
 		}
 	}
 
 	public ReadOnlyMemory<byte> TransformHeader {
-		get { return _transformHeader; }
+		get {
+			ThrowIfNotInitialized();
+			return _transformHeader;
+		}
 	}
 
 	private readonly int _midpointsDepth;
@@ -239,6 +248,14 @@ public partial class TFChunk : IChunkBlob {
 
 	~TFChunk() {
 		FreeCachedData();
+	}
+
+	private static InvalidOperationException CreateNotInitializedException([CallerMemberName] string memberName = "")
+		=> new($"The chunk is not yet initialized to access the member {memberName}. Call EnsureInitialized() first.");
+
+	private void ThrowIfNotInitialized([CallerMemberName] string memberName = "") {
+		if (_lazyInitArgs is not null)
+			throw CreateNotInitializedException(memberName);
 	}
 
 	private static TFChunk FromCompletedFile(IChunkFileSystem fileSystem, string filename, bool unbufferedRead,
@@ -776,6 +793,7 @@ public partial class TFChunk : IChunkBlob {
 	// this method takes (b) and returns (d)
 	public async ValueTask<long> GetActualRawPosition(long logicalPosition, CancellationToken token) {
 		ArgumentOutOfRangeException.ThrowIfNegative(logicalPosition);
+		ThrowIfNotInitialized();
 
 		var actualPosition = await _readSide.GetActualPosition(logicalPosition, token);
 
@@ -786,6 +804,7 @@ public partial class TFChunk : IChunkBlob {
 		if (_inMem)
 			return;
 
+		ThrowIfNotInitialized();
 		await _cachedDataLock.AcquireAsync(token);
 		try {
 			if (_cacheStatus is not CacheStatus.Uncached) {
@@ -920,31 +939,46 @@ public partial class TFChunk : IChunkBlob {
 	}
 
 	public ValueTask<bool> ExistsAt(long logicalPosition, CancellationToken token)
-		=> _readSide.ExistsAt(logicalPosition, token);
+		=> Initialized
+			? _readSide.ExistsAt(logicalPosition, token)
+			: ValueTask.FromException<bool>(CreateNotInitializedException());
 
 	public ValueTask<RecordReadResult> TryReadAt(long logicalPosition, bool couldBeScavenged, CancellationToken token)
-		=> _readSide.TryReadAt(logicalPosition, couldBeScavenged, token);
+		=> Initialized
+			? _readSide.TryReadAt(logicalPosition, couldBeScavenged, token)
+			: ValueTask.FromException<RecordReadResult>(CreateNotInitializedException());
 
 	public ValueTask<RecordReadResult> TryReadFirst(CancellationToken token)
-		=> _readSide.TryReadFirst(token);
+		=> Initialized
+			? _readSide.TryReadFirst(token)
+			: ValueTask.FromException<RecordReadResult>(CreateNotInitializedException());
 
 	public ValueTask<RecordReadResult> TryReadClosestForward(long logicalPosition, CancellationToken token)
-		=> _readSide.TryReadClosestForward(logicalPosition, token);
+		=> Initialized
+			? _readSide.TryReadClosestForward(logicalPosition, token)
+			: ValueTask.FromException<RecordReadResult>(CreateNotInitializedException());
 
 	public ValueTask<RawReadResult> TryReadClosestForwardRaw(long logicalPosition, Func<int, byte[]> getBuffer,
 		CancellationToken token)
-		=> _readSide.TryReadClosestForwardRaw(logicalPosition, getBuffer, token);
+		=> Initialized
+			? _readSide.TryReadClosestForwardRaw(logicalPosition, getBuffer, token)
+			: ValueTask.FromException<RawReadResult>(CreateNotInitializedException());
 
 	public ValueTask<RecordReadResult> TryReadLast(CancellationToken token)
-		=> _readSide.TryReadLast(token);
+		=> Initialized
+			? _readSide.TryReadLast(token)
+			: ValueTask.FromException<RecordReadResult>(CreateNotInitializedException());
 
 	public ValueTask<RecordReadResult> TryReadClosestBackward(long logicalPosition, CancellationToken token)
-		=> _readSide.TryReadClosestBackward(logicalPosition, token);
+		=> Initialized
+			? _readSide.TryReadClosestBackward(logicalPosition, token)
+			: ValueTask.FromException<RecordReadResult>(CreateNotInitializedException());
 
 	public async ValueTask<RecordWriteResult> TryAppend(ILogRecord record, CancellationToken token) {
 		if (IsReadOnly)
 			throw new InvalidOperationException("Cannot write to a read-only block.");
 
+		ThrowIfNotInitialized();
 		var workItem = _writerWorkItem;
 		long oldPosition;
 		int length;
@@ -987,6 +1021,7 @@ public partial class TFChunk : IChunkBlob {
 	}
 
 	public async ValueTask<bool> TryAppendRawData(ReadOnlyMemory<byte> buffer, CancellationToken token) {
+		ThrowIfNotInitialized();
 		var workItem = _writerWorkItem;
 		if (workItem.WorkingStream.Position + buffer.Length > workItem.WorkingStream.Length)
 			return false;
@@ -998,6 +1033,9 @@ public partial class TFChunk : IChunkBlob {
 		=> IsReadOnly ? ValueTask.CompletedTask : _writerWorkItem.FlushToDisk(token);
 
 	public ValueTask Complete(CancellationToken token) {
+		if (!Initialized)
+			return ValueTask.FromException(CreateNotInitializedException());
+
 		return ChunkHeader.IsScavenged
 			? ValueTask.FromException(
 				new InvalidOperationException("CompleteScavenged should be used for scavenged chunks."))
@@ -1005,6 +1043,9 @@ public partial class TFChunk : IChunkBlob {
 	}
 
 	public ValueTask CompleteScavenge(IReadOnlyCollection<PosMap> mapping, CancellationToken token) {
+		if (!Initialized)
+			return ValueTask.FromException(CreateNotInitializedException());
+
 		return ChunkHeader.IsScavenged
 			? CompleteNonRaw(mapping, token)
 			: ValueTask.FromException(
@@ -1035,6 +1076,8 @@ public partial class TFChunk : IChunkBlob {
 	public async ValueTask CompleteRaw(CancellationToken token) {
 		if (IsReadOnly)
 			throw new InvalidOperationException("Cannot complete a read-only TFChunk.");
+
+		ThrowIfNotInitialized();
 		if (_writerWorkItem.WorkingStream.Position != _writerWorkItem.WorkingStream.Length)
 			throw new InvalidOperationException("The raw chunk is not completely written.");
 
