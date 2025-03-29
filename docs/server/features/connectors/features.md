@@ -276,3 +276,55 @@ For more details on customizing these settings, refer to the [Resilience Configu
 ::: note
 Some connectors have their own resilience mechanisms and configurations. Refer to the specific connector's page for details.
 :::
+
+## Data Protection
+
+KurrentDB Connectors protect sensitive configuration fields using envelope encryption to secure confidential information such as passwords and access tokens.
+
+When you configure a connector, the system encrypts sensitive data using Data Encryption Keys (DEKs), which are then wrapped (encrypted) using a master key based on your provided token. The encrypted data is stored securely in KurrentDB rather than in plaintext.
+
+Refer to each connector's [individual documentation](./sinks/) to see which fields are considered sensitive and protected.
+
+### Configuring Data Protection
+
+To enable data protection, configure the token settings in your configuration file. You have three options for providing a token:
+
+Update your configuration file as follows:
+
+```yaml
+Connectors:
+  Enabled: true
+  DataProtection:
+    Token: "<your-secret-token>"       # Direct token string
+    # OR
+    TokenFile: "/path/to/token/file"   # Path to a file containing the token
+    # Optional setting
+    Destroy: true  # Default: true - Controls secure cleanup after operations
+```
+
+::: note
+If you provide both `Token` and `TokenFile`, the system will use the token file and ignore the `Token` setting.
+:::
+
+### Token Configuration Options
+
+1. **Token**: Directly specify your secret token as a string in the configuration
+2. **TokenFile**: Provide a path to a file containing your token
+
+### Key Vault Configuration
+
+KurrentDB Connectors currently only supports the Surge key vault for storing encryption keys:
+
+The Surge key vault is KurrentDB's native key storage mechanism that stores encryption keys directly within KurrentDB itself. Rather than requiring a separate external key management system, Surge stores the encrypted keys in internal system streams. More key vault options will be available in the future.
+
+```yaml
+Connectors:
+  Enabled: true
+  DataProtection:
+    # Token configuration as shown above
+    
+    # Key Vault configuration
+    KeyVaults:
+      Surge:
+        KeyMaxHistory: 10 # Maximum number of key historical snapshots (-1 for unlimited)
+```

@@ -106,6 +106,16 @@ You can use the HTTP sink without a license, but a license is required for all o
 
 Refer to the [documentation](../features/connectors/README.md) for instructions on setting up and configuring connectors and sinks.
 
+#### Elasticsearch sink
+
+<Badge type="info" vertical="middle" text="License Required"/>
+
+The Elasticsearch sink pulls messages from a KurrentDB stream and stores them in
+an Elasticsearch index. The records will be serialized into JSON documents,
+compatible with Elasticsearch's document structure.
+
+Refer to the [documentation](../features/connectors/sinks/elasticsearch.md) for instructions on setting up a Elasticsearch sink.
+
 #### Kafka sink
 
 <Badge type="info" vertical="middle" text="License Required"/>
@@ -156,6 +166,18 @@ Refer to the [documentation](../features/connectors/sinks/http.md) for instructi
 The Serilog sink logs detailed messages about the connector and record details.
 
 Refer to the [documentation](../features/connectors/sinks/serilog.md) for instructions on setting up a Serilog sink.
+
+#### Data Protection
+
+We've introduced a comprehensive data protection system to enhance the security of your sensitive connector configurations.
+
+All connectors now use envelope encryption to automatically protect sensitive data such as passwords and tokens using industry-standard encryption techniques. This ensures your credentials remain secure during transmission.
+
+Setup is straightforward with token-based protection requiring minimal configuration. You can provide tokens directly in your configuration or via separate files for enhanced security in production environments.
+
+We've integrated a native Surge key vault that stores encryption keys directly within KurrentDB system streams but we will support more key vaults in the future.
+
+See the [Data Protection documentation](../features/connectors/features.md#data-protection) for complete setup instructions.
 
 ### Auto-scavenge
 
